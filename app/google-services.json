@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "520407937883",
+    "firebase_url": "https://primera-eafe6-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "primera-eafe6",
+    "storage_bucket": "primera-eafe6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:520407937883:android:4edda193e05245d94f607e",
+        "android_client_info": {
+          "package_name": "com.example.primera"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC43I0hlVxv7pFU3YeVYv5H7MgiT2OHjy4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
