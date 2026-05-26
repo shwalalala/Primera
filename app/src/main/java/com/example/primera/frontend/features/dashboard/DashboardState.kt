@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit
 
 data class DashboardState(
     // ========== USER INFO (from profile) ==========
-    val userName: String = "Sarah",
+    val userName: String = "",
     val dueDate: Date? = null,
 
     // ========== DYNAMICALLY CALCULATED FIELDS ==========
@@ -18,14 +18,14 @@ data class DashboardState(
     val daysLeft: Int = getDaysLeft(dueDate),
     val babySize: String = getBabySize(getWeekNumber(dueDate)),
 
-    // ========== STATIC PLACEHOLDER DATA ==========
-    val heartRateBpm: Int = 72,
+    // ========== DATA FROM FIREBASE ==========
+    val heartRateBpm: Int = 0,
     val heartRateTrendingUp: Boolean = true,
-    val heartRateVsLastWeek: Int = 2,
-    val steps: Int = 5_432,
-    val stepsGoal: Int = 8_000,
-    val sleepHours: Int = 7,
-    val sleepMinutes: Int = 45,
+    val heartRateVsLastWeek: Int = 0,
+    val steps: Int = 0,
+    val stepsGoal: Int = 0,
+    val sleepHours: Int = 0,
+    val sleepMinutes: Int = 0,
     val sleepQuality: String = getSleepQuality(sleepHours, sleepMinutes),
     val wellnessGoals: List<WellnessGoalItem> = defaultWellnessGoals,
     val recentSymptoms: List<SymptomItem> = defaultSymptoms,

@@ -104,7 +104,7 @@ fun LoginScreen(
                         label = "Email",
                         value = state.email,
                         onValueChange = onEmailChange,
-                        placeholder = "Loisbecket@gmail.com",
+                        placeholder = "Enter your email",
                         keyboardType = KeyboardType.Email,
                         isError = state.emailError != null,
                         errorMessage = state.emailError
@@ -116,7 +116,7 @@ fun LoginScreen(
                         label = "Password",
                         value = state.password,
                         onValueChange = onPasswordChange,
-                        placeholder = "••••••••",
+                        placeholder = "Enter your password",
                         isPassword = true,
                         isError = state.passwordError != null,
                         errorMessage = state.passwordError

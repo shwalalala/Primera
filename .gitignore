@@ -5,8 +5,13 @@
 /.idea/libraries
 /.idea/modules.xml
 /.idea/workspace.xml
+/.idea/deploymentTargetSelector.xml
+/.idea/studiobot.xml
+/.idea/planningMode.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
+/.idea/shelf/
+*.hprof
 .DS_Store
 /build
 /captures

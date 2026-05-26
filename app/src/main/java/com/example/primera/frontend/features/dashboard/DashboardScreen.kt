@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import com.example.primera.frontend.common.theme.*
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
@@ -41,21 +43,35 @@ import com.example.primera.R
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel = viewModel(),
+    onLogout: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(BackgroundCream)
-    ) {
-        DashboardTopBar(state.userName)
-        DashboardContent(
-            state           = state,
-            onViewAllLogs   = viewModel::onViewAllLogs,
-            onAddLog        = viewModel::onAddLog,
-            onInputManually = viewModel::onInputManually
-        )
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(BackgroundCream)
+        ) {
+            DashboardTopBar(state.userName, onLogout)
+            DashboardContent(
+                state = state,
+                onViewAllLogs = viewModel::onViewAllLogs,
+                onAddLog = viewModel::onAddLog,
+                onInputManually = viewModel::onInputManually
+            )
+        }
+
+        if (state.isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = PrimeraViolet)
+            }
+        }
     }
 }
 
@@ -99,7 +115,9 @@ fun DashboardContent(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun DashboardTopBar(userName: String) {
+private fun DashboardTopBar(userName: String, onLogout: () -> Unit) {
+    var showMenu by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -108,20 +126,53 @@ private fun DashboardTopBar(userName: String) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Menu Button
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFF5ECEC))
-                .border(1.dp, Color(0xFFF0F0F0), CircleShape)
-                .clickable { },
-            contentAlignment = Alignment.Center
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Box(Modifier.size(width = 16.dp, height = 2.dp).background(TextSecondary))
-                Box(Modifier.size(width = 16.dp, height = 2.dp).background(TextSecondary))
-                Box(Modifier.size(width = 10.dp, height = 2.dp).background(TextSecondary))
+        // Hamburger Menu Button
+        Box {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFF5ECEC))
+                    .border(1.dp, Color(0xFFF0F0F0), CircleShape)
+                    .clickable { showMenu = true },
+                contentAlignment = Alignment.Center
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Box(Modifier.size(width = 16.dp, height = 2.dp).background(TextSecondary))
+                    Box(Modifier.size(width = 16.dp, height = 2.dp).background(TextSecondary))
+                    Box(Modifier.size(width = 10.dp, height = 2.dp).background(TextSecondary))
+                }
+            }
+
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false },
+                modifier = Modifier
+                    .background(SurfaceWhite)
+                    .border(1.dp, Color(0xFFF0F0F0), RoundedCornerShape(12.dp))
+            ) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            "Logout",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextPrimary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Logout,
+                            contentDescription = "Logout",
+                            tint = PrimeraViolet,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
+                    onClick = {
+                        showMenu = false
+                        onLogout()
+                    }
+                )
             }
         }
 

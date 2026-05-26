@@ -112,7 +112,7 @@ fun RegisterScreen(
                         label = "Full Name",
                         value = state.fullName,
                         onValueChange = onFullNameChange,
-                        placeholder = "Full Name",
+                        placeholder = "Enter your full name",
                         isError = state.fullNameError != null,
                         errorMessage = state.fullNameError
                     )
@@ -123,7 +123,7 @@ fun RegisterScreen(
                         label = "Email",
                         value = state.email,
                         onValueChange = onEmailChange,
-                        placeholder = "Loisbecket@gmail.com",
+                        placeholder = "Enter a valid email",
                         keyboardType = KeyboardType.Email,
                         isError = state.emailError != null,
                         errorMessage = state.emailError
@@ -135,7 +135,7 @@ fun RegisterScreen(
                         label = "Password",
                         value = state.password,
                         onValueChange = onPasswordChange,
-                        placeholder = "••••••••",
+                        placeholder = "Enter valid password (minimum of 8 characters)",
                         isPassword = true,
                         isError = state.passwordError != null,
                         errorMessage = state.passwordError
