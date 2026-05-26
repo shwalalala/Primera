@@ -15,6 +15,16 @@ class AuthViewModel : ViewModel() {
     private val _state = MutableStateFlow(AuthState())
     val state: StateFlow<AuthState> = _state.asStateFlow()
 
+    init {
+        val isAuth = authRepository.isUserAuthenticated()
+        if (isAuth) {
+            _state.update { it.copy(isAuthenticated = true) }
+            viewModelScope.launch {
+                _effect.send(AuthEffect.NavigateToDashboard)
+            }
+        }
+    }
+
     private val _effect = Channel<AuthEffect>(Channel.BUFFERED)
     val effect: Flow<AuthEffect> = _effect.receiveAsFlow()
 
@@ -52,7 +62,13 @@ class AuthViewModel : ViewModel() {
             
             result.fold(
                 onSuccess = {
-                    _state.update { it.copy(isLoading = false, isAuthenticated = true) }
+                    _state.update { it.copy(
+                        isLoading = false,
+                        isAuthenticated = true,
+                        fullName = "",
+                        email = "",
+                        password = ""
+                    ) }
                     _effect.send(AuthEffect.NavigateToDashboard)
                 },
                 onFailure = { error ->
@@ -76,7 +92,13 @@ class AuthViewModel : ViewModel() {
 
             result.fold(
                 onSuccess = {
-                    _state.update { it.copy(isLoading = false, isAuthenticated = true) }
+                    _state.update { it.copy(
+                        isLoading = false,
+                        isAuthenticated = true,
+                        fullName = "",
+                        email = "",
+                        password = ""
+                    ) }
                     _effect.send(AuthEffect.NavigateToDashboard)
                 },
                 onFailure = { error ->
@@ -89,6 +111,19 @@ class AuthViewModel : ViewModel() {
     fun onForgotPasswordClicked() {
         viewModelScope.launch {
             _effect.send(AuthEffect.NavigateToForgotPassword)
+        }
+    }
+
+    fun logout() {
+        authRepository.logout()
+        _state.update { it.copy(
+            isAuthenticated = false,
+            fullName = "",
+            email = "",
+            password = ""
+        ) }
+        viewModelScope.launch {
+            _effect.send(AuthEffect.NavigateToLogin)
         }
     }
 

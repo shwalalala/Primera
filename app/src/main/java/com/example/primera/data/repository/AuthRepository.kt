@@ -9,6 +9,12 @@ class AuthRepository {
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
+    fun isUserAuthenticated(): Boolean = auth.currentUser != null
+
+    fun logout() {
+        auth.signOut()
+    }
+
     suspend fun login(email: String, password: String): Result<Unit> {
         return try {
             auth.signInWithEmailAndPassword(email, password).await()
