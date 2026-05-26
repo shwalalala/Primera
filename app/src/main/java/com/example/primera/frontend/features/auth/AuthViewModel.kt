@@ -18,6 +18,10 @@ class AuthViewModel : ViewModel() {
     private val _effect = Channel<AuthEffect>(Channel.BUFFERED)
     val effect: Flow<AuthEffect> = _effect.receiveAsFlow()
 
+    init {
+        checkSession()
+    }
+
     fun onTabSelected(tab: AuthTab) {
         _state.update { it.copy(activeTab = tab, errorMessage = null) }
     }
@@ -52,7 +56,13 @@ class AuthViewModel : ViewModel() {
             
             result.fold(
                 onSuccess = {
-                    _state.update { it.copy(isLoading = false, isAuthenticated = true) }
+                    _state.update { it.copy(
+                        isLoading = false,
+                        isAuthenticated = true,
+                        fullName = "",
+                        email = "",
+                        password = ""
+                    ) }
                     _effect.send(AuthEffect.NavigateToDashboard)
                 },
                 onFailure = { error ->
@@ -76,7 +86,13 @@ class AuthViewModel : ViewModel() {
 
             result.fold(
                 onSuccess = {
-                    _state.update { it.copy(isLoading = false, isAuthenticated = true) }
+                    _state.update { it.copy(
+                        isLoading = false,
+                        isAuthenticated = true,
+                        fullName = "",
+                        email = "",
+                        password = ""
+                    ) }
                     _effect.send(AuthEffect.NavigateToDashboard)
                 },
                 onFailure = { error ->
@@ -89,6 +105,28 @@ class AuthViewModel : ViewModel() {
     fun onForgotPasswordClicked() {
         viewModelScope.launch {
             _effect.send(AuthEffect.NavigateToForgotPassword)
+        }
+    }
+
+    fun logout() {
+        authRepository.logout()
+        _state.update { it.copy(
+            isAuthenticated = false,
+            fullName = "",
+            email = "",
+            password = ""
+        ) }
+        viewModelScope.launch {
+            _effect.send(AuthEffect.NavigateToLogin)
+        }
+    }
+
+    private fun checkSession() {
+        if (authRepository.isUserAuthenticated()) {
+            _state.update { it.copy(isAuthenticated = true) }
+            viewModelScope.launch {
+                _effect.send(AuthEffect.NavigateToDashboard)
+            }
         }
     }
 

@@ -1,9 +1,14 @@
 package com.example.primera.frontend.navigation
 
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -11,6 +16,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.primera.frontend.common.components.AuthTab
+import com.example.primera.frontend.common.theme.*
 import com.example.primera.frontend.features.auth.*
 import com.example.primera.frontend.features.dashboard.DashboardScreen
 
@@ -37,6 +43,11 @@ fun AppNavGraph(
                 is AuthEffect.NavigateToDashboard -> {
                     navController.navigate(Routes.DASHBOARD) {
                         popUpTo(Routes.AUTH_SCREEN) { inclusive = true }
+                    }
+                }
+                is AuthEffect.NavigateToLogin -> {
+                    navController.navigate(Routes.AUTH_SCREEN) {
+                        popUpTo(0) { inclusive = true }
                     }
                 }
                 is AuthEffect.NavigateToForgotPassword -> {
@@ -84,20 +95,44 @@ fun AppNavGraph(
             }
 
             composable(Routes.DEVICE) {
-                /* DeviceScreen() — placeholder */
+                PlaceholderScreen("Device Screen")
             }
 
             composable(Routes.INSIGHT) {
-                /* InsightScreen() — placeholder */
+                PlaceholderScreen("Insights Screen")
             }
 
             composable(Routes.CHECKIN) {
-                /* CheckInScreen() — placeholder */
+                PlaceholderScreen("Check-In Screen")
             }
 
             composable(Routes.FORGOT_PW) {
-                /* ForgotPasswordScreen() — placeholder */
+                PlaceholderScreen("Forgot Password Screen")
             }
+        }
+    }
+}
+
+@Composable
+fun PlaceholderScreen(name: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BackgroundCream),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.headlineMedium,
+                color = TextPrimary
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Coming soon...",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary
+            )
         }
     }
 }
