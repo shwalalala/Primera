@@ -246,9 +246,11 @@ private fun GreetingSection(state: DashboardState) {
 
 @Composable
 private fun BabyRingCard(state: DashboardState) {
-    val totalDays   = 280f
-    val elapsed     = (totalDays - state.daysLeft).coerceIn(0f, totalDays)
-    val sweepAngle  = (elapsed / totalDays) * 300f
+    val totalWeeks  = 40f
+    // Calculate progress based on week number (40 weeks = 100%)
+    val completedWeeks = (state.weekNumber - 1) + (state.dayNumber / 7f)
+    val progress    = (completedWeeks / totalWeeks).coerceIn(0f, 1f)
+    val sweepAngle  = progress * 300f
 
     Column(
         modifier = Modifier.fillMaxWidth(),
