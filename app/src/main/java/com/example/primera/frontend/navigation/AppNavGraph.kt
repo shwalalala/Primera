@@ -91,7 +91,7 @@ fun AppNavGraph(
             }
 
             composable(Routes.DASHBOARD) {
-                DashboardScreen()
+                DashboardScreen(onLogout = { authViewModel.logout() })
             }
 
             composable(Routes.DEVICE) {

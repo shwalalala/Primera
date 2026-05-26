@@ -9,8 +9,15 @@ service cloud.firestore {
     }
 
     match /activity_logs/{logId} {
-      allow create: if request.auth != null;
-      allow read, update, delete: if false;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    match /transcriptions/{transcriptionId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
     }
 
     match /{document=**} {

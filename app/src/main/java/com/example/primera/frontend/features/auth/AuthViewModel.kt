@@ -109,14 +109,14 @@ class AuthViewModel : ViewModel() {
     }
 
     fun logout() {
-        authRepository.logout()
-        _state.update { it.copy(
-            isAuthenticated = false,
-            fullName = "",
-            email = "",
-            password = ""
-        ) }
         viewModelScope.launch {
+            authRepository.logout()
+            _state.update { it.copy(
+                isAuthenticated = false,
+                fullName = "",
+                email = "",
+                password = ""
+            ) }
             _effect.send(AuthEffect.NavigateToLogin)
         }
     }

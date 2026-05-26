@@ -48,51 +48,63 @@ fun PrimeraBottomNav(
     onFabClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Root container allows overlapping elements
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .shadow(elevation = 12.dp)
-            .background(Color.White)
-            .navigationBarsPadding()
+            .navigationBarsPadding(),
+        contentAlignment = Alignment.BottomCenter
     ) {
-        Row(
+        // 1. The White Background Bar (Bottom Layer)
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(72.dp)
-                .padding(horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceAround
+                .height(72.dp),
+            color = Color.White,
+            shadowElevation = 8.dp
         ) {
-            val destinations = NavDestination.entries
-
-            // Left two items
-            destinations.take(2).forEach { dest ->
-                NavItem(
-                    destination = dest,
-                    isSelected  = currentRoute == dest.route,
-                    onClick     = { onDestinationSelected(dest) },
-                    modifier    = Modifier.weight(1f)
-                )
-            }
-
-            // FAB slot — raised circle in the center
-            Box(
-                modifier = Modifier.weight(1f),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceAround
             ) {
-                FabButton(onClick = onFabClicked)
-            }
+                val destinations = NavDestination.entries
 
-            // Right two items
-            destinations.drop(2).forEach { dest ->
-                NavItem(
-                    destination = dest,
-                    isSelected  = currentRoute == dest.route,
-                    onClick     = { onDestinationSelected(dest) },
-                    modifier    = Modifier.weight(1f)
-                )
+                // Left two items
+                destinations.take(2).forEach { dest ->
+                    NavItem(
+                        destination = dest,
+                        isSelected  = currentRoute == dest.route,
+                        onClick     = { onDestinationSelected(dest) },
+                        modifier    = Modifier.weight(1f)
+                    )
+                }
+
+                // Empty space for the FAB overlap
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Right two items
+                destinations.drop(2).forEach { dest ->
+                    NavItem(
+                        destination = dest,
+                        isSelected  = currentRoute == dest.route,
+                        onClick     = { onDestinationSelected(dest) },
+                        modifier    = Modifier.weight(1f)
+                    )
+                }
             }
         }
+
+        // 2. The Floating FAB (Top Layer)
+        // Positioned to overlap the top edge of the surface
+        FabButton(
+            onClick = onFabClicked,
+            modifier = Modifier
+                .padding(bottom = 12.dp)
+                .offset(y = (-14.dp)) // Moved down by 0.5 (from -28.dp to -14.dp)
+        )
     }
 }
 
@@ -141,23 +153,25 @@ private fun NavItem(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun FabButton(onClick: () -> Unit) {
+private fun FabButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(68.dp)
-            .offset(y = (-24).dp)
+        modifier = modifier
+            .size(64.dp) // Larger size for the floating look
             .shadow(elevation = 12.dp, shape = CircleShape)
+            .background(Color(0xFFB7A6D8), CircleShape)
             .border(width = 4.dp, color = Color.White, shape = CircleShape)
             .clip(CircleShape)
-            .background(Color(0xFFB7A6D8))
             .clickable { onClick() }
     ) {
         Icon(
             painter            = painterResource(R.drawable.mic),
             contentDescription = "Microphone",
             tint               = Color.White,
-            modifier           = Modifier.size(28.dp)
+            modifier           = Modifier.size(32.dp)
         )
     }
 }

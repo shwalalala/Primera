@@ -11,7 +11,9 @@ class AuthRepository {
 
     fun isUserAuthenticated(): Boolean = auth.currentUser != null
 
-    fun logout() {
+    suspend fun logout() {
+        val email = auth.currentUser?.email ?: "Unknown"
+        logActivity("Logout", "User logged out: $email")
         auth.signOut()
     }
 
@@ -41,6 +43,34 @@ class AuthRepository {
             // Verbose log in Firebase
             logActivity("Sign Up", "New user registered: $email with name $fullName", userId)
 
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun saveTranscription(
+        text: String,
+        audioDurationMs: Long,
+        confidence: Float,
+        languageCode: String = "en-US"
+    ): Result<Unit> {
+        return try {
+            val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+            val transcriptionData = hashMapOf(
+                "userId" to userId,
+                "text" to text,
+                "timestamp" to Date(),
+                "verboseMetadata" to hashMapOf(
+                    "audioDurationMs" to audioDurationMs,
+                    "confidenceScore" to confidence,
+                    "languageCode" to languageCode,
+                    "deviceInfo" to android.os.Build.MODEL,
+                    "version" to "1.0.0"
+                )
+            )
+            firestore.collection("transcriptions").add(transcriptionData).await()
+            logActivity("Transcription", "Verbose transcription saved (length: ${text.length})")
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
