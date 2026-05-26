@@ -44,18 +44,17 @@ fun DashboardScreen(
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    Scaffold(
-        topBar = { DashboardTopBar() },
-        bottomBar = { DashboardBottomBar() },
-        containerColor = BackgroundCream,
+    Column(
         modifier = modifier
-    ) { innerPadding ->
+            .fillMaxSize()
+            .background(BackgroundCream)
+    ) {
+        DashboardTopBar(state.userName)
         DashboardContent(
             state           = state,
             onViewAllLogs   = viewModel::onViewAllLogs,
             onAddLog        = viewModel::onAddLog,
-            onInputManually = viewModel::onInputManually,
-            modifier        = Modifier.padding(innerPadding)
+            onInputManually = viewModel::onInputManually
         )
     }
 }
@@ -100,13 +99,12 @@ fun DashboardContent(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun DashboardTopBar() {
+private fun DashboardTopBar(userName: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(top = 20.dp)
-            .padding( horizontal = 20.dp, vertical = 8.dp),
+            .padding(horizontal = 20.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -127,27 +125,21 @@ private fun DashboardTopBar() {
             }
         }
 
-        // Profile Picture
+        // Profile Placeholder
         Box(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFF5ECEC))
+                .background(PrimeraViolet),
+            contentAlignment = Alignment.Center
         ) {
-
+            Text(
+                text = userName.take(1).uppercase(),
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
-}
-
-// Call our bottom nav
-@Composable
-private fun DashboardBottomBar() {
-
-}
-
-@Composable
-private fun BottomNavItem(icon: String, label: String, isSelected: Boolean) {
-
 }
 
 // ---------------------------------------------------------------------------
