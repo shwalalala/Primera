@@ -43,7 +43,7 @@ fun PrimeraGradientButton(
     isLoading: Boolean = false
 ) {
     val gradient = Brush.linearGradient(
-        colors = listOf(PrimeraViolet, PrimeraLilac),
+        colors = listOf(PrimeraLogoStart, PrimeraViolet),
         start = Offset(0f, 0f),
         end = Offset(Float.POSITIVE_INFINITY, 0f)
     )
@@ -66,7 +66,11 @@ fun PrimeraGradientButton(
         } else {
             Text(
                 text = text,
-                style = MaterialTheme.typography.labelLarge,
+                fontFamily = Quicksand,
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                ),
                 color = SurfaceWhite
             )
         }
@@ -98,6 +102,7 @@ fun PrimeraTextField(
             placeholder = {
                 Text(
                     text = placeholder,
+                    fontFamily = NunitoSans,
                     style = MaterialTheme.typography.bodyLarge,
                     color = TextHint
                 )
