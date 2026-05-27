@@ -8,7 +8,10 @@ import com.example.primera.feature.auth.ui.AuthViewModel
 import com.example.primera.feature.dashboard.ui.DashboardViewModel
 import com.example.primera.feature.onboarding.ui.OnboardingViewModel
 import com.example.primera.feature.splash.ui.SplashViewModel
+import com.example.primera.feature.transcription.data.SpeechRecognitionManager
+import com.example.primera.feature.transcription.ui.TranscriptionViewModel
 import com.example.primera.feature.welcome.ui.WelcomeViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 object ViewModelProvider {
     val Factory = object : ViewModelProvider.Factory {
@@ -23,6 +26,11 @@ object ViewModelProvider {
                 OnboardingViewModel::class.java -> OnboardingViewModel(container.onboardingRepository)
                 SplashViewModel::class.java -> SplashViewModel()
                 WelcomeViewModel::class.java -> WelcomeViewModel()
+                TranscriptionViewModel::class.java -> TranscriptionViewModel(
+                    container.transcriptionRepository,
+                    SpeechRecognitionManager(application),
+                    FirebaseAuth.getInstance()
+                )
                 else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             } as T
         }
