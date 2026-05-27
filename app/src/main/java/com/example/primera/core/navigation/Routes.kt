@@ -10,4 +10,5 @@ object Routes {
     const val DEVICE      = "device"
     const val INSIGHT     = "insight"
     const val CHECKIN     = "checkin"
+    const val TRANSCRIPTION = "transcription"
 }
