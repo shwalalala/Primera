@@ -2,49 +2,99 @@ package com.example.primera.frontend.common.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-// Note: Ensure Poppins is added to res/font if referencing it here.
+import com.example.primera.R // Import your project's R file
+
+// Load Quicksand from res/font
+val Quicksand = FontFamily(
+    Font(resId = R.font.quicksand_regular, weight = FontWeight.Normal)
+)
+
+// Load Nunito Sans from res/font
+val NunitoSans = FontFamily(
+    Font(resId = R.font.nunitosans, weight = FontWeight.Normal)
+)
+
 val PrimeraTypography = Typography(
-    headlineLarge = TextStyle(
-        fontFamily = FontFamily.SansSerif, // Defaulting to SansSerif, replace with Poppins if available
+    // ── MAIN TEXT (Quicksand Bold mapping) ───────────────────────────────────
+    displayLarge = TextStyle(
+        fontFamily = Quicksand,
         fontWeight = FontWeight.Bold,
-        fontSize = 26.sp,
-        lineHeight = 34.sp,
+        fontSize = 24.sp,
+        lineHeight = 32.sp,
+        letterSpacing = 0.29.sp,
         color = TextPrimary
     ),
+    displayMedium = TextStyle(
+        fontFamily = Quicksand,
+        fontWeight = FontWeight.Bold,
+        fontSize = 24.sp,
+        lineHeight = 32.sp,
+        color = TextPrimary
+    ),
+    displaySmall = TextStyle(
+        fontFamily = Quicksand,
+        fontWeight = FontWeight.Bold,
+        fontSize = 24.sp,
+        lineHeight = 32.sp,
+        letterSpacing = 1.07.sp,
+        color = TextPrimary
+    ),
+    headlineLarge = TextStyle(
+        fontFamily = Quicksand,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+        lineHeight = 27.sp,
+        color = TextPrimary
+    ),
+    headlineMedium = TextStyle(
+        fontFamily = Quicksand,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+        lineHeight = 28.sp,
+        color = TextPrimary
+    ),
+
+    // ── BODY TEXT (Nunito Sans mapping) ──────────────────────────────────────
     bodyLarge = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Normal,
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
-        color = TextSecondary
+        fontFamily = NunitoSans,
+        fontWeight = FontWeight.Bold,
+        fontSize = 20.sp,
+        lineHeight = 32.sp,
+        letterSpacing = 0.29.sp,
+        color = TextPrimary
     ),
     bodyMedium = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Normal,
-        fontSize = 13.sp,
-        lineHeight = 18.sp,
+        fontFamily = NunitoSans,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 20.sp,
+        lineHeight = 32.sp,
+        color = TextSecondary
+    ),
+    bodySmall = TextStyle(
+        fontFamily = NunitoSans,
+        fontWeight = FontWeight.Bold,
+        fontSize = 24.sp,
+        lineHeight = 32.sp,
+        letterSpacing = 1.07.sp,
         color = TextSecondary
     ),
     labelLarge = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 16.sp,
+        fontFamily = NunitoSans,
+        fontWeight = FontWeight.Medium,
+        fontSize = 18.sp,
+        lineHeight = 27.sp,
         color = SurfaceWhite
     ),
     labelMedium = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Medium,
-        fontSize = 14.sp,
+        fontFamily = NunitoSans,
+        fontWeight = FontWeight.Light,
+        fontSize = 18.sp,
+        lineHeight = 28.sp,
         color = TextPrimary
-    ),
-    labelSmall = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Normal,
-        fontSize = 12.sp,
-        color = TextSecondary
     )
 )

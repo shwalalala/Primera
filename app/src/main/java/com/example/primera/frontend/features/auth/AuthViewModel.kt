@@ -93,7 +93,7 @@ class AuthViewModel : ViewModel() {
                         email = "",
                         password = ""
                     ) }
-                    _effect.send(AuthEffect.NavigateToDashboard)
+                    _effect.send(AuthEffect.NavigateToOnboarding)
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isLoading = false, errorMessage = error.message) }

@@ -26,7 +26,7 @@ fun PrimeraGradientButton(
     isLoading: Boolean = false
 ) {
     val gradient = Brush.linearGradient(
-        colors = listOf(PrimeraViolet, PrimeraLilac),
+        colors = listOf(PrimeraLogoStart, PrimeraViolet),
         start = Offset(0f, 0f),
         end = Offset(Float.POSITIVE_INFINITY, 0f)
     )

@@ -22,6 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.ui.graphics.Brush
 import com.example.primera.frontend.common.theme.*
 import com.example.primera.frontend.common.components.*
 import androidx.compose.ui.res.painterResource
@@ -34,11 +35,20 @@ fun DashboardScreen(
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        (BackgroundCream),
+                        PrimeraLilac.copy(alpha = 0.45f)
+                    )
+                )
+            )
+    ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(BackgroundCream)
+            modifier = Modifier.fillMaxSize()
         ) {
             DashboardTopBar(state.userName, onLogout)
             DashboardContent(

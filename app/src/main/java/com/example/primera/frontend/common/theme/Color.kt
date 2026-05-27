@@ -8,9 +8,9 @@ val SurfaceWhite       = Color(0xFFFFFFFF)
 val ArchFill           = Color(0xFFEDE8F8)
 
 // ── Brand / Primary ──────────────────────────────────────────────────────────
-val PrimeraViolet      = Color(0xFF7C5CBF)  // gradient start
-val PrimeraLilac       = Color(0xFFC084FC)  // gradient end
-val PrimeraLogoStart   = Color(0xFFEC4899)
+val PrimeraViolet      = Color(0xFFB8A8D9)  // gradient start
+val PrimeraLilac       = Color(0xFFF1DCDB)  // gradient end
+val PrimeraLogoStart   = Color(0xFF8C62C0)
 val PrimeraLogoEnd     = Color(0xFFA855F7)
 
 // ── Text ─────────────────────────────────────────────────────────────────────

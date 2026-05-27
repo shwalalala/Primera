@@ -20,6 +20,7 @@ data class AuthState(
 
 sealed interface AuthEffect {
     data object NavigateToDashboard : AuthEffect
+    data object NavigateToOnboarding : AuthEffect
     data object NavigateToLogin : AuthEffect
     data class ShowSnackbar(val message: String) : AuthEffect
     data object NavigateToForgotPassword : AuthEffect

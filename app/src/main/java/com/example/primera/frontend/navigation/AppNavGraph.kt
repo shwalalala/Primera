@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -19,6 +20,9 @@ import com.example.primera.frontend.common.components.AuthTab
 import com.example.primera.frontend.common.theme.*
 import com.example.primera.frontend.features.auth.*
 import com.example.primera.frontend.features.dashboard.DashboardScreen
+import com.example.primera.frontend.features.onboarding.OnboardingHostScreen
+import com.example.primera.frontend.features.onboarding.ui.PrimeraSplashScreen
+import com.example.primera.frontend.features.onboarding.ui.WelcomeScreen
 
 // Routes where the bottom nav should be visible
 private val bottomNavRoutes = setOf(
@@ -31,7 +35,7 @@ private val bottomNavRoutes = setOf(
 @Composable
 fun AppNavGraph(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Routes.AUTH_SCREEN
+    startDestination: String = Routes.SPLASH
 ) {
     val authViewModel: AuthViewModel = viewModel()
     val currentBackStack by navController.currentBackStackEntryAsState()
@@ -42,6 +46,11 @@ fun AppNavGraph(
             when (effect) {
                 is AuthEffect.NavigateToDashboard -> {
                     navController.navigate(Routes.DASHBOARD) {
+                        popUpTo(Routes.AUTH_SCREEN) { inclusive = true }
+                    }
+                }
+                is AuthEffect.NavigateToOnboarding -> {
+                    navController.navigate(Routes.ONBOARDING) {
                         popUpTo(Routes.AUTH_SCREEN) { inclusive = true }
                     }
                 }
@@ -66,7 +75,6 @@ fun AppNavGraph(
                     currentRoute          = currentRoute ?: Routes.DASHBOARD,
                     onDestinationSelected = { dest ->
                         navController.navigate(dest.route) {
-                            // Keep the back stack clean — don't stack duplicates
                             popUpTo(Routes.DASHBOARD) { saveState = true }
                             launchSingleTop = true
                             restoreState    = true
@@ -85,12 +93,38 @@ fun AppNavGraph(
                 bottom = if (currentRoute in bottomNavRoutes) innerPadding.calculateBottomPadding() else 0.dp
             )
         ) {
+            composable(Routes.SPLASH) {
+                PrimeraSplashScreen(onTimeout = {
+                    navController.navigate(Routes.WELCOME) {
+                        popUpTo(Routes.SPLASH) { inclusive = true }
+                    }
+                })
+            }
+
+            composable(Routes.WELCOME) {
+                WelcomeScreen(onGetStarted = {
+                    navController.navigate(Routes.AUTH_SCREEN) {
+                        popUpTo(Routes.WELCOME) { inclusive = true }
+                    }
+                })
+            }
+
             composable(Routes.AUTH_SCREEN) {
                 val state by authViewModel.state.collectAsState()
                 AuthScreenHost(
                     state          = state,
                     authViewModel  = authViewModel,
                     onTermsClicked = { navController.navigate(Routes.FORGOT_PW) }
+                )
+            }
+
+            composable(Routes.ONBOARDING) {
+                OnboardingHostScreen(
+                    onOnboardingComplete = {
+                        navController.navigate(Routes.DASHBOARD) {
+                            popUpTo(Routes.ONBOARDING) { inclusive = true }
+                        }
+                    }
                 )
             }
 
@@ -122,13 +156,20 @@ fun PlaceholderScreen(name: String) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundCream),
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        (BackgroundCream),
+                        PrimeraLilac.copy(alpha = 0.45f)
+                    )
+                )
+            ),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = name,
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.displayMedium,
                 color = TextPrimary
             )
             Spacer(Modifier.height(8.dp))
