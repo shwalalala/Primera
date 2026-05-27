@@ -22,6 +22,8 @@ import com.example.primera.feature.auth.ui.*
 import com.example.primera.feature.dashboard.ui.DashboardScreen
 import com.example.primera.feature.onboarding.ui.OnboardingHostScreen
 import com.example.primera.feature.splash.ui.SplashScreen
+import com.example.primera.feature.transcription.ui.TranscriptionScreen
+import com.example.primera.feature.transcription.ui.TranscriptionViewModel
 import com.example.primera.feature.welcome.ui.WelcomeScreen
 import com.example.primera.ui.components.AuthTab
 import com.example.primera.core.theme.*
@@ -81,7 +83,7 @@ fun AppNavGraph(
                             restoreState    = true
                         }
                     },
-                    onFabClicked = { /* open quick-action / mic sheet */ }
+                    onFabClicked = { navController.navigate(Routes.TRANSCRIPTION) }
                 )
             }
         }
@@ -147,6 +149,14 @@ fun AppNavGraph(
 
             composable(Routes.FORGOT_PW) {
                 PlaceholderScreen("Forgot Password Screen")
+            }
+
+            composable(Routes.TRANSCRIPTION) {
+                val transcriptionViewModel: TranscriptionViewModel = viewModel(factory = ViewModelProvider.Factory)
+                TranscriptionScreen(
+                    viewModel = transcriptionViewModel,
+                    onBack = { navController.popBackStack() }
+                )
             }
         }
     }

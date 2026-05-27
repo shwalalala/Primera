@@ -9,11 +9,17 @@ import com.example.primera.feature.dashboard.data.repository.DashboardRepository
 import com.example.primera.feature.onboarding.data.datasource.OnboardingDataSource
 import com.example.primera.feature.onboarding.data.repository.OnboardingRepository
 import com.example.primera.feature.onboarding.data.repository.OnboardingRepositoryImpl
+import com.example.primera.feature.transcription.data.datasource.TranscriptionDataSource
+import com.example.primera.feature.transcription.data.repository.TranscriptionRepository
+import com.example.primera.feature.transcription.data.repository.TranscriptionRepositoryImpl
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 interface AppContainer {
     val authRepository: AuthRepository
     val dashboardRepository: DashboardRepository
     val onboardingRepository: OnboardingRepository
+    val transcriptionRepository: TranscriptionRepository
 }
 
 class AppContainerImpl : AppContainer {
@@ -43,5 +49,14 @@ class AppContainerImpl : AppContainer {
 
     override val onboardingRepository: OnboardingRepository by lazy {
         OnboardingRepositoryImpl(onboardingDataSource)
+    }
+
+    // Transcription dependencies
+    private val transcriptionDataSource: TranscriptionDataSource by lazy {
+        TranscriptionDataSource(FirebaseFirestore.getInstance(), FirebaseAuth.getInstance())
+    }
+
+    override val transcriptionRepository: TranscriptionRepository by lazy {
+        TranscriptionRepositoryImpl(transcriptionDataSource)
     }
 }
