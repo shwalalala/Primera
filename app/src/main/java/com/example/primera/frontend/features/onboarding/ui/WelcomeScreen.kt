@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -35,6 +36,7 @@ fun WelcomeScreen(
 ) {
     val pagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     val onboardingPages = listOf(
         OnboardingPageData(
@@ -121,6 +123,7 @@ fun WelcomeScreen(
             PrimeraGradientButton(
                 text = if (pagerState.currentPage == 2) "Get Started" else "Continue",
                 onClick = {
+                    keyboardController?.hide()
                     if (pagerState.currentPage < 2) {
                         coroutineScope.launch {
                             pagerState.animateScrollToPage(pagerState.currentPage + 1)

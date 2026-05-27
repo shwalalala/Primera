@@ -3,10 +3,7 @@ package com.example.primera.frontend.features.onboarding
 import java.util.Date
 
 data class OnboardingState(
-    val currentStep: OnboardingStep = OnboardingStep.NAME,
-    val firstName: String = "",
-    val lastName: String = "",
-    val middleName: String = "",
+    val currentStep: OnboardingStep = OnboardingStep.BIRTHDAY,
     val birthday: Date? = null,
     val weightKg: Int = 60,
     val heightCm: Int = 160,
@@ -27,7 +24,6 @@ data class OnboardingState(
 )
 
 enum class OnboardingStep {
-    NAME,
     BIRTHDAY,
     WEIGHT,
     HEIGHT,

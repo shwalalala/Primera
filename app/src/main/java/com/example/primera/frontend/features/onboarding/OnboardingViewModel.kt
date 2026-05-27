@@ -14,9 +14,6 @@ class OnboardingViewModel : ViewModel() {
     private val _state = MutableStateFlow(OnboardingState())
     val state: StateFlow<OnboardingState> = _state.asStateFlow()
 
-    fun onFirstNameChange(name: String) = _state.update { it.copy(firstName = name) }
-    fun onLastNameChange(name: String) = _state.update { it.copy(lastName = name) }
-    fun onMiddleNameChange(name: String) = _state.update { it.copy(middleName = name) }
     fun onBirthdayChange(date: Date) = _state.update { it.copy(birthday = date) }
     fun onWeightChange(weight: Int) = _state.update { it.copy(weightKg = weight) }
     fun onHeightChange(height: Int) = _state.update { it.copy(heightCm = height) }
@@ -47,7 +44,6 @@ class OnboardingViewModel : ViewModel() {
     fun nextStep() {
         val currentState = _state.value
         val next = when (currentState.currentStep) {
-            OnboardingStep.NAME -> OnboardingStep.BIRTHDAY
             OnboardingStep.BIRTHDAY -> OnboardingStep.WEIGHT
             OnboardingStep.WEIGHT -> OnboardingStep.HEIGHT
             OnboardingStep.HEIGHT -> OnboardingStep.LMP
@@ -71,8 +67,7 @@ class OnboardingViewModel : ViewModel() {
     fun previousStep() {
         val currentState = _state.value
         val prev = when (currentState.currentStep) {
-            OnboardingStep.NAME -> OnboardingStep.NAME
-            OnboardingStep.BIRTHDAY -> OnboardingStep.NAME
+            OnboardingStep.BIRTHDAY -> OnboardingStep.WEIGHT
             OnboardingStep.WEIGHT -> OnboardingStep.BIRTHDAY
             OnboardingStep.HEIGHT -> OnboardingStep.WEIGHT
             OnboardingStep.LMP -> OnboardingStep.HEIGHT
