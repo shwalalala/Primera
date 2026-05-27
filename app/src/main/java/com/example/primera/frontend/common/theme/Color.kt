@@ -11,14 +11,15 @@ val LightGray          = Color(0xFFF4F4F4) // From Light Gray #f4f4F4
 // ── Brand / Primary ──────────────────────────────────────────────────────────
 val PrimeraViolet      = Color(0xFFB8A8D9) // From Primary #b8a8D9
 val PrimeraLilac       = Color(0xFFF1DCDB) // From Secondary #f1dcDB
-val PrimeraLogoStart   = Color(0xFFEC4899)
+val PrimeraLogoStart   = Color(0xFF8C62C0)
 val PrimeraLogoEnd     = Color(0xFFA855F7)
+
 val Accent             = Color(0xFFE5ECCA) // From Accent #e5ecCA
 
 // ── Text ─────────────────────────────────────────────────────────────────────
 val TextPrimary        = Color(0xFF4A454F) // From Text - Dark #4a454F
 val TextSecondary      = Color(0xFF8B8591) // From Text - Light #8b8591
-val TextHint           = Color(0xFFBBB8CC)
+val TextHint           = Color(0xCC4A454F)
 val TextLink           = Color(0xFF93C5FD) // From System Blue #93c5FD
 
 // ── Input / Toggle / UI ───────────────────────────────────────────────────────

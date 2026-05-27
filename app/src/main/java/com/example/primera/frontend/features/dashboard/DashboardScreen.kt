@@ -47,11 +47,20 @@ fun DashboardScreen(
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        (BackgroundCream),
+                        PrimeraLilac.copy(alpha = 0.45f)
+                    )
+                )
+            )
+    ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(BackgroundCream)
+            modifier = Modifier.fillMaxSize()
         ) {
             DashboardTopBar(state.userName, onLogout)
             DashboardContent(

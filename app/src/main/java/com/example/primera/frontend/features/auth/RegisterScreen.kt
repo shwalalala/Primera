@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.painter.Painter
@@ -50,7 +51,14 @@ fun RegisterScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(BackgroundCream)
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        (BackgroundCream),
+                        PrimeraLilac.copy(alpha = 0.45f)
+                    )
+                )
+            )
     ) {
         Column(
             modifier = Modifier
