@@ -33,7 +33,7 @@ enum class NavDestination(
 ) {
     HOME    ("Home",     R.drawable.home,         Routes.DASHBOARD),
     CHECKIN ("Check-in", R.drawable.log,          Routes.CHECKIN),
-    INSIGHT ("Insight",  R.drawable.heart,        Routes.INSIGHT),
+    INSIGHT ("Insight",  R.drawable.calendar,        Routes.INSIGHT),
     DEVICE  ("Device",   R.drawable.device,       Routes.DEVICE)
 }
 
