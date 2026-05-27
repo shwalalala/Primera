@@ -53,6 +53,11 @@ fun PrimeraGradientButton(
         modifier = modifier
             .height(54.dp)
             .fillMaxWidth()
+            .shadow(
+                elevation = 8.dp,
+                shape = RoundedCornerShape(32.dp),
+                ambientColor = PrimeraViolet.copy(alpha = 0.3f)
+            )
             .clip(RoundedCornerShape(32.dp))
             .background(if (enabled) gradient else Brush.linearGradient(listOf(Color.Gray, Color.Gray)))
             .clickable(enabled = enabled && !isLoading, onClick = onClick)
@@ -297,5 +302,9 @@ fun LabeledField(
 
 @Composable
 fun PrimeraLogoBubble(modifier: Modifier = Modifier) {
+    Image(
+        painter = painterResource(id = R.drawable.primera_logo),
+        contentDescription = "Primera Logo",
+        modifier = modifier.size(120.dp)
     )
 }

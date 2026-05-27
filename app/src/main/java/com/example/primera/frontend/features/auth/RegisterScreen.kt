@@ -16,9 +16,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -70,10 +68,44 @@ fun RegisterScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(top = 80.dp)
+            ) {
+                // 1. Draw the Arch background
+                Spacer(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .drawBehind {
+                            drawArc(
+                                color = SurfaceWhite,
+                                startAngle = 180f,
+                                sweepAngle = 180f,
+                                useCenter = true,
+                                topLeft = Offset(size.width * 0.2f, -size.width * 0.3f),
+                                size = Size(size.width * 0.6f, size.width * 0.6f)
+                            )
+                        }
+                )
 
                 // 2. Position the Logo centered in the arch
                 BoxWithConstraints(
                     modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    val archRadius = maxWidth * 0.3f
+                    PrimeraLogoBubble(
+                        modifier = Modifier.offset(y = -archRadius / 2 - 35.dp)
+                    )
+                }
+
+                // 3. Main Content Card
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp))
+                        .background(SurfaceWhite)
+                        .padding(horizontal = 24.dp, vertical = 32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
                         text = "Get Started now",
                         style = MaterialTheme.typography.headlineLarge.copy(
