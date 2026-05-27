@@ -155,7 +155,7 @@ fun OnboardingPage(data: OnboardingPageData) {
             contentScale = ContentScale.Fit
         )
 
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(68.dp))
 
         Text(
             text = data.title,

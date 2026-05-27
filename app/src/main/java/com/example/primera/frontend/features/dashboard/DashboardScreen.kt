@@ -22,6 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.ui.graphics.Brush
 import com.example.primera.frontend.common.theme.*
 import com.example.primera.frontend.common.components.*
 import androidx.compose.ui.res.painterResource

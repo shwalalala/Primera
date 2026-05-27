@@ -1,4 +1,4 @@
-package com.example.primera.frontend.common.components
+ package com.example.primera.frontend.common.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
