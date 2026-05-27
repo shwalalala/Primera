@@ -2,32 +2,37 @@ package com.example.primera.feature.onboarding.ui
 
 import java.util.Date
 
-data class OnboardingUiState(
+data class OnboardingState(
+    val currentStep: OnboardingStep = OnboardingStep.NAME,
     val firstName: String = "",
     val lastName: String = "",
     val middleName: String = "",
     val birthday: Date? = null,
-    val weightKg: Int = 50,
-    val heightCm: Int = 160,
+    val weightKg: Int = 0,
+    val heightCm: Int = 0,
     val lmpDate: Date? = null,
     val eddDate: Date? = null,
     val isFirstPregnancy: Boolean? = null,
+    
+    // Pregnancy History (if not first)
     val pregnancyNumber: Int = 1,
     val historyDeliveryDate: Date? = null,
-    val deliveryType: String = "",
-    val birthOutcome: String = "",
-    val childrenDelivered: String = "",
+    val deliveryType: String = "", // Vaginal, C-section
+    val childrenDelivered: String = "", // Single, Twins, Multiple
     val complications: List<String> = emptyList(),
     
-    val currentStep: OnboardingStep = OnboardingStep.NAME,
     val preparationProgress: Float = 0f,
-    val isCompleted: Boolean = false,
-    
-    // Error handling
-    val errorMessage: String? = null,
-    val errorStep: OnboardingStep? = null
+    val isCompleted: Boolean = false
 )
 
 enum class OnboardingStep {
-    NAME, BIRTHDAY, WEIGHT, HEIGHT, LMP, EDD, FIRST_PREGNANCY, PREGNANCY_HISTORY, PREPARING
+    NAME,
+    BIRTHDAY,
+    WEIGHT,
+    HEIGHT,
+    LMP,
+    EDD,
+    FIRST_PREGNANCY,
+    PREGNANCY_HISTORY,
+    PREPARING
 }

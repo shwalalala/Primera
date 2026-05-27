@@ -2,105 +2,54 @@ package com.example.primera.feature.welcome.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.primera.R
-import com.example.primera.core.di.ViewModelProvider
-import com.example.primera.core.theme.BackgroundCream
-import com.example.primera.core.theme.PrimeraLilac
-import com.example.primera.core.theme.PrimeraTheme
-import com.example.primera.core.theme.PrimeraViolet
-import com.example.primera.core.theme.PagerIndicatorInactive
-import com.example.primera.core.theme.TextPrimary
-import com.example.primera.core.theme.TextSecondary
 import com.example.primera.ui.components.PrimeraGradientButton
+import com.example.primera.core.theme.*
 import kotlinx.coroutines.launch
 
 @Composable
 fun WelcomeScreen(
     onGetStarted: () -> Unit,
-    viewModel: WelcomeViewModel = viewModel(factory = ViewModelProvider.Factory)
+    onSkip: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    // Listen for navigation effect
-    LaunchedEffect(Unit) {
-        viewModel.effect.collect { effect ->
-            when (effect) {
-                is WelcomeEffect.NavigateToAuth -> onGetStarted()
-            }
-        }
-    }
-
-    WelcomeScreenContent(
-        uiState = uiState,
-        onPreviousPage = { viewModel.previousPage() },
-        onNextPage = { viewModel.nextPage() },
-        onSkip = { viewModel.onSkip() },
-        onGetStarted = { viewModel.onGetStarted() }
-    )
-}
-
-@Composable
-private fun WelcomeScreenContent(
-    uiState: WelcomeUiState,
-    onPreviousPage: () -> Unit,
-    onNextPage: () -> Unit,
-    onSkip: () -> Unit,
-    onGetStarted: () -> Unit
-) {
-    val pagerState = rememberPagerState(initialPage = uiState.currentPage, pageCount = { uiState.totalPages })
-    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+    val pagerState = rememberPagerState(pageCount = { 3 })
+    val coroutineScope = rememberCoroutineScope()
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     val onboardingPages = listOf(
-        WelcomePageData(
+        OnboardingPageData(
             imageRes = R.drawable.welcome_1,
             title = "Welcome to Primera",
             description = "Your personalized companion for a healthy and happy pregnancy journey."
         ),
-        WelcomePageData(
+        OnboardingPageData(
             imageRes = R.drawable.welcome_2,
             title = "Track Your Progress",
             description = "Easily monitor your baby's growth and your health milestones every step of the way."
         ),
-        WelcomePageData(
+        OnboardingPageData(
             imageRes = R.drawable.welcome_3,
             title = "Personalized Insights",
             description = "Get expert advice and tips tailored to your specific stage of pregnancy."
@@ -119,11 +68,12 @@ private fun WelcomeScreenContent(
                 )
             )
     ) {
+        // Skip Button
+
         TextButton(
             onClick = onSkip,
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .statusBarsPadding()
                 .padding(top = 16.dp, end = 16.dp)
         ) {
             Text(
@@ -155,8 +105,8 @@ private fun WelcomeScreenContent(
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                repeat(onboardingPages.size) { iteration ->
-                    val color = if (pagerState.currentPage == iteration) PrimeraViolet else PagerIndicatorInactive
+                repeat(3) { iteration ->
+                    val color = if (pagerState.currentPage == iteration) PrimeraViolet else Color.LightGray
                     Box(
                         modifier = Modifier
                             .padding(4.dp)
@@ -171,12 +121,12 @@ private fun WelcomeScreenContent(
 
             // Navigation Button
             PrimeraGradientButton(
-                text = if (pagerState.currentPage == uiState.totalPages - 1) "Get Started" else "Continue",
+                text = if (pagerState.currentPage == 2) "Get Started" else "Continue",
                 onClick = {
-                    if (pagerState.currentPage < uiState.totalPages - 1) {
+                    keyboardController?.hide()
+                    if (pagerState.currentPage < 2) {
                         coroutineScope.launch {
                             pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                            onNextPage()
                         }
                     } else {
                         onGetStarted()
@@ -184,7 +134,6 @@ private fun WelcomeScreenContent(
                 },
                 modifier = Modifier
                     .fillMaxWidth(0.8f)
-                    .navigationBarsPadding()
                     .padding(bottom = 64.dp)
             )
         }
@@ -192,11 +141,10 @@ private fun WelcomeScreenContent(
 }
 
 @Composable
-private fun OnboardingPage(data: WelcomePageData) {
+fun OnboardingPage(data: OnboardingPageData) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -234,18 +182,16 @@ private fun OnboardingPage(data: WelcomePageData) {
     }
 }
 
-@Preview(name = "Compact Phone", device = Devices.PHONE)
-@Preview(name = "Small Phone", widthDp = 360, heightDp = 640)
-@Preview(name = "Large Phone", widthDp = 480, heightDp = 960)
+data class OnboardingPageData(
+    val imageRes: Int,
+    val title: String,
+    val description: String
+)
+
+@Preview(showBackground = true, name = "Welcome Screen - Page 1")
 @Composable
-private fun WelcomeScreenPreview() {
+private fun WelcomeScreenPreview1() {
     PrimeraTheme {
-        WelcomeScreenContent(
-            uiState = WelcomeUiState(),
-            onPreviousPage = {},
-            onNextPage = {},
-            onSkip = {},
-            onGetStarted = {}
-        )
+        WelcomeScreen(onGetStarted = {}, onSkip = {})
     }
 }

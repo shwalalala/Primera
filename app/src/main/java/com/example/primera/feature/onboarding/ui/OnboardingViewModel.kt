@@ -15,8 +15,8 @@ import java.util.*
 class OnboardingViewModel(
     private val repository: OnboardingRepository
 ) : ViewModel() {
-    private val _state = MutableStateFlow(OnboardingUiState())
-    val uiState: StateFlow<OnboardingUiState> = _state.asStateFlow()
+    private val _state = MutableStateFlow(OnboardingState())
+    val uiState: StateFlow<OnboardingState> = _state.asStateFlow()
 
     fun onFirstNameChange(name: String) = _state.update { it.copy(firstName = name) }
     fun onLastNameChange(name: String) = _state.update { it.copy(lastName = name) }
@@ -34,7 +34,6 @@ class OnboardingViewModel(
     fun onPregnancyNumberChange(num: Int) = _state.update { it.copy(pregnancyNumber = num) }
     fun onHistoryDeliveryDateChange(date: Date) = _state.update { it.copy(historyDeliveryDate = date) }
     fun onDeliveryTypeChange(type: String) = _state.update { it.copy(deliveryType = type) }
-    fun onBirthOutcomeChange(outcome: String) = _state.update { it.copy(birthOutcome = outcome) }
     fun onChildrenDeliveredChange(count: String) = _state.update { it.copy(childrenDelivered = count) }
     
     fun toggleComplication(complication: String) {
@@ -95,16 +94,16 @@ class OnboardingViewModel(
                 firstName = s.firstName,
                 lastName = s.lastName,
                 middleName = s.middleName,
-                birthday = s.birthday,
+                birthday = s.birthday ?: Date(),
                 weightKg = s.weightKg,
                 heightCm = s.heightCm,
                 lmpDate = s.lmpDate,
                 eddDate = s.eddDate,
-                isFirstPregnancy = s.isFirstPregnancy,
+                isFirstPregnancy = s.isFirstPregnancy ?: false,
                 pregnancyNumber = s.pregnancyNumber,
                 historyDeliveryDate = s.historyDeliveryDate,
                 deliveryType = s.deliveryType,
-                birthOutcome = s.birthOutcome,
+                birthOutcome = "", // Placeholder
                 childrenDelivered = s.childrenDelivered,
                 complications = s.complications
             )

@@ -1,51 +1,79 @@
 package com.example.primera.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.primera.core.theme.CheckboxBorder
-import com.example.primera.core.theme.ErrorRed
-import com.example.primera.core.theme.IconTint
-import com.example.primera.core.theme.InputBorder
-import com.example.primera.core.theme.PrimeraTheme
-import com.example.primera.core.theme.PrimeraViolet
-import com.example.primera.core.theme.SurfaceWhite
-import com.example.primera.core.theme.TextHint
-import com.example.primera.core.theme.TextPrimary
-import com.example.primera.core.theme.TextSecondary
+import com.example.primera.core.theme.*
+import java.util.Date
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PrimeraDatePicker(
+    selectedDate: Date?,
+    onDateSelected: (Date) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = selectedDate?.time ?: System.currentTimeMillis()
+    )
+
+    LaunchedEffect(datePickerState.selectedDateMillis) {
+        datePickerState.selectedDateMillis?.let {
+            onDateSelected(Date(it))
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .shadow(
+                elevation = 10.dp,
+                shape = RoundedCornerShape(24.dp),
+                ambientColor = Color.Black.copy(alpha = 0.08f),
+                spotColor = Color.Black.copy(alpha = 0.08f)
+            )
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color.White)
+            .border(
+                width = 1.dp,
+                color = Color(0xFFEAEAEA),
+                shape = RoundedCornerShape(24.dp)
+            )
+    ) {
+        DatePicker(
+            state = datePickerState,
+            showModeToggle = false,
+            title = null,
+            headline = null,
+            colors = DatePickerDefaults.colors(
+                selectedDayContainerColor = PrimeraViolet,
+                todayContentColor = PrimeraViolet,
+                todayDateBorderColor = PrimeraViolet,
+                containerColor = Color.White,
+                navigationContentColor = TextPrimary,
+            ),
+            modifier = modifier
+        )
+    }
+}
 @Composable
 fun PrimeraTextField(
     value: String,

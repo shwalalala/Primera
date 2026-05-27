@@ -6,7 +6,6 @@ import com.example.primera.feature.auth.data.repository.AuthRepositoryImpl
 import com.example.primera.feature.dashboard.data.datasource.DashboardDataSource
 import com.example.primera.feature.dashboard.data.repository.DashboardRepository
 import com.example.primera.feature.dashboard.data.repository.DashboardRepositoryImpl
-import com.example.primera.feature.onboarding.data.datasource.OnboardingDataSource
 import com.example.primera.feature.onboarding.data.repository.OnboardingRepository
 import com.example.primera.feature.onboarding.data.repository.OnboardingRepositoryImpl
 import com.example.primera.feature.transcription.data.datasource.TranscriptionDataSource
@@ -42,13 +41,8 @@ class AppContainerImpl : AppContainer {
         DashboardRepositoryImpl(dashboardDataSource)
     }
 
-    // Onboarding dependencies
-    private val onboardingDataSource: OnboardingDataSource by lazy {
-        OnboardingDataSource()
-    }
-
     override val onboardingRepository: OnboardingRepository by lazy {
-        OnboardingRepositoryImpl(onboardingDataSource)
+        OnboardingRepositoryImpl()
     }
 
     // Transcription dependencies
