@@ -59,7 +59,14 @@ fun PrimeraGradientButton(
                 ambientColor = PrimeraViolet.copy(alpha = 0.3f)
             )
             .clip(RoundedCornerShape(32.dp))
-            .background(if (enabled) gradient else Brush.linearGradient(listOf(Color.Gray, Color.Gray)))
+            .background(
+                if (enabled) gradient else Brush.linearGradient(
+                    listOf(
+                        Color.Gray,
+                        Color.Gray
+                    )
+                )
+            )
             .clickable(enabled = enabled && !isLoading, onClick = onClick)
     ) {
         if (isLoading) {

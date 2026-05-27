@@ -255,22 +255,22 @@ private fun RegisterSocialRow() {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         SocialIconButton(
-            icon = rememberVectorPainter(Icons.Default.Phone), // Use actual drawables when available
+            icon = painterResource(id = R.drawable.google),
             contentDescription = "Google",
             onClick = {}
         )
         SocialIconButton(
-            icon = rememberVectorPainter(Icons.Default.Facebook),
+            icon = painterResource(id = R.drawable.facebook),
             contentDescription = "Facebook",
             onClick = {}
         )
         SocialIconButton(
-            icon = rememberVectorPainter(Icons.Default.Phone), // Apple placeholder
+            icon = painterResource(id = R.drawable.apple),
             contentDescription = "Apple",
             onClick = {}
         )
         SocialIconButton(
-            icon = rememberVectorPainter(Icons.Default.Phone),
+            icon = painterResource(id = R.drawable.mobile),
             contentDescription = "Phone",
             onClick = {}
         )
