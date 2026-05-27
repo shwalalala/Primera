@@ -1,4 +1,4 @@
-package com.example.primera.frontend.common.components
+package com.example.primera.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,11 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.primera.frontend.common.theme.NunitoSans
-import com.example.primera.frontend.common.theme.TextPrimary
-import com.example.primera.frontend.common.theme.TextSecondary
-import com.example.primera.frontend.common.theme.PrimeraTheme
-import com.example.primera.frontend.common.theme.Quicksand
+import com.example.primera.core.theme.*
 
 @Composable
 fun PrimeraTitle(

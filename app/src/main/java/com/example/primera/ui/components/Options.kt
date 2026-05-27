@@ -1,4 +1,4 @@
-package com.example.primera.frontend.common.components
+package com.example.primera.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,7 +17,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.primera.frontend.common.theme.*
+import com.example.primera.core.theme.*
 
 @Composable
 fun PrimeraOptionButton(
@@ -123,10 +123,10 @@ private fun OptionsPreview() {
         ) {
             PrimeraOptionButton(text = "Option Button", isSelected = true) {}
             PrimeraOptionButton(text = "Option Button", isSelected = false) {}
-            
+
             PrimeraOptionCard(text = "Option Card Selection", isSelected = true) {}
             PrimeraOptionCard(text = "Option Card Selection", isSelected = false) {}
-            
+
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PrimeraOptionChip(text = "Chip 1", isSelected = true) {}
                 PrimeraOptionChip(text = "Chip 2", isSelected = false) {}

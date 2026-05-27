@@ -1,4 +1,4 @@
-package com.example.primera.frontend.features.onboarding.ui
+package com.example.primera.feature.welcome.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -25,8 +25,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.primera.R
-import com.example.primera.frontend.common.components.PrimeraGradientButton
-import com.example.primera.frontend.common.theme.*
+import com.example.primera.ui.components.PrimeraGradientButton
+import com.example.primera.core.theme.*
 import kotlinx.coroutines.launch
 
 @Composable
@@ -71,17 +71,17 @@ fun WelcomeScreen(
         // Skip Button
 
         TextButton(
-                onClick = onSkip,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 16.dp, end = 16.dp)
-            ) {
-                Text(
-                    text = "Skip",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary
-                )
-            }
+            onClick = onSkip,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 16.dp, end = 16.dp)
+        ) {
+            Text(
+                text = "Skip",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary
+            )
+        }
 
         Column(
             modifier = Modifier.fillMaxSize(),
