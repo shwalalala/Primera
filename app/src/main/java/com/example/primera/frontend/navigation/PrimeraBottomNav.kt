@@ -50,9 +50,7 @@ fun PrimeraBottomNav(
 ) {
     // Root container allows overlapping elements
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .navigationBarsPadding(),
+        modifier = modifier.fillMaxWidth(),
         contentAlignment = Alignment.BottomCenter
     ) {
         // 1. The White Background Bar (Bottom Layer)

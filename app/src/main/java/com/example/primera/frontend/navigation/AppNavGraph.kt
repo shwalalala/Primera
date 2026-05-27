@@ -59,6 +59,7 @@ fun AppNavGraph(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             if (currentRoute in bottomNavRoutes) {
                 PrimeraBottomNav(
@@ -79,7 +80,10 @@ fun AppNavGraph(
         NavHost(
             navController    = navController,
             startDestination = startDestination,
-            modifier         = Modifier.padding(innerPadding)
+            modifier         = Modifier.padding(
+                top = innerPadding.calculateTopPadding(),
+                bottom = if (currentRoute in bottomNavRoutes) innerPadding.calculateBottomPadding() else 0.dp
+            )
         ) {
             composable(Routes.AUTH_SCREEN) {
                 val state by authViewModel.state.collectAsState()

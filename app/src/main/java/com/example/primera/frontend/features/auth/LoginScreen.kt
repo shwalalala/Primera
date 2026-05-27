@@ -49,7 +49,7 @@ fun LoginScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .systemBarsPadding(),
+                .statusBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(40.dp))

@@ -457,7 +457,6 @@ private fun HeartRateCard(state: DashboardState, modifier: Modifier) {
             Spacer(Modifier.width(3.dp))
             Text(
                 text     = "bpm",
-                fontSize = 12.sp,
                 color    = TextSecondary,
                 modifier = Modifier.padding(bottom = 3.dp)
             )
