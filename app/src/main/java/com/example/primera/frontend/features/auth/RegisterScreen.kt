@@ -6,12 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Facebook
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,9 +15,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -32,6 +26,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.primera.R
 import com.example.primera.frontend.common.components.*
 import com.example.primera.frontend.common.theme.*
 
@@ -65,23 +60,44 @@ fun RegisterScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 80.dp) // Space for the arch "bubble"
-                    .drawBehind {
-                        // Draw the "arch bubble"
-                        drawArc(
-                            color = SurfaceWhite,
-                            startAngle = 180f,
-                            sweepAngle = 180f,
-                            useCenter = true,
-                            topLeft = Offset(size.width * 0.2f, -size.width * 0.3f),
-                            size = Size(size.width * 0.6f, size.width * 0.6f)
-                        )
-                    }
-                    .clip(RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp))
-                    .background(SurfaceWhite)
-                    .padding(horizontal = 24.dp, vertical = 32.dp)
+                    .padding(top = 80.dp)
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // 1. Draw the Arch background
+                Spacer(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .drawBehind {
+                            drawArc(
+                                color = SurfaceWhite,
+                                startAngle = 180f,
+                                sweepAngle = 180f,
+                                useCenter = true,
+                                topLeft = Offset(size.width * 0.2f, -size.width * 0.3f),
+                                size = Size(size.width * 0.6f, size.width * 0.6f)
+                            )
+                        }
+                )
+
+                // 2. Position the Logo centered in the arch
+                BoxWithConstraints(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    val archRadius = maxWidth * 0.3f
+                    PrimeraLogoBubble(
+                        modifier = Modifier.offset(y = -archRadius / 2 - 35.dp)
+                    )
+                }
+
+                // 3. Main Content Card
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp))
+                        .background(SurfaceWhite)
+                        .padding(horizontal = 24.dp, vertical = 32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
                         text = "Get Started now",
                         style = MaterialTheme.typography.headlineLarge.copy(
@@ -231,22 +247,22 @@ private fun RegisterSocialRow() {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         SocialIconButton(
-            icon = rememberVectorPainter(Icons.Default.Phone), // Use actual drawables when available
+            icon = painterResource(id = R.drawable.google),
             contentDescription = "Google",
             onClick = {}
         )
         SocialIconButton(
-            icon = rememberVectorPainter(Icons.Default.Facebook),
+            icon = painterResource(id = R.drawable.facebook),
             contentDescription = "Facebook",
             onClick = {}
         )
         SocialIconButton(
-            icon = rememberVectorPainter(Icons.Default.Phone), // Apple placeholder
+            icon = painterResource(id = R.drawable.apple),
             contentDescription = "Apple",
             onClick = {}
         )
         SocialIconButton(
-            icon = rememberVectorPainter(Icons.Default.Phone),
+            icon = painterResource(id = R.drawable.mobile),
             contentDescription = "Phone",
             onClick = {}
         )
