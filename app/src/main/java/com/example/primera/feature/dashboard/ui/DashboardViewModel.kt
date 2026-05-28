@@ -23,6 +23,9 @@ class DashboardViewModel(
             if (data == null) DashboardUiState.Error("User not found")
             else DashboardUiState.Success(mapToUiModel(data))
         }
+        .catch { e ->
+            emit(DashboardUiState.Error(e.message ?: "An unexpected error occurred"))
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
