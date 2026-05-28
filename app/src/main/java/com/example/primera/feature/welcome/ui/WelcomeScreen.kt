@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,19 +25,29 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.primera.R
+import com.example.primera.core.di.ViewModelProvider
 import com.example.primera.ui.components.PrimeraGradientButton
 import com.example.primera.core.theme.*
 import kotlinx.coroutines.launch
 
 @Composable
 fun WelcomeScreen(
-    onGetStarted: () -> Unit,
-    onSkip: () -> Unit = {}
+    onNavigateToAuth: () -> Unit,
+    viewModel: WelcomeViewModel = viewModel(factory = ViewModelProvider.Factory)
 ) {
     val pagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is WelcomeEffect.NavigateToAuth -> onNavigateToAuth()
+            }
+        }
+    }
 
     val onboardingPages = listOf(
         OnboardingPageData(
@@ -69,9 +80,8 @@ fun WelcomeScreen(
             )
     ) {
         // Skip Button
-
         TextButton(
-            onClick = onSkip,
+            onClick = { viewModel.onSkip() },
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(top = 16.dp, end = 16.dp)
@@ -129,7 +139,7 @@ fun WelcomeScreen(
                             pagerState.animateScrollToPage(pagerState.currentPage + 1)
                         }
                     } else {
-                        onGetStarted()
+                        viewModel.onGetStarted()
                     }
                 },
                 modifier = Modifier
@@ -192,6 +202,6 @@ data class OnboardingPageData(
 @Composable
 private fun WelcomeScreenPreview1() {
     PrimeraTheme {
-        WelcomeScreen(onGetStarted = {}, onSkip = {})
+        WelcomeScreen(onNavigateToAuth = {})
     }
 }
