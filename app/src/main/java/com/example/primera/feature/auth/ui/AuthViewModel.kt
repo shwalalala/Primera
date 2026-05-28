@@ -2,9 +2,8 @@ package com.example.primera.feature.auth.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.primera.core.data.repository.PreferenceRepository
-import com.example.primera.feature.auth.data.repository.AuthRepository
-import com.example.primera.ui.components.AuthTab
+import com.example.primera.core.data.PreferenceRepository
+import com.example.primera.feature.auth.data.AuthRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch

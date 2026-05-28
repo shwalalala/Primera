@@ -2,10 +2,10 @@ package com.example.primera.feature.onboarding.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.primera.core.data.repository.PreferenceRepository
-import com.example.primera.feature.onboarding.data.repository.OnboardingRepository
-import com.example.primera.feature.onboarding.domain.model.OnboardingProfile
-import com.example.primera.feature.onboarding.domain.model.PregnancyHistory
+import com.example.primera.core.data.PreferenceRepository
+import com.example.primera.feature.onboarding.data.OnboardingRepository
+import com.example.primera.feature.onboarding.domain.OnboardingProfile
+import com.example.primera.feature.onboarding.domain.PregnancyHistory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
