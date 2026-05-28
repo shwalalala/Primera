@@ -26,11 +26,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.primera.core.theme.*
-import com.example.primera.feature.checkins.ui.components.CheckinItemChip
+import com.example.primera.feature.checkins.ui.CheckinItemChip
 import com.example.primera.feature.dashboard.ui.DashboardWeekDayItem
-import com.example.primera.ui.components.DayChip
-import com.example.primera.ui.components.PrimeraGradientButton
-import com.example.primera.ui.components.WeekCalendarRow
+import com.example.primera.feature.dashboard.ui.WeekCalendarRow
+import com.example.primera.ui.components.*
 
 @Composable
 fun DailyCheckinScreen(
@@ -51,6 +50,7 @@ fun DailyCheckinScreen(
     DailyCheckinContent(
         state = state,
         onBack = onBack,
+        onClear = viewModel::prepareNewCheckin,
         onSubmit = viewModel::onSaveCheckin,
         onSymptomToggle = viewModel::onSymptomToggle,
         onMoodToggle = viewModel::onMoodToggle,
@@ -66,6 +66,7 @@ fun DailyCheckinScreen(
 fun DailyCheckinContent(
     state: DailyCheckinUiState,
     onBack: () -> Unit,
+    onClear: () -> Unit,
     onSubmit: () -> Unit,
     onSymptomToggle: (String) -> Unit,
     onMoodToggle: (String) -> Unit,
@@ -96,6 +97,7 @@ fun DailyCheckinContent(
             Spacer(Modifier.statusBarsPadding())
             DailyCheckinTopBar(
                 onBack = onBack,
+                onClear = onClear,
                 isEditing = state.editingId != null
             )
             
@@ -171,6 +173,7 @@ fun DailyCheckinContent(
 @Composable
 private fun DailyCheckinTopBar(
     onBack: () -> Unit,
+    onClear: () -> Unit,
     isEditing: Boolean
 ) {
     Row(
@@ -179,19 +182,8 @@ private fun DailyCheckinTopBar(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(SurfaceWhite)
-        ) {
-            Icon(
-                Icons.Default.ArrowBackIosNew,
-                contentDescription = "Back",
-                modifier = Modifier.size(20.dp),
-                tint = TextPrimary
-            )
+        TextButton(onClick = onBack) {
+            Text("Cancel", color = TextSecondary)
         }
         
         Text(
@@ -202,7 +194,9 @@ private fun DailyCheckinTopBar(
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
         
-        Spacer(Modifier.width(40.dp)) // Equalizer for back button
+        TextButton(onClick = onClear) {
+            Text("Clear", color = PrimeraViolet)
+        }
     }
 }
 
@@ -423,6 +417,7 @@ private fun DailyCheckinPreview() {
                 shouldShowWeightUpdateAlert = true
             ),
             onBack = {},
+            onClear = {},
             onSubmit = {},
             onSymptomToggle = {},
             onMoodToggle = {},

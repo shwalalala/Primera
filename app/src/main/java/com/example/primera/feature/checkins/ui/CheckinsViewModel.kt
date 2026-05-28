@@ -7,8 +7,8 @@ import com.example.primera.core.theme.LogBaby
 import com.example.primera.core.theme.LogNutrition
 import com.example.primera.core.theme.LogOther
 import com.example.primera.core.theme.LogPain
-import com.example.primera.feature.checkins.data.dto.CheckinLogDto
-import com.example.primera.feature.checkins.data.repository.CheckinsRepository
+import com.example.primera.feature.checkins.data.CheckinLogDto
+import com.example.primera.feature.checkins.data.CheckinsRepository
 import com.example.primera.feature.dashboard.ui.DashboardLogUiItem
 import com.example.primera.feature.dashboard.ui.DashboardWeekDayItem
 import kotlinx.coroutines.flow.*
@@ -248,10 +248,16 @@ class CheckinsViewModel(
                 }
 
                 if (descriptionParts.isNotEmpty()) {
+                    val category = when {
+                        state.selectedSymptoms.isNotEmpty() -> "Symptom"
+                        state.selectedMoods.isNotEmpty() -> "Mood"
+                        state.selectedMedicines.isNotEmpty() -> "Medicine"
+                        else -> "Other"
+                    }
                     repository.saveLog(CheckinLogDto(
                         id = state.editingId,
                         type = "Check-in",
-                        category = "Fetal Movement",
+                        category = category,
                         description = descriptionParts.joinToString("; "),
                         timestamp = Date()
                     ))

@@ -2,9 +2,10 @@ package com.example.primera.feature.onboarding.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.primera.feature.onboarding.data.repository.OnboardingRepository
-import com.example.primera.feature.onboarding.domain.model.OnboardingProfile
-import com.example.primera.feature.onboarding.domain.model.PregnancyHistory
+import com.example.primera.core.data.PreferenceRepository
+import com.example.primera.feature.onboarding.data.OnboardingRepository
+import com.example.primera.feature.onboarding.domain.OnboardingProfile
+import com.example.primera.feature.onboarding.domain.PregnancyHistory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +15,8 @@ import kotlinx.coroutines.launch
 import java.util.*
 
 class OnboardingViewModel(
-    private val repository: OnboardingRepository
+    private val repository: OnboardingRepository,
+    private val preferenceRepository: PreferenceRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(OnboardingState())
     val uiState: StateFlow<OnboardingState> = _state.asStateFlow()
@@ -67,6 +69,24 @@ class OnboardingViewModel(
                 curr.complications + complication
             }
             curr.copy(complications = newList)
+        }
+    }
+
+    fun removePregnancy(index: Int) {
+        _state.update { state ->
+            if (state.pregnancyHistories.size <= 1) return@update state // Keep at least one
+            val newList = state.pregnancyHistories.toMutableList()
+            newList.removeAt(index)
+            
+            // Adjust pregnancy numbers
+            val adjustedList = newList.mapIndexed { i, history ->
+                history.copy(pregnancyNumber = i + 1)
+            }
+            
+            state.copy(
+                pregnancyHistories = adjustedList,
+                selectedPregnancyIndex = if (state.selectedPregnancyIndex >= adjustedList.size) adjustedList.size - 1 else state.selectedPregnancyIndex
+            )
         }
     }
 
@@ -141,11 +161,15 @@ class OnboardingViewModel(
     private fun saveAndFinish() {
         viewModelScope.launch {
             val s = _state.value
+            
+            // BUG-003 Fix: Use a sensible default (25 years ago) if birthday is missing
+            val defaultBirthday = Calendar.getInstance().apply { add(Calendar.YEAR, -25) }.time
+            
             val profile = OnboardingProfile(
                 firstName = s.firstName,
                 lastName = s.lastName,
                 middleName = s.middleName,
-                birthday = s.birthday ?: Date(),
+                birthday = s.birthday ?: defaultBirthday,
                 weightKg = s.weightKg,
                 heightCm = s.heightCm,
                 lmpDate = s.lmpDate,
@@ -155,6 +179,7 @@ class OnboardingViewModel(
             )
             
             repository.saveProfile(profile)
+            preferenceRepository.setOnboardingCompleted()
             
             for (i in 0..100 step 10) {
                 _state.update { it.copy(preparationProgress = i / 100f) }

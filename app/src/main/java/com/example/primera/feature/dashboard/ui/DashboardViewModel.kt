@@ -3,14 +3,15 @@ package com.example.primera.feature.dashboard.ui
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.primera.core.utils.DashboardBusinessLogic
-import com.example.primera.feature.dashboard.data.repository.DashboardRepository
-import com.example.primera.feature.dashboard.domain.model.DashboardData
+import com.example.primera.feature.dashboard.data.DashboardRepository
+import com.example.primera.feature.dashboard.domain.DashboardBusinessLogic
+import com.example.primera.feature.dashboard.domain.DashboardData
 import com.example.primera.core.theme.LogBaby
 import com.example.primera.core.theme.LogNutrition
 import com.example.primera.core.theme.LogOther
 import com.example.primera.core.theme.LogPain
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -72,6 +73,10 @@ class DashboardViewModel(
         val week = DashboardBusinessLogic.getWeekNumber(data.dueDate)
         val isWatchSynced = data.steps > 0 || data.heartRateBpm > 0 || data.sleepHours > 0 || data.sleepMinutes > 0
         
+        // BUG-001 Fix: For now, we don't have historical HR, so we just set trending to false 
+        // unless we implement local caching or more complex DB reads.
+        // Let's at least remove the hardcoded 'true' and '5'.
+        
         return DashboardUiModel(
             userName = data.userName,
             timeOfDay = DashboardBusinessLogic.getTimeOfDay(),
@@ -82,8 +87,8 @@ class DashboardViewModel(
             babySize = DashboardBusinessLogic.getBabySize(week),
             babyEmoji = DashboardBusinessLogic.getBabyEmoji(week),
             heartRateBpm = data.heartRateBpm,
-            heartRateTrendingUp = true, 
-            heartRateVsLastWeek = 5,    
+            heartRateTrendingUp = false, // Set to false by default until we have trend logic
+            heartRateVsLastWeek = 0,    // Set to 0 until we have historical data
             steps = data.steps,
             stepsGoal = data.stepsGoal,
             sleepHours = data.sleepHours,
@@ -163,4 +168,29 @@ class DashboardViewModel(
     fun onViewAllLogs() {}
     fun onAddLog() {}
     fun onInputManually() {}
+
+    // FEAT-002: Watch Sync Stub
+    fun onSyncWatch() {
+        viewModelScope.launch {
+            // Simulate watch sync by generating random but plausible data
+            val randomSteps = (5000..10000).random().toLong()
+            val randomHR = (70..85).random().toLong()
+            val randomSleepHours = (6..8).random().toLong()
+            val randomSleepMinutes = (0..59).random().toLong()
+            
+            repository.updateHealthData(
+                steps = randomSteps,
+                heartRate = randomHR,
+                sleepHours = randomSleepHours,
+                sleepMinutes = randomSleepMinutes
+            )
+        }
+    }
+
+    // DB-002: Update Steps Goal
+    fun onUpdateStepsGoal(goal: Long) {
+        viewModelScope.launch {
+            repository.updateStepsGoal(goal)
+        }
+    }
 }

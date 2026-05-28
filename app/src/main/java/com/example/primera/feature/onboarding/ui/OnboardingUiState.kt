@@ -1,6 +1,6 @@
 package com.example.primera.feature.onboarding.ui
 
-import com.example.primera.feature.onboarding.domain.model.PregnancyHistory
+import com.example.primera.feature.onboarding.domain.PregnancyHistory
 import java.util.Date
 
 enum class OnboardingStep {

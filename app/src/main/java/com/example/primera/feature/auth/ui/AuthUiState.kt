@@ -1,7 +1,5 @@
 package com.example.primera.feature.auth.ui
 
-import com.example.primera.ui.components.AuthTab
-
 data class AuthUiState(
     val activeTab: AuthTab = AuthTab.LOGIN,
     val fullName: String = "",

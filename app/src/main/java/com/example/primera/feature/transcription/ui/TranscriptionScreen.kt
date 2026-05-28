@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
@@ -92,13 +94,23 @@ private fun TranscriptionContent(
         ) {
             Spacer(Modifier.height(16.dp))
             
-            Text(
-                text = "Voice Transcription",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                }
+                Text(
+                    text = "Voice Transcription",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
                 )
-            )
+                Spacer(Modifier.width(48.dp))
+            }
             
             Spacer(Modifier.height(8.dp))
             
@@ -131,6 +143,13 @@ private fun TranscriptionContent(
                         .fillMaxWidth()
                         .heightIn(min = 150.dp),
                     label = { Text("Transcribed Text") },
+                    trailingIcon = {
+                        if (transcribedText.isNotEmpty()) {
+                            IconButton(onClick = { onTextEdited("") }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear text")
+                            }
+                        }
+                    },
                     shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedContainerColor = Color.White.copy(alpha = 0.6f),

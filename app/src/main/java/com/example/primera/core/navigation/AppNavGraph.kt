@@ -27,7 +27,7 @@ import com.example.primera.feature.onboarding.ui.OnboardingHostScreen
 import com.example.primera.feature.splash.ui.SplashScreen
 import com.example.primera.feature.transcription.ui.TranscriptionScreen
 import com.example.primera.feature.transcription.ui.TranscriptionViewModel
-import com.example.primera.ui.components.AuthTab
+
 import com.example.primera.core.theme.*
 import com.example.primera.feature.welcome.ui.WelcomeScreen
 

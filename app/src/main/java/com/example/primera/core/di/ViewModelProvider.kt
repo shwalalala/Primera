@@ -12,7 +12,6 @@ import com.example.primera.feature.splash.ui.SplashViewModel
 import com.example.primera.feature.transcription.data.SpeechRecognitionManager
 import com.example.primera.feature.transcription.ui.TranscriptionViewModel
 import com.example.primera.feature.welcome.ui.WelcomeViewModel
-import com.google.firebase.auth.FirebaseAuth
 
 object ViewModelProvider {
     val Factory = object : ViewModelProvider.Factory {
@@ -22,16 +21,21 @@ object ViewModelProvider {
             val container = application.container
             
             return when (modelClass) {
-                AuthViewModel::class.java -> AuthViewModel(container.authRepository)
+                AuthViewModel::class.java -> AuthViewModel(
+                    container.authRepository,
+                    container.preferenceRepository
+                )
                 DashboardViewModel::class.java -> DashboardViewModel(container.dashboardRepository)
-                OnboardingViewModel::class.java -> OnboardingViewModel(container.onboardingRepository)
+                OnboardingViewModel::class.java -> OnboardingViewModel(
+                    container.onboardingRepository,
+                    container.preferenceRepository
+                )
                 SplashViewModel::class.java -> SplashViewModel(container.preferenceRepository)
                 WelcomeViewModel::class.java -> WelcomeViewModel(container.preferenceRepository)
                 CheckinsViewModel::class.java -> CheckinsViewModel(container.checkinsRepository)
                 TranscriptionViewModel::class.java -> TranscriptionViewModel(
                     container.transcriptionRepository,
-                    SpeechRecognitionManager(application),
-                    FirebaseAuth.getInstance()
+                    SpeechRecognitionManager(application)
                 )
                 else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             } as T

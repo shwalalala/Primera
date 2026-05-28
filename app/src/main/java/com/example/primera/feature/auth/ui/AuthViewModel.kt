@@ -2,14 +2,15 @@ package com.example.primera.feature.auth.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.primera.feature.auth.data.repository.AuthRepository
-import com.example.primera.ui.components.AuthTab
+import com.example.primera.core.data.PreferenceRepository
+import com.example.primera.feature.auth.data.AuthRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val preferenceRepository: PreferenceRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthUiState())
@@ -63,7 +64,11 @@ class AuthViewModel(
                         email = "",
                         password = ""
                     ) }
-                    _effect.send(AuthEffect.NavigateToDashboard)
+                    if (preferenceRepository.shouldShowOnboarding()) {
+                        _effect.send(AuthEffect.NavigateToOnboarding)
+                    } else {
+                        _effect.send(AuthEffect.NavigateToDashboard)
+                    }
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isLoading = false, errorMessage = error.message) }
@@ -125,7 +130,11 @@ class AuthViewModel(
         if (authRepository.isUserAuthenticated()) {
             _state.update { it.copy(isAuthenticated = true) }
             viewModelScope.launch {
-                _effect.send(AuthEffect.NavigateToDashboard)
+                if (preferenceRepository.shouldShowOnboarding()) {
+                    _effect.send(AuthEffect.NavigateToOnboarding)
+                } else {
+                    _effect.send(AuthEffect.NavigateToDashboard)
+                }
             }
         }
     }
