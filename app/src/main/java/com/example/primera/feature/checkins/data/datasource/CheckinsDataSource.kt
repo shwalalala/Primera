@@ -23,7 +23,7 @@ class CheckinsDataSource {
             return@callbackFlow
         }
 
-        val listener = firestore.collection("activity_logs")
+        val listener = firestore.collection("checkins")
             .whereEqualTo("userId", userId)
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
@@ -34,8 +34,8 @@ class CheckinsDataSource {
                     try {
                         CheckinLogDto(
                             id = doc.id,
-                            type = doc.getString("type"),
-                            category = doc.getString("category"),
+                            type = doc.getString("type") ?: "Check-in",
+                            category = doc.getString("category") ?: "Fetal Movement",
                             message = doc.getString("message"),
                             description = doc.getString("description"),
                             timestamp = doc.getTimestamp("timestamp")?.toDate()
@@ -86,9 +86,9 @@ class CheckinsDataSource {
             )
             
             if (log.id != null) {
-                firestore.collection("activity_logs").document(log.id).set(logData).await()
+                firestore.collection("checkins").document(log.id).set(logData).await()
             } else {
-                firestore.collection("activity_logs").add(logData).await()
+                firestore.collection("checkins").add(logData).await()
             }
             Result.success(Unit)
         } catch (e: Exception) {
