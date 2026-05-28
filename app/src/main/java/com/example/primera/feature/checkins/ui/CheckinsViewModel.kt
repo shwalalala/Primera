@@ -121,6 +121,7 @@ class CheckinsViewModel(
             }
 
             DashboardLogUiItem(
+                id = log.id,
                 category = log.category ?: "Other",
                 description = log.description ?: "",
                 time = timeText,
@@ -244,6 +245,7 @@ class CheckinsViewModel(
 
                 if (descriptionParts.isNotEmpty()) {
                     repository.saveLog(CheckinLogDto(
+                        id = state.editingId,
                         type = "Check-in",
                         category = "Fetal Movement",
                         description = descriptionParts.joinToString("; "),
@@ -256,6 +258,63 @@ class CheckinsViewModel(
                 _dailyState.update { it.copy(isSaving = false, errorMessage = e.message) }
             }
         }
+    }
+
+    fun prepareNewCheckin() {
+        _dailyState.update { 
+            DailyCheckinUiState(
+                weekDays = it.weekDays,
+                availableSymptoms = it.availableSymptoms,
+                availableMoods = it.availableMoods,
+                availableMedicines = it.availableMedicines,
+                weightKg = it.weightKg,
+                lastWeightUpdateDate = it.lastWeightUpdateDate,
+                shouldShowWeightUpdateAlert = it.shouldShowWeightUpdateAlert
+            )
+        }
+    }
+
+    fun loadCheckinForEdit(log: DashboardLogUiItem) {
+        val description = log.description
+        val symptoms = parseSection(description, "Symptoms:")
+        val moods = parseSection(description, "Mood:")
+        val medicines = parseSection(description, "Medicine:")
+        
+        // The note is what remains after removing the labeled sections
+        var note = description
+        listOf("Symptoms:", "Mood:", "Medicine:").forEach { label ->
+            val index = note.indexOf(label)
+            if (index != -1) {
+                val end = note.indexOf(";", index).let { if (it == -1) note.length else it + 1 }
+                note = note.removeRange(index, end).trim()
+            }
+        }
+        note = note.trimStart(';').trim()
+
+        _dailyState.update { 
+            it.copy(
+                editingId = log.id,
+                selectedSymptoms = symptoms.toSet(),
+                selectedMoods = moods.toSet(),
+                selectedMedicines = medicines.toSet(),
+                note = note,
+                success = false,
+                errorMessage = null
+            )
+        }
+    }
+
+    private fun parseSection(description: String, label: String): List<String> {
+        val start = description.indexOf(label)
+        if (start == -1) return emptyList()
+        
+        val contentStart = start + label.length
+        val end = description.indexOf(";", contentStart).let { if (it == -1) description.length else it }
+        
+        return description.substring(contentStart, end)
+            .split(",")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
     }
 
     fun resetSuccess() {

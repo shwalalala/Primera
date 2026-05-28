@@ -29,6 +29,7 @@ import com.example.primera.ui.components.LogCard
 @Composable
 fun CheckinsOverviewScreen(
     onNavigateToDailyCheckin: () -> Unit,
+    onLogClick: (DashboardLogUiItem) -> Unit,
     viewModel: CheckinsViewModel,
     modifier: Modifier = Modifier
 ) {
@@ -38,6 +39,7 @@ fun CheckinsOverviewScreen(
         state = state,
         onSearchQueryChange = viewModel::onSearchQueryChange,
         onNavigateToDailyCheckin = onNavigateToDailyCheckin,
+        onLogClick = onLogClick,
         modifier = modifier
     )
 }
@@ -47,6 +49,7 @@ fun CheckinsOverviewContent(
     state: CheckinsOverviewUiState,
     onSearchQueryChange: (String) -> Unit,
     onNavigateToDailyCheckin: () -> Unit,
+    onLogClick: (DashboardLogUiItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -104,7 +107,8 @@ fun CheckinsOverviewContent(
                         category = log.category,
                         time = log.time,
                         description = log.description,
-                        accentColor = log.accentColor
+                        accentColor = log.accentColor,
+                        onClick = { onLogClick(log) }
                     )
                 }
             }
@@ -156,12 +160,25 @@ private fun CheckinsOverviewPreview() {
         CheckinsOverviewContent(
             state = CheckinsOverviewUiState(
                 logs = listOf(
-                    DashboardLogUiItem("Nausea", "Felt sick in the morning", "11:02 AM", LogPain),
-                    DashboardLogUiItem("Back Pain", "Lower back pain after walking", "8:32 AM", LogPain)
+                    DashboardLogUiItem(
+                        id = "1",
+                        category = "Nausea",
+                        description = "Felt sick in the morning",
+                        time = "11:02 AM",
+                        accentColor = LogPain
+                    ),
+                    DashboardLogUiItem(
+                        id = "2",
+                        category = "Back Pain",
+                        description = "Lower back pain after walking",
+                        time = "8:32 AM",
+                        accentColor = LogPain
+                    )
                 )
             ),
             onSearchQueryChange = {},
-            onNavigateToDailyCheckin = {}
+            onNavigateToDailyCheckin = {},
+            onLogClick = {}
         )
     }
 }
