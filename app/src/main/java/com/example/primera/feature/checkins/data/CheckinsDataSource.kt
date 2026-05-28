@@ -1,6 +1,7 @@
 package com.example.primera.feature.checkins.data
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -20,11 +21,12 @@ class CheckinsDataSource {
             return@callbackFlow
         }
 
-        val listener = firestore.collection("checkins")
+        val registration: ListenerRegistration = firestore.collection("checkins")
             .whereEqualTo("userId", userId)
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
+                    trySend(emptyList())
                     return@addSnapshotListener
                 }
                 val logs = snapshot?.documents?.mapNotNull { doc ->
@@ -37,13 +39,13 @@ class CheckinsDataSource {
                             description = doc.getString("description"),
                             timestamp = doc.getTimestamp("timestamp")?.toDate()
                         )
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         null
                     }
                 } ?: emptyList()
                 trySend(logs)
             }
-        awaitClose { listener.remove() }
+        awaitClose(registration::remove)
     }
 
     fun observeUserWeight(): Flow<CheckinUserDto?> = callbackFlow {
@@ -54,9 +56,10 @@ class CheckinsDataSource {
             return@callbackFlow
         }
 
-        val listener = firestore.collection("users").document(userId)
+        val registration: ListenerRegistration = firestore.collection("users").document(userId)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
+                    trySend(null)
                     return@addSnapshotListener
                 }
                 if (snapshot != null && snapshot.exists()) {
@@ -67,7 +70,7 @@ class CheckinsDataSource {
                     trySend(null)
                 }
             }
-        awaitClose { listener.remove() }
+        awaitClose(registration::remove)
     }
 
     suspend fun saveLog(log: CheckinLogDto): Result<Unit> {

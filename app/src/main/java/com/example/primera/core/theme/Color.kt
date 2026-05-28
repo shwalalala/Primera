@@ -62,3 +62,9 @@ val LogPain             = Color(0xFFEF9A9A)
 val LogNutrition        = Color(0xFFA5D6A7)
 val LogBaby             = Color(0xFF9FA8DA)
 val LogOther            = Color(0xFFB0BEC5)
+
+//  ── Indicator Colors ──────────────────────────────────────────────────────────
+
+val Good = Color(0xFFA1D386)
+val Moderate = Color(0xFFFBBB67)
+val Warning = Color(0xFFF28B82)

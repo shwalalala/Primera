@@ -17,6 +17,8 @@ import com.example.primera.feature.onboarding.data.OnboardingRepositoryImpl
 import com.example.primera.feature.transcription.data.TranscriptionDataSource
 import com.example.primera.feature.transcription.data.TranscriptionRepository
 import com.example.primera.feature.transcription.data.TranscriptionRepositoryImpl
+import com.example.primera.feature.goals.data.GoalsRepository
+import com.example.primera.feature.goals.data.GoalsRepositoryImpl
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -26,6 +28,7 @@ interface AppContainer {
     val onboardingRepository: OnboardingRepository
     val transcriptionRepository: TranscriptionRepository
     val checkinsRepository: CheckinsRepository
+    val goalsRepository: GoalsRepository
     val preferenceRepository: PreferenceRepository
 }
 
@@ -69,6 +72,10 @@ class AppContainerImpl(private val context: Context) : AppContainer {
 
     override val transcriptionRepository: TranscriptionRepository by lazy {
         TranscriptionRepositoryImpl(transcriptionDataSource)
+    }
+
+    override val goalsRepository: GoalsRepository by lazy {
+        GoalsRepositoryImpl()
     }
 
     override val preferenceRepository: PreferenceRepository by lazy {

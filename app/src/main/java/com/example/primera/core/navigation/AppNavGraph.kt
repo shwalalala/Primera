@@ -23,6 +23,7 @@ import com.example.primera.feature.checkins.ui.CheckinsOverviewScreen
 import com.example.primera.feature.checkins.ui.CheckinsViewModel
 import com.example.primera.feature.checkins.ui.DailyCheckinScreen
 import com.example.primera.feature.dashboard.ui.DashboardScreen
+import com.example.primera.feature.insights.ui.InsightsScreen
 import com.example.primera.feature.onboarding.ui.OnboardingHostScreen
 import com.example.primera.feature.splash.ui.SplashScreen
 import com.example.primera.feature.transcription.ui.TranscriptionScreen
@@ -172,7 +173,11 @@ fun AppNavGraph(
             }
 
             composable(Routes.INSIGHT) {
-                PlaceholderScreen("Insights Screen")
+                val application = androidx.compose.ui.platform.LocalContext.current.applicationContext as com.example.primera.PrimeraApplication
+                InsightsScreen(
+                    onBack = { navController.popBackStack() },
+                    goalsRepository = application.container.goalsRepository
+                )
             }
 
             composable(Routes.CHECKIN) {

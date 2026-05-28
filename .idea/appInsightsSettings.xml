@@ -6,6 +6,14 @@
         <entry key="Firebase Crashlytics">
           <value>
             <InsightsFilterSettings>
+              <option name="connection">
+                <ConnectionSetting>
+                  <option name="appId" value="com.example.primera" />
+                  <option name="mobileSdkAppId" value="1:520407937883:android:4edda193e05245d94f607e" />
+                  <option name="projectId" value="primera-eafe6" />
+                  <option name="projectNumber" value="520407937883" />
+                </ConnectionSetting>
+              </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
               <option name="timeIntervalDays" value="THIRTY_DAYS" />
               <option name="visibilityType" value="ALL" />
