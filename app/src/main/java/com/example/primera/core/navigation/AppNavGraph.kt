@@ -19,6 +19,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.primera.core.di.ViewModelProvider
 import com.example.primera.feature.auth.ui.*
+import com.example.primera.feature.checkins.ui.CheckinsOverviewScreen
+import com.example.primera.feature.checkins.ui.CheckinsViewModel
+import com.example.primera.feature.checkins.ui.DailyCheckinScreen
 import com.example.primera.feature.dashboard.ui.DashboardScreen
 import com.example.primera.feature.onboarding.ui.OnboardingHostScreen
 import com.example.primera.feature.splash.ui.SplashScreen
@@ -33,7 +36,8 @@ private val bottomNavRoutes = setOf(
     Routes.DASHBOARD,
     Routes.DEVICE,
     Routes.INSIGHT,
-    Routes.CHECKIN
+    Routes.CHECKIN,
+    Routes.DAILY_CHECKIN
 )
 
 @Composable
@@ -153,7 +157,20 @@ fun AppNavGraph(
             }
 
             composable(Routes.CHECKIN) {
-                PlaceholderScreen("Check-In Screen")
+                val checkinsViewModel: CheckinsViewModel = viewModel(factory = ViewModelProvider.Factory)
+                CheckinsOverviewScreen(
+                    onNavigateToDailyCheckin = { navController.navigate(Routes.DAILY_CHECKIN) },
+                    viewModel = checkinsViewModel
+                )
+            }
+
+            composable(Routes.DAILY_CHECKIN) {
+                val checkinsViewModel: CheckinsViewModel = viewModel(factory = ViewModelProvider.Factory)
+                DailyCheckinScreen(
+                    onBack = { navController.popBackStack() },
+                    onReview = { navController.navigate(Routes.CHECKIN) },
+                    viewModel = checkinsViewModel
+                )
             }
 
             composable(Routes.FORGOT_PW) {

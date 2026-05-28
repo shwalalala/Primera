@@ -6,6 +6,9 @@ import com.example.primera.core.data.repository.PreferenceRepositoryImpl
 import com.example.primera.feature.auth.data.datasource.AuthDataSource
 import com.example.primera.feature.auth.data.repository.AuthRepository
 import com.example.primera.feature.auth.data.repository.AuthRepositoryImpl
+import com.example.primera.feature.checkins.data.datasource.CheckinsDataSource
+import com.example.primera.feature.checkins.data.repository.CheckinsRepository
+import com.example.primera.feature.checkins.data.repository.CheckinsRepositoryImpl
 import com.example.primera.feature.dashboard.data.datasource.DashboardDataSource
 import com.example.primera.feature.dashboard.data.repository.DashboardRepository
 import com.example.primera.feature.dashboard.data.repository.DashboardRepositoryImpl
@@ -22,6 +25,7 @@ interface AppContainer {
     val dashboardRepository: DashboardRepository
     val onboardingRepository: OnboardingRepository
     val transcriptionRepository: TranscriptionRepository
+    val checkinsRepository: CheckinsRepository
     val preferenceRepository: PreferenceRepository
 }
 
@@ -47,6 +51,15 @@ class AppContainerImpl(private val context: Context) : AppContainer {
 
     override val onboardingRepository: OnboardingRepository by lazy {
         OnboardingRepositoryImpl()
+    }
+
+    // Check-ins dependencies
+    private val checkinsDataSource: CheckinsDataSource by lazy {
+        CheckinsDataSource()
+    }
+
+    override val checkinsRepository: CheckinsRepository by lazy {
+        CheckinsRepositoryImpl(checkinsDataSource, preferenceRepository)
     }
 
     // Transcription dependencies

@@ -54,16 +54,41 @@ class DashboardViewModel(
             sleepMinutes = data.sleepMinutes,
             sleepQuality = DashboardBusinessLogic.getSleepQuality(data.sleepHours, data.sleepMinutes),
             isWatchSynced = isWatchSynced,
-            recentLogs = data.recentLogs.map { log ->
-                DashboardLogUiItem(
-                    category = log.category,
-                    description = log.description,
-                    time = SimpleDateFormat("h:mm a", Locale.getDefault()).format(log.timestamp),
-                    accentColor = getCategoryColor(log.category)
-                )
-            },
+            recentLogs = data.recentLogs
+                .map { log ->
+                    val sdf = SimpleDateFormat("h:mm a", Locale.getDefault())
+                    val timeText = if (isToday(log.timestamp)) {
+                        "Today, ${sdf.format(log.timestamp)}"
+                    } else if (isYesterday(log.timestamp)) {
+                        "Yesterday, ${sdf.format(log.timestamp)}"
+                    } else {
+                        SimpleDateFormat("MMM d, h:mm a", Locale.getDefault()).format(log.timestamp)
+                    }
+
+                    DashboardLogUiItem(
+                        category = log.category,
+                        description = log.description,
+                        time = timeText,
+                        accentColor = getCategoryColor(log.category)
+                    )
+                },
             weekDays = getCurrentWeekDays()
         )
+    }
+
+    private fun isToday(date: Date): Boolean {
+        val cal1 = Calendar.getInstance()
+        val cal2 = Calendar.getInstance().apply { time = date }
+        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+                cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
+    }
+
+    private fun isYesterday(date: Date): Boolean {
+        val cal1 = Calendar.getInstance()
+        cal1.add(Calendar.DAY_OF_YEAR, -1)
+        val cal2 = Calendar.getInstance().apply { time = date }
+        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+                cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
     }
 
     private fun getCategoryColor(category: String): Color {

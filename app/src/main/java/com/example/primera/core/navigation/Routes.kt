@@ -10,5 +10,7 @@ object Routes {
     const val DEVICE      = "device"
     const val INSIGHT     = "insight"
     const val CHECKIN     = "checkin"
+    const val DAILY_CHECKIN = "daily_checkin"
+    const val CHECKIN_PREVIEW = "checkin_preview"
     const val TRANSCRIPTION = "transcription"
 }
