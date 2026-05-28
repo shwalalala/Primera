@@ -230,6 +230,7 @@ fun RecentHealthLogsSection(
     logs: List<DashboardLogUiItem>,
     onViewAll: () -> Unit,
     onAdd: () -> Unit,
+    onLogClick: (DashboardLogUiItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.padding(horizontal = 20.dp)) {
@@ -254,7 +255,8 @@ fun RecentHealthLogsSection(
                     category = log.category,
                     time = log.time,
                     description = log.description,
-                    accentColor = log.accentColor
+                    accentColor = log.accentColor,
+                    onClick = { onLogClick(log) }
                 )
                 Spacer(Modifier.height(12.dp))
             }

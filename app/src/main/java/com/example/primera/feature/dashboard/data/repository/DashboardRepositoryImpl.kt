@@ -28,6 +28,7 @@ class DashboardRepositoryImpl(
                 sleepMinutes = userDto.sleepMinutes?.toInt() ?: 0,
                 recentLogs = logsDtoList.map { dto ->
                     DashboardHealthLog(
+                        id = dto.id,
                         category = dto.type ?: dto.category ?: "Other",
                         description = dto.message ?: dto.description ?: "",
                         timestamp = dto.timestamp ?: Date()

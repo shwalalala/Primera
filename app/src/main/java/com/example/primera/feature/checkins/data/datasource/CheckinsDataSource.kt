@@ -76,7 +76,7 @@ class CheckinsDataSource {
     suspend fun saveLog(log: CheckinLogDto): Result<Unit> {
         return try {
             val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
-            val logData = hashMapOf(
+            val logData = mutableMapOf(
                 "userId" to userId,
                 "type" to log.type,
                 "category" to log.category,
@@ -84,7 +84,12 @@ class CheckinsDataSource {
                 "description" to log.description,
                 "timestamp" to (log.timestamp ?: Date())
             )
-            firestore.collection("activity_logs").add(logData).await()
+            
+            if (log.id != null) {
+                firestore.collection("activity_logs").document(log.id).set(logData).await()
+            } else {
+                firestore.collection("activity_logs").add(logData).await()
+            }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

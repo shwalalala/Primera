@@ -12,6 +12,7 @@ data class CheckinsOverviewUiState(
 )
 
 data class DailyCheckinUiState(
+    val editingId: String? = null,
     val isLoading: Boolean = false,
     val weekDays: List<DashboardWeekDayItem> = emptyList(),
     val availableSymptoms: List<CheckinOption> = emptyList(),

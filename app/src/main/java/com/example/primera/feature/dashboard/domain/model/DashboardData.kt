@@ -14,6 +14,7 @@ data class DashboardData(
 )
 
 data class DashboardHealthLog(
+    val id: String? = null,
     val category: String,
     val description: String,
     val timestamp: Date

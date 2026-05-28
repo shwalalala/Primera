@@ -22,6 +22,7 @@ import com.example.primera.core.theme.*
 fun DashboardScreen(
     modifier: Modifier = Modifier,
     onLogout: () -> Unit,
+    onLogClick: (DashboardLogUiItem) -> Unit,
     viewModel: DashboardViewModel = viewModel(factory = ViewModelProvider.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -49,6 +50,7 @@ fun DashboardScreen(
                         onViewAllLogs = viewModel::onViewAllLogs,
                         onAddLog = viewModel::onAddLog,
                         onInputManually = viewModel::onInputManually,
+                        onLogClick = onLogClick,
                         onSyncWatch = { /* Trigger watch sync logic */ }
                     )
                 }
@@ -63,6 +65,7 @@ fun DashboardContent(
     onViewAllLogs: () -> Unit,
     onAddLog: () -> Unit,
     onInputManually: () -> Unit,
+    onLogClick: (DashboardLogUiItem) -> Unit,
     onSyncWatch: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -90,7 +93,7 @@ fun DashboardContent(
         Spacer(Modifier.height(20.dp))
         StatsGrid(state, onInputManually, onSyncWatch)
         Spacer(Modifier.height(24.dp))
-        RecentHealthLogsSection(state.recentLogs, onViewAllLogs, onAddLog)
+        RecentHealthLogsSection(state.recentLogs, onViewAllLogs, onAddLog, onLogClick)
         Spacer(Modifier.height(8.dp))
     }
 }
@@ -141,6 +144,7 @@ private fun DashboardScreenPreview() {
             onViewAllLogs = {},
             onAddLog = {},
             onInputManually = {},
+            onLogClick = {},
             onSyncWatch = {}
         )
     }
