@@ -18,6 +18,7 @@ data class OnboardingState(
     val pregnancyNumber: Int = 1,
     val historyDeliveryDate: Date? = null,
     val deliveryType: String = "", // Vaginal, C-section
+    val birthOutcome: String = "", // Miscarriage, Alive, Stillborn
     val childrenDelivered: String = "", // Single, Twins, Multiple
     val complications: List<String> = emptyList(),
     

@@ -34,6 +34,7 @@ class OnboardingViewModel(
     fun onPregnancyNumberChange(num: Int) = _state.update { it.copy(pregnancyNumber = num) }
     fun onHistoryDeliveryDateChange(date: Date) = _state.update { it.copy(historyDeliveryDate = date) }
     fun onDeliveryTypeChange(type: String) = _state.update { it.copy(deliveryType = type) }
+    fun onBirthOutcomeChange(outcome: String) = _state.update { it.copy(birthOutcome = outcome) }
     fun onChildrenDeliveredChange(count: String) = _state.update { it.copy(childrenDelivered = count) }
     
     fun toggleComplication(complication: String) {
@@ -103,7 +104,7 @@ class OnboardingViewModel(
                 pregnancyNumber = s.pregnancyNumber,
                 historyDeliveryDate = s.historyDeliveryDate,
                 deliveryType = s.deliveryType,
-                birthOutcome = "", // Placeholder
+                birthOutcome = s.birthOutcome,
                 childrenDelivered = s.childrenDelivered,
                 complications = s.complications
             )
