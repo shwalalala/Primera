@@ -22,9 +22,15 @@ object ViewModelProvider {
             val container = application.container
             
             return when (modelClass) {
-                AuthViewModel::class.java -> AuthViewModel(container.authRepository)
+                AuthViewModel::class.java -> AuthViewModel(
+                    container.authRepository,
+                    container.preferenceRepository
+                )
                 DashboardViewModel::class.java -> DashboardViewModel(container.dashboardRepository)
-                OnboardingViewModel::class.java -> OnboardingViewModel(container.onboardingRepository)
+                OnboardingViewModel::class.java -> OnboardingViewModel(
+                    container.onboardingRepository,
+                    container.preferenceRepository
+                )
                 SplashViewModel::class.java -> SplashViewModel(container.preferenceRepository)
                 WelcomeViewModel::class.java -> WelcomeViewModel(container.preferenceRepository)
                 CheckinsViewModel::class.java -> CheckinsViewModel(container.checkinsRepository)

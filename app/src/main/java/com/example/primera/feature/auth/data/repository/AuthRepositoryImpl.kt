@@ -39,4 +39,13 @@ class AuthRepositoryImpl(
             Result.failure(e)
         }
     }
+
+    override suspend fun logActivity(type: String, message: String): Result<Unit> {
+        return try {
+            dataSource.logActivity(type, message, dataSource.getCurrentUserId())
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

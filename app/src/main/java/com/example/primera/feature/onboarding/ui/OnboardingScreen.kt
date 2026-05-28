@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -417,19 +418,35 @@ fun PregnancyHistoryStep(state: OnboardingState, viewModel: OnboardingViewModel)
                 val isSel = state.selectedPregnancyIndex == index
                 val isCompleted = state.isPregnancyComplete(index)
                 
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(if (isSel) PrimeraViolet else if (isCompleted) PrimeraViolet.copy(alpha = 0.2f) else SurfaceWhite)
-                        .border(1.dp, if (isSel) PrimeraViolet else InputBorder, CircleShape)
-                        .clickable { viewModel.onSelectPregnancy(index) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = history.pregnancyNumber.toString(),
-                        color = if (isSel) SurfaceWhite else TextPrimary
-                    )
+                Box(contentAlignment = Alignment.TopEnd) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(if (isSel) PrimeraViolet else if (isCompleted) PrimeraViolet.copy(alpha = 0.2f) else SurfaceWhite)
+                            .border(1.dp, if (isSel) PrimeraViolet else InputBorder, CircleShape)
+                            .clickable { viewModel.onSelectPregnancy(index) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = history.pregnancyNumber.toString(),
+                            color = if (isSel) SurfaceWhite else TextPrimary
+                        )
+                    }
+                    
+                    if (state.pregnancyHistories.size > 1) {
+                        Surface(
+                            modifier = Modifier
+                                .size(16.dp)
+                                .offset(x = 4.dp, y = (-4).dp)
+                                .clickable { viewModel.removePregnancy(index) },
+                            shape = CircleShape,
+                            color = ErrorRed,
+                            contentColor = Color.White
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Remove", modifier = Modifier.padding(2.dp))
+                        }
+                    }
                 }
             }
             

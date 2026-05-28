@@ -54,7 +54,7 @@ fun DashboardScreen(
                         onAddLog = onAddLog,
                         onInputManually = onInputManually,
                         onLogClick = onLogClick,
-                        onSyncWatch = { /* Trigger watch sync logic */ }
+                        onSyncWatch = { viewModel.onSyncWatch() }
                     )
                 }
             }

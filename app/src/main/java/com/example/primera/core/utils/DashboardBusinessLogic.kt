@@ -16,21 +16,21 @@ object DashboardBusinessLogic {
     }
 
     fun getWeekNumber(dueDate: Date?): Int {
-        if (dueDate == null) return 28
+        if (dueDate == null) return 0
         val diffInMillis = dueDate.time - System.currentTimeMillis()
         val daysUntilDue = TimeUnit.MILLISECONDS.toDays(diffInMillis).toInt()
         return ((280 - daysUntilDue) / 7).coerceIn(1, 42)
     }
 
     fun getDayNumber(dueDate: Date?): Int {
-        if (dueDate == null) return 3
+        if (dueDate == null) return 0
         val diffInMillis = dueDate.time - System.currentTimeMillis()
         val daysUntilDue = TimeUnit.MILLISECONDS.toDays(diffInMillis).toInt()
         return ((280 - daysUntilDue) % 7).coerceIn(0, 6)
     }
 
     fun getDaysLeft(dueDate: Date?): Int {
-        if (dueDate == null) return 88
+        if (dueDate == null) return 0
         val diffInMillis = dueDate.time - System.currentTimeMillis()
         return (TimeUnit.MILLISECONDS.toDays(diffInMillis).toInt()).coerceAtLeast(0)
     }

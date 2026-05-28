@@ -8,6 +8,8 @@ import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
+import java.util.Date
 
 class DashboardDataSource {
     private val auth = FirebaseAuth.getInstance()
@@ -97,5 +99,42 @@ class DashboardDataSource {
                 trySend(logs)
             }
         awaitClose { listener.remove() }
+    }
+
+    suspend fun updateStepsGoal(goal: Long): Result<Unit> {
+        return try {
+            val userId = auth.currentUser?.uid ?: return Result.failure(Exception("Not authenticated"))
+            firestore.collection("users").document(userId)
+                .update("stepsGoal", goal)
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateHealthData(
+        steps: Long,
+        heartRate: Long,
+        sleepHours: Long,
+        sleepMinutes: Long
+    ): Result<Unit> {
+        return try {
+            val userId = auth.currentUser?.uid ?: return Result.failure(Exception("Not authenticated"))
+            firestore.collection("users").document(userId)
+                .update(
+                    mapOf(
+                        "steps" to steps,
+                        "heartRateBpm" to heartRate,
+                        "sleepHours" to sleepHours,
+                        "sleepMinutes" to sleepMinutes,
+                        "updatedAt" to Date()
+                    )
+                )
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

@@ -244,10 +244,16 @@ class CheckinsViewModel(
                 }
 
                 if (descriptionParts.isNotEmpty()) {
+                    val category = when {
+                        state.selectedSymptoms.isNotEmpty() -> "Symptom"
+                        state.selectedMoods.isNotEmpty() -> "Mood"
+                        state.selectedMedicines.isNotEmpty() -> "Medicine"
+                        else -> "Other"
+                    }
                     repository.saveLog(CheckinLogDto(
                         id = state.editingId,
                         type = "Check-in",
-                        category = "Fetal Movement",
+                        category = category,
                         description = descriptionParts.joinToString("; "),
                         timestamp = Date()
                     ))
