@@ -127,10 +127,7 @@ private fun DashboardScreenPreview() {
                 sleepMinutes = 45,
                 sleepQuality = "Good quality",
                 isWatchSynced = true,
-                recentLogs = listOf(
-                    DashboardLogUiItem("Back Pain", "Felt mild lower back pain", "8:32 AM", LogPain),
-                    DashboardLogUiItem("Nutrition", "Healthy lunch", "12:15 PM", LogNutrition)
-                ),
+                recentLogs = emptyList(),
                 weekDays = listOf(
                     DashboardWeekDayItem("S", 22, false),
                     DashboardWeekDayItem("M", 23, true),

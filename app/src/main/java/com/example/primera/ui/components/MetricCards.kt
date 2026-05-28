@@ -201,7 +201,7 @@ fun LogCard(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = category.uppercase(),
+                        text = category,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextSecondary,
@@ -220,7 +220,7 @@ fun LogCard(
                 fontSize = 13.sp,
                 color = TextPrimary,
                 lineHeight = 18.sp,
-                maxLines = 3,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
         }
