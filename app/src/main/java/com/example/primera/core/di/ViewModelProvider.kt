@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.example.primera.PrimeraApplication
 import com.example.primera.feature.auth.ui.AuthViewModel
+import com.example.primera.feature.checkins.ui.CheckinsViewModel
 import com.example.primera.feature.dashboard.ui.DashboardViewModel
 import com.example.primera.feature.onboarding.ui.OnboardingViewModel
 import com.example.primera.feature.splash.ui.SplashViewModel
@@ -26,6 +27,7 @@ object ViewModelProvider {
                 OnboardingViewModel::class.java -> OnboardingViewModel(container.onboardingRepository)
                 SplashViewModel::class.java -> SplashViewModel(container.preferenceRepository)
                 WelcomeViewModel::class.java -> WelcomeViewModel(container.preferenceRepository)
+                CheckinsViewModel::class.java -> CheckinsViewModel(container.checkinsRepository)
                 TranscriptionViewModel::class.java -> TranscriptionViewModel(
                     container.transcriptionRepository,
                     SpeechRecognitionManager(application),
