@@ -79,6 +79,7 @@ fun PrimeraTextField(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,
+
     modifier: Modifier = Modifier,
     isPassword: Boolean = false,
     keyboardType: KeyboardType = KeyboardType.Text,
@@ -92,10 +93,11 @@ fun PrimeraTextField(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
+            textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = NunitoSans),
             placeholder = {
                 Text(
                     text = placeholder,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontFamily = NunitoSans),
                     color = TextHint
                 )
             },
@@ -136,7 +138,10 @@ fun PrimeraTextField(
             Text(
                 text = errorMessage,
                 color = ErrorRed,
-                fontSize = 11.sp,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontSize = 11.sp,
+                    fontFamily = NunitoSans
+                ),
                 modifier = Modifier.padding(start = 16.dp, top = 2.dp)
             )
         }
@@ -158,7 +163,7 @@ fun LabeledField(
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelSmall.copy(fontFamily = NunitoSans),
             color = TextSecondary,
             modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
         )

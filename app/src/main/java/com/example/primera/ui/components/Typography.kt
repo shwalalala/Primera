@@ -84,7 +84,7 @@ fun PrimeraLabel(
     text: String,
     modifier: Modifier = Modifier,
     color: Color = TextPrimary,
-    fontFamily: FontFamily = Quicksand,
+    fontFamily: FontFamily = NunitoSans,
     textAlign: TextAlign = TextAlign.Start,
     fontWeight: FontWeight = FontWeight.Medium,
     paddingValues: PaddingValues = PaddingValues(bottom = 20.dp),
@@ -97,7 +97,7 @@ fun PrimeraLabel(
             fontWeight = fontWeight,
             color = color,
             textAlign = textAlign,
-            fontFamily = Quicksand
+            fontFamily = NunitoSans
         )
     )
 }
