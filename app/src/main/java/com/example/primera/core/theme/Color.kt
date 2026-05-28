@@ -7,6 +7,8 @@ val BackgroundCream    = Color(0xFFF5F1FB)
 val SurfaceWhite       = Color(0xFFFFFFFF)
 val ArchFill           = Color(0xFFEDE8F8)
 
+val BackgroundSection  = Color(0x1A9C62C0)
+
 // ── Brand / Primary ──────────────────────────────────────────────────────────
 val PrimeraViolet      = Color(0xFFB8A8D9)  // gradient start
 val PrimeraLilac       = Color(0xFFF1DCDB)  // gradient end
