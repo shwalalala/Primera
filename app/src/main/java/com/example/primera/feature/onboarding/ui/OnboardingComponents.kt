@@ -1,4 +1,4 @@
-package com.example.primera.ui.components
+package com.example.primera.feature.onboarding.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,6 +24,7 @@ import com.example.primera.core.theme.PrimeraViolet
 import com.example.primera.core.theme.SurfaceWhite
 import com.example.primera.core.theme.TextPrimary
 import com.example.primera.core.theme.TextSecondary
+import com.example.primera.ui.components.PrimeraGradientButton
 
 @Composable
 fun OnboardingLayout(

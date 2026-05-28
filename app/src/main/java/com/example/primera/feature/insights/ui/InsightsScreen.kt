@@ -170,7 +170,7 @@ fun InsightsContent(
 
                 // Goals Section
                 DashboardSectionHeader(
-                    title = "Weekly Wellness Goals",
+                    title = "$activePeriod Wellness Goals",
                     onAdd = onAddGoal
                 )
                 

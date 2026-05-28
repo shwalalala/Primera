@@ -16,8 +16,15 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class DashboardViewModel(
-    private val repository: DashboardRepository
+    private val repository: DashboardRepository,
+    private val goalsRepository: com.example.primera.feature.goals.data.GoalsRepository
 ) : ViewModel() {
+
+    init {
+        viewModelScope.launch {
+            goalsRepository.ensureMandatoryGoals()
+        }
+    }
 
     val uiState: StateFlow<DashboardUiState> = repository.observeDashboardData()
         .map { data ->

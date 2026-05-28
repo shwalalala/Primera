@@ -1,10 +1,12 @@
 package com.example.primera.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
@@ -43,10 +46,41 @@ fun CircularPregnancyRing(
     babyEmoji: String,
     modifier: Modifier = Modifier
 ) {
-    val totalWeeks = 40f
-    val completedWeeks = (weekNumber - 1) + (dayNumber / 7f)
-    val progress = (completedWeeks / totalWeeks).coerceIn(0f, 1f)
-    val sweepAngle = progress * 300f
+    InsightCircularProgress(
+        progress = ((weekNumber - 1) + (dayNumber / 7f)) / 40f,
+        centerContent = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(babyEmoji, fontSize = 72.sp)
+
+                Spacer(Modifier.height(8.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = DaysLeftBg
+                ) {
+                    Text(
+                        text = "$daysLeft Days Left",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = PrimeraViolet
+                    )
+                }
+            }
+        },
+        modifier = modifier
+    )
+}
+
+@Composable
+fun InsightCircularProgress(
+    progress: Float,
+    centerContent: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    progressColor: Color = RingProgressColor,
+    trackColor: Color = RingTrackColor
+) {
+    val sweepAngle = (progress.coerceIn(0f, 1f)) * 300f
 
     Column(
         modifier = modifier,
@@ -80,7 +114,7 @@ fun CircularPregnancyRing(
                         val startAngle = 120f
 
                         drawArc(
-                            color = RingTrackColor,
+                            color = trackColor,
                             startAngle = startAngle,
                             sweepAngle = 360f,
                             useCenter = false,
@@ -90,7 +124,7 @@ fun CircularPregnancyRing(
                         )
 
                         drawArc(
-                            color = RingProgressColor,
+                            color = progressColor,
                             startAngle = startAngle,
                             sweepAngle = sweepAngle,
                             useCenter = false,
@@ -100,26 +134,32 @@ fun CircularPregnancyRing(
                         )
                     }
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(babyEmoji, fontSize = 72.sp)
-
-                    Spacer(Modifier.height(8.dp))
-
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = DaysLeftBg
-                    ) {
-                        Text(
-                            text = "$daysLeft Days Left",
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = PrimeraViolet
-                        )
-                    }
-                }
+                centerContent()
             }
         }
+    }
+}
+
+@Composable
+fun GoalProgressBar(
+    progress: Float,
+    modifier: Modifier = Modifier,
+    color: Color = PrimeraViolet
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(8.dp)
+            .clip(RoundedCornerShape(4.dp))
+            .background(color.copy(alpha = 0.1f))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(progress.coerceIn(0f, 1f))
+                .fillMaxHeight()
+                .clip(RoundedCornerShape(4.dp))
+                .background(color)
+        )
     }
 }
 
@@ -127,13 +167,15 @@ fun CircularPregnancyRing(
 @Composable
 private fun ProgressIndicatorsPreview() {
     PrimeraTheme {
-        Box(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             CircularPregnancyRing(
                 weekNumber = 28,
                 dayNumber = 3,
                 daysLeft = 88,
                 babyEmoji = "🥬"
             )
+            
+            GoalProgressBar(progress = 0.6f)
         }
     }
 }

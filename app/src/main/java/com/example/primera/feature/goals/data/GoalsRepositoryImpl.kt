@@ -48,7 +48,7 @@ class GoalsRepositoryImpl : GoalsRepository {
                             accentColorHex = doc.getString("accentColorHex"),
                             timestamp = doc.getTimestamp("timestamp")?.toDate()
                         )
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         null
                     }
                 } ?: emptyList()
@@ -101,7 +101,7 @@ class GoalsRepositoryImpl : GoalsRepository {
 
     override suspend fun ensureMandatoryGoals(): Result<Unit> {
         return try {
-            val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+            auth.currentUser?.uid ?: throw Exception("User not authenticated")
             val goals = observeGoals().first()
             
             val calendar = Calendar.getInstance()
@@ -109,10 +109,24 @@ class GoalsRepositoryImpl : GoalsRepository {
             calendar.set(Calendar.MINUTE, 0)
             calendar.set(Calendar.SECOND, 0)
             calendar.set(Calendar.MILLISECOND, 0)
-            val today = calendar.time
+            val startOfToday = calendar.time
+            
+            calendar.add(Calendar.DAY_OF_YEAR, 1)
+            val endOfToday = calendar.time
 
-            val hasHydration = goals.any { it.title == "Hydration" && it.timestamp?.after(today) == true }
-            val hasMovement = goals.any { it.title == "Movement" && it.timestamp?.after(today) == true }
+            val hasHydration = goals.any { 
+                it.title == "Hydration" && 
+                it.timestamp != null && 
+                it.timestamp.after(startOfToday) && 
+                it.timestamp.before(endOfToday)
+            }
+            
+            val hasMovement = goals.any { 
+                it.title == "Movement" && 
+                it.timestamp != null && 
+                it.timestamp.after(startOfToday) && 
+                it.timestamp.before(endOfToday)
+            }
 
             if (!hasHydration) {
                 addGoal(GoalDto(

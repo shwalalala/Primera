@@ -139,9 +139,9 @@ fun AddGoalDialog(
                                     title = title,
                                     targetValue = target,
                                     unit = unit,
-                                    icon = "",
+                                    icon = "🎯",
                                     category = "Wellness",
-                                    period = "Weekly",
+                                    period = "Daily",
                                     accentColorHex = "#9C62C0",
                                     timestamp = Date()
                                 )
