@@ -50,12 +50,12 @@ fun AppNavGraph(
             when (effect) {
                 is AuthEffect.NavigateToDashboard -> {
                     navController.navigate(Routes.DASHBOARD) {
-                        popUpTo(Routes.DASHBOARD) { inclusive = true }
+                        popUpTo(Routes.AUTH_SCREEN) { inclusive = true }
                     }
                 }
                 is AuthEffect.NavigateToOnboarding -> {
                     navController.navigate(Routes.ONBOARDING) {
-                        popUpTo(Routes.ONBOARDING) { inclusive = true }
+                        popUpTo(Routes.AUTH_SCREEN) { inclusive = true }
                     }
                 }
                 is AuthEffect.NavigateToLogin -> {
@@ -106,9 +106,12 @@ fun AppNavGraph(
 
             composable(Routes.WELCOME) {
                 WelcomeScreen(onGetStarted = {
-                    //temporary for testing
-                    navController.navigate(Routes.AUTH_SCREEN) {
-                        popUpTo(Routes.ONBOARDING) { inclusive = true }
+                    // Temporarily bypass AUTH_SCREEN for testing
+                    // navController.navigate(Routes.AUTH_SCREEN) {
+                    //    popUpTo(Routes.WELCOME) { inclusive = true }
+                    // }
+                    navController.navigate(Routes.ONBOARDING) {
+                        popUpTo(Routes.WELCOME) { inclusive = true }
                     }
                 })
             }
