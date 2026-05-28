@@ -145,7 +145,14 @@ fun AppNavGraph(
             }
 
             composable(Routes.DASHBOARD) {
-                DashboardScreen(onLogout = { authViewModel.logout() })
+                val checkinsViewModel: CheckinsViewModel = viewModel(factory = ViewModelProvider.Factory)
+                DashboardScreen(
+                    onLogout = { authViewModel.logout() },
+                    onLogClick = { log ->
+                        checkinsViewModel.loadCheckinForEdit(log)
+                        navController.navigate(Routes.DAILY_CHECKIN)
+                    }
+                )
             }
 
             composable(Routes.DEVICE) {
@@ -157,15 +164,24 @@ fun AppNavGraph(
             }
 
             composable(Routes.CHECKIN) {
-                val checkinsViewModel: CheckinsViewModel = viewModel(factory = ViewModelProvider.Factory)
+                val parentEntry = remember(it) { navController.getBackStackEntry(Routes.DASHBOARD) }
+                val checkinsViewModel: CheckinsViewModel = viewModel(parentEntry, factory = ViewModelProvider.Factory)
                 CheckinsOverviewScreen(
-                    onNavigateToDailyCheckin = { navController.navigate(Routes.DAILY_CHECKIN) },
+                    onNavigateToDailyCheckin = { 
+                        checkinsViewModel.prepareNewCheckin()
+                        navController.navigate(Routes.DAILY_CHECKIN) 
+                    },
+                    onLogClick = { log ->
+                        checkinsViewModel.loadCheckinForEdit(log)
+                        navController.navigate(Routes.DAILY_CHECKIN)
+                    },
                     viewModel = checkinsViewModel
                 )
             }
 
             composable(Routes.DAILY_CHECKIN) {
-                val checkinsViewModel: CheckinsViewModel = viewModel(factory = ViewModelProvider.Factory)
+                val parentEntry = remember(it) { navController.getBackStackEntry(Routes.DASHBOARD) }
+                val checkinsViewModel: CheckinsViewModel = viewModel(parentEntry, factory = ViewModelProvider.Factory)
                 DailyCheckinScreen(
                     onBack = { navController.popBackStack() },
                     onReview = { navController.navigate(Routes.CHECKIN) },
