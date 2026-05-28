@@ -1,0 +1,264 @@
+package com.example.primera.feature.checkins.ui
+
+import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.primera.core.theme.LogBaby
+import com.example.primera.core.theme.LogNutrition
+import com.example.primera.core.theme.LogOther
+import com.example.primera.core.theme.LogPain
+import com.example.primera.feature.checkins.data.dto.CheckinLogDto
+import com.example.primera.feature.checkins.data.repository.CheckinsRepository
+import com.example.primera.feature.dashboard.ui.DashboardLogUiItem
+import com.example.primera.feature.dashboard.ui.DashboardWeekDayItem
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
+
+class CheckinsViewModel(
+    private val repository: CheckinsRepository
+) : ViewModel() {
+
+    private val _overviewState = MutableStateFlow(CheckinsOverviewUiState())
+    val overviewState: StateFlow<CheckinsOverviewUiState> = _overviewState.asStateFlow()
+
+    private val _dailyState = MutableStateFlow(DailyCheckinUiState())
+    val dailyState: StateFlow<DailyCheckinUiState> = _dailyState.asStateFlow()
+
+    private val defaultSymptoms = listOf(
+        CheckinOption("Aching Head", "🤕", "Symptom"),
+        CheckinOption("Nausea", "🤢", "Symptom"),
+        CheckinOption("Back Pain", "😣", "Symptom"),
+        CheckinOption("Fatigue", "😴", "Symptom")
+    )
+    private val defaultMoods = listOf(
+        CheckinOption("Normal", "😊", "Mood"),
+        CheckinOption("Angry", "😡", "Mood"),
+        CheckinOption("Happy", "😁", "Mood"),
+        CheckinOption("Sad", "😢", "Mood")
+    )
+    private val defaultMedicines = listOf(
+        CheckinOption("Med Pills", "💊", "Medicine"),
+        CheckinOption("Gauze", "🩹", "Medicine"),
+        CheckinOption("Syringe", "💉", "Medicine")
+    )
+
+    init {
+        observeLogs()
+        observeWeight()
+        updateWeekDays()
+        loadOptions()
+    }
+
+    private fun loadOptions() {
+        val customSymptoms = repository.getCustomOptions("Symptom").map { CheckinOption(it, "✨", "Symptom") }
+        val customMoods = repository.getCustomOptions("Mood").map { CheckinOption(it, "✨", "Mood") }
+        val customMedicines = repository.getCustomOptions("Medicine").map { CheckinOption(it, "✨", "Medicine") }
+
+        _dailyState.update { 
+            it.copy(
+                availableSymptoms = customSymptoms + defaultSymptoms,
+                availableMoods = customMoods + defaultMoods,
+                availableMedicines = customMedicines + defaultMedicines
+            )
+        }
+    }
+
+    private fun observeLogs() {
+        repository.observeLogs()
+            .onEach { logs ->
+                _overviewState.update { it.copy(logs = mapLogs(logs), isLoading = false) }
+            }
+            .catch { e ->
+                _overviewState.update { it.copy(errorMessage = e.message, isLoading = false) }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    private fun observeWeight() {
+        repository.observeUserWeight()
+            .onEach { userDto ->
+                if (userDto != null) {
+                    val lastUpdate = userDto.weightUpdatedAt
+                    val shouldAlert = if (lastUpdate != null) {
+                        val diff = Date().time - lastUpdate.time
+                        diff > 14L * 24 * 60 * 60 * 1000
+                    } else true
+
+                    _dailyState.update { 
+                        it.copy(
+                            weightKg = userDto.weightKg?.toString() ?: "",
+                            lastWeightUpdateDate = lastUpdate?.let { date -> 
+                                SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(date)
+                            },
+                            shouldShowWeightUpdateAlert = shouldAlert
+                        )
+                    }
+                }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    private fun mapLogs(logs: List<CheckinLogDto>): List<DashboardLogUiItem> {
+        val sdf = SimpleDateFormat("h:mm a", Locale.getDefault())
+        val daySdf = SimpleDateFormat("MMM d", Locale.getDefault())
+        val today = Calendar.getInstance().apply { 
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.time
+
+        return logs.map { log ->
+            val timestamp = log.timestamp ?: Date()
+            val timeText = if (timestamp.after(today)) {
+                sdf.format(timestamp)
+            } else if (timestamp.time > today.time - 24 * 60 * 60 * 1000) {
+                "Yesterday"
+            } else {
+                daySdf.format(timestamp)
+            }
+
+            DashboardLogUiItem(
+                category = log.category ?: "Other",
+                description = log.description ?: "",
+                time = timeText,
+                accentColor = getCategoryColor(log.category ?: "")
+            )
+        }
+    }
+
+    private fun getCategoryColor(category: String): Color {
+        return when (category.lowercase()) {
+            "back pain", "pain", "nausea", "symptom" -> LogPain
+            "nutrition", "food" -> LogNutrition
+            "fetal movement", "baby" -> LogBaby
+            else -> LogOther
+        }
+    }
+
+    private fun updateWeekDays() {
+        val calendar = Calendar.getInstance()
+        val today = calendar.get(Calendar.DAY_OF_YEAR)
+        calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek)
+        
+        val days = mutableListOf<DashboardWeekDayItem>()
+        val dayInitials = listOf("S", "M", "T", "W", "T", "F", "S")
+        
+        for (i in 0..6) {
+            days.add(
+                DashboardWeekDayItem(
+                    initial = dayInitials[i],
+                    date = calendar.get(Calendar.DAY_OF_MONTH),
+                    isSelected = calendar.get(Calendar.DAY_OF_YEAR) == today
+                )
+            )
+            calendar.add(Calendar.DAY_OF_MONTH, 1)
+        }
+        _dailyState.update { it.copy(weekDays = days) }
+    }
+
+    fun onSearchQueryChange(query: String) {
+        _overviewState.update { it.copy(searchQuery = query) }
+    }
+
+    fun onSymptomToggle(symptom: String) {
+        _dailyState.update { state ->
+            val newSet = if (state.selectedSymptoms.contains(symptom)) {
+                state.selectedSymptoms - symptom
+            } else {
+                state.selectedSymptoms + symptom
+            }
+            state.copy(selectedSymptoms = newSet)
+        }
+    }
+
+    fun onMoodToggle(mood: String) {
+        _dailyState.update { state ->
+            val newSet = if (state.selectedMoods.contains(mood)) {
+                state.selectedMoods - mood
+            } else {
+                state.selectedMoods + mood
+            }
+            state.copy(selectedMoods = newSet)
+        }
+    }
+
+    fun onMedicineToggle(medicine: String) {
+        _dailyState.update { state ->
+            val newSet = if (state.selectedMedicines.contains(medicine)) {
+                state.selectedMedicines - medicine
+            } else {
+                state.selectedMedicines + medicine
+            }
+            state.copy(selectedMedicines = newSet)
+        }
+    }
+
+    fun onNoteChange(note: String) {
+        _dailyState.update { it.copy(note = note) }
+    }
+
+    fun onWeightChange(weight: String) {
+        _dailyState.update { it.copy(weightKg = weight) }
+    }
+
+    fun onAddCustomOption(category: String, label: String) {
+        if (label.isBlank()) return
+        repository.addCustomOption(category, label)
+        loadOptions()
+        // Auto-select the newly added option
+        when (category.lowercase()) {
+            "symptom" -> onSymptomToggle(label)
+            "mood" -> onMoodToggle(label)
+            "medicine" -> onMedicineToggle(label)
+        }
+    }
+
+    fun onSaveCheckin() {
+        viewModelScope.launch {
+            _dailyState.update { it.copy(isSaving = true) }
+            try {
+                // Save Weight
+                val weight = _dailyState.value.weightKg.toIntOrNull()
+                if (weight != null) {
+                    repository.updateUserWeight(weight)
+                }
+
+                val state = _dailyState.value
+                val descriptionParts = mutableListOf<String>()
+
+                if (state.selectedSymptoms.isNotEmpty()) {
+                    descriptionParts.add("Symptoms: ${state.selectedSymptoms.joinToString(", ")}")
+                }
+                if (state.selectedMoods.isNotEmpty()) {
+                    descriptionParts.add("Mood: ${state.selectedMoods.joinToString(", ")}")
+                }
+                if (state.selectedMedicines.isNotEmpty()) {
+                    descriptionParts.add("Medicine: ${state.selectedMedicines.joinToString(", ")}")
+                }
+                if (state.note.isNotBlank()) {
+                    descriptionParts.add(state.note)
+                }
+
+                if (descriptionParts.isNotEmpty()) {
+                    repository.saveLog(CheckinLogDto(
+                        type = "Check-in",
+                        category = "Fetal Movement",
+                        description = descriptionParts.joinToString("; "),
+                        timestamp = Date()
+                    ))
+                }
+
+                _dailyState.update { it.copy(isSaving = false, success = true) }
+            } catch (e: Exception) {
+                _dailyState.update { it.copy(isSaving = false, errorMessage = e.message) }
+            }
+        }
+    }
+
+    fun resetSuccess() {
+        _dailyState.update { it.copy(success = false) }
+    }
+}
