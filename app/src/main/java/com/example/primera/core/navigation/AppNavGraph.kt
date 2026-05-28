@@ -103,10 +103,14 @@ fun AppNavGraph(
             composable(Routes.SPLASH) {
                 SplashScreen(
                     onTimeout = { 
-                        // Handled by AuthEffect or local logic if session is missing
+                        navController.navigate(Routes.WELCOME) {
+                            popUpTo(Routes.SPLASH) { inclusive = true }
+                        }
                     },
                     onNavigateToAuth = {
-                        // Handled by AuthEffect
+                        navController.navigate(Routes.AUTH_SCREEN) {
+                            popUpTo(Routes.SPLASH) { inclusive = true }
+                        }
                     }
                 )
             }

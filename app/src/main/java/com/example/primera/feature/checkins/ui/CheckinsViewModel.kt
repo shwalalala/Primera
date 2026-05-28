@@ -164,6 +164,10 @@ class CheckinsViewModel(
         _overviewState.update { it.copy(searchQuery = query) }
     }
 
+    fun onFilterChange(filter: String) {
+        _overviewState.update { it.copy(selectedFilter = filter) }
+    }
+
     fun onSymptomToggle(symptom: String) {
         _dailyState.update { state ->
             val newSet = if (state.selectedSymptoms.contains(symptom)) {

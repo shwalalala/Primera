@@ -7,6 +7,7 @@ import com.example.primera.feature.dashboard.ui.DashboardWeekDayItem
 data class CheckinsOverviewUiState(
     val isLoading: Boolean = false,
     val searchQuery: String = "",
+    val selectedFilter: String = "All",
     val logs: List<DashboardLogUiItem> = emptyList(),
     val errorMessage: String? = null
 )
