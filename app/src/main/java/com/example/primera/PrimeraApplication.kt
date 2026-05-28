@@ -9,6 +9,6 @@ class PrimeraApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        container = AppContainerImpl()
+        container = AppContainerImpl(this)
     }
 }

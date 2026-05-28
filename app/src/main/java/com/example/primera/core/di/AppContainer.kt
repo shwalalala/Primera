@@ -1,5 +1,8 @@
 package com.example.primera.core.di
 
+import android.content.Context
+import com.example.primera.core.data.repository.PreferenceRepository
+import com.example.primera.core.data.repository.PreferenceRepositoryImpl
 import com.example.primera.feature.auth.data.datasource.AuthDataSource
 import com.example.primera.feature.auth.data.repository.AuthRepository
 import com.example.primera.feature.auth.data.repository.AuthRepositoryImpl
@@ -19,9 +22,10 @@ interface AppContainer {
     val dashboardRepository: DashboardRepository
     val onboardingRepository: OnboardingRepository
     val transcriptionRepository: TranscriptionRepository
+    val preferenceRepository: PreferenceRepository
 }
 
-class AppContainerImpl : AppContainer {
+class AppContainerImpl(private val context: Context) : AppContainer {
     
     // Auth dependencies
     private val authDataSource: AuthDataSource by lazy {
@@ -52,5 +56,9 @@ class AppContainerImpl : AppContainer {
 
     override val transcriptionRepository: TranscriptionRepository by lazy {
         TranscriptionRepositoryImpl(transcriptionDataSource)
+    }
+
+    override val preferenceRepository: PreferenceRepository by lazy {
+        PreferenceRepositoryImpl(context)
     }
 }
