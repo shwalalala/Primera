@@ -33,6 +33,7 @@ data class DashboardUiModel(
 )
 
 data class DashboardLogUiItem(
+    val id: String? = null,
     val category: String,
     val description: String,
     val time: String,

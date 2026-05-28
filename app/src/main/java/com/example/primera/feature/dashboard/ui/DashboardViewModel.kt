@@ -66,6 +66,7 @@ class DashboardViewModel(
                     }
 
                     DashboardLogUiItem(
+                        id = log.id,
                         category = log.category,
                         description = log.description,
                         time = timeText,

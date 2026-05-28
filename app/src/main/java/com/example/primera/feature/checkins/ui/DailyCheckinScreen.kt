@@ -94,7 +94,10 @@ fun DailyCheckinContent(
                 .padding(bottom = 32.dp)
         ) {
             Spacer(Modifier.statusBarsPadding())
-            DailyCheckinTopBar(onBack)
+            DailyCheckinTopBar(
+                onBack = onBack,
+                isEditing = state.editingId != null
+            )
             
             WeekCalendarRow(state.weekDays)
             
@@ -147,7 +150,7 @@ fun DailyCheckinContent(
             Spacer(Modifier.height(32.dp))
             
             PrimeraGradientButton(
-                text = "Submit Check-in",
+                text = if (state.editingId != null) "Update Check-in" else "Submit Check-in",
                 onClick = onSubmit,
                 isLoading = state.isSaving,
                 modifier = Modifier.padding(horizontal = 24.dp)
@@ -166,7 +169,10 @@ fun DailyCheckinContent(
 }
 
 @Composable
-private fun DailyCheckinTopBar(onBack: () -> Unit) {
+private fun DailyCheckinTopBar(
+    onBack: () -> Unit,
+    isEditing: Boolean
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -189,7 +195,7 @@ private fun DailyCheckinTopBar(onBack: () -> Unit) {
         }
         
         Text(
-            text = "Daily Check-In",
+            text = if (isEditing) "Edit Check-In" else "Daily Check-In",
             style = MaterialTheme.typography.displayMedium,
             color = TextPrimary,
             modifier = Modifier.weight(1f),
@@ -402,6 +408,7 @@ private fun DailyCheckinPreview() {
     PrimeraTheme {
         DailyCheckinContent(
             state = DailyCheckinUiState(
+                editingId = null,
                 weekDays = listOf(
                     DashboardWeekDayItem("S", 22, false),
                     DashboardWeekDayItem("M", 23, true),
