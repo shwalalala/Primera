@@ -97,22 +97,28 @@ fun AppNavGraph(
             )
         ) {
             composable(Routes.SPLASH) {
-                SplashScreen(onTimeout = {
-                    navController.navigate(Routes.WELCOME) {
-                        popUpTo(Routes.SPLASH) { inclusive = true }
+                SplashScreen(
+                    onTimeout = {
+                        navController.navigate(Routes.WELCOME) {
+                            popUpTo(Routes.SPLASH) { inclusive = true }
+                        }
+                    },
+                    onNavigateToAuth = {
+                        navController.navigate(Routes.AUTH_SCREEN) {
+                            popUpTo(Routes.SPLASH) { inclusive = true }
+                        }
                     }
-                })
+                )
             }
 
             composable(Routes.WELCOME) {
-                WelcomeScreen(onGetStarted = {
-                     navController.navigate(Routes.AUTH_SCREEN) {
-                        popUpTo(Routes.WELCOME) { inclusive = true }
-                     }
-//                    navController.navigate(Routes.ONBOARDING) {
-//                        popUpTo(Routes.WELCOME) { inclusive = true }
-//                    }
-                })
+                WelcomeScreen(
+                    onNavigateToAuth = {
+                        navController.navigate(Routes.AUTH_SCREEN) {
+                            popUpTo(Routes.WELCOME) { inclusive = true }
+                        }
+                    }
+                )
             }
 
             composable(Routes.AUTH_SCREEN) {

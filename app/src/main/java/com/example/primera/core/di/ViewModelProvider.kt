@@ -24,8 +24,8 @@ object ViewModelProvider {
                 AuthViewModel::class.java -> AuthViewModel(container.authRepository)
                 DashboardViewModel::class.java -> DashboardViewModel(container.dashboardRepository)
                 OnboardingViewModel::class.java -> OnboardingViewModel(container.onboardingRepository)
-                SplashViewModel::class.java -> SplashViewModel()
-                WelcomeViewModel::class.java -> WelcomeViewModel()
+                SplashViewModel::class.java -> SplashViewModel(container.preferenceRepository)
+                WelcomeViewModel::class.java -> WelcomeViewModel(container.preferenceRepository)
                 TranscriptionViewModel::class.java -> TranscriptionViewModel(
                     container.transcriptionRepository,
                     SpeechRecognitionManager(application),
