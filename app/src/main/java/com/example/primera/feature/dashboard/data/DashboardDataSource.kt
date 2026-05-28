@@ -38,6 +38,7 @@ class DashboardDataSource {
                             heartRateBpm = snapshot.getLong("heartRateBpm") ?: 0L,
                             sleepHours = snapshot.getLong("sleepHours") ?: 0L,
                             sleepMinutes = snapshot.getLong("sleepMinutes") ?: 0L,
+                            heightCm = snapshot.getLong("heightCm")
                         )
                     } catch (_: Exception) {
                         null
