@@ -3,9 +3,9 @@ package com.example.primera.feature.dashboard.ui
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.primera.core.utils.DashboardBusinessLogic
-import com.example.primera.feature.dashboard.data.repository.DashboardRepository
-import com.example.primera.feature.dashboard.domain.model.DashboardData
+import com.example.primera.feature.dashboard.data.DashboardRepository
+import com.example.primera.feature.dashboard.domain.DashboardBusinessLogic
+import com.example.primera.feature.dashboard.domain.DashboardData
 import com.example.primera.core.theme.LogBaby
 import com.example.primera.core.theme.LogNutrition
 import com.example.primera.core.theme.LogOther

@@ -26,11 +26,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.primera.core.theme.*
-import com.example.primera.feature.checkins.ui.components.CheckinItemChip
+import com.example.primera.feature.checkins.ui.CheckinItemChip
 import com.example.primera.feature.dashboard.ui.DashboardWeekDayItem
-import com.example.primera.ui.components.DayChip
-import com.example.primera.ui.components.PrimeraGradientButton
-import com.example.primera.ui.components.WeekCalendarRow
+import com.example.primera.feature.dashboard.ui.WeekCalendarRow
+import com.example.primera.ui.components.*
 
 @Composable
 fun DailyCheckinScreen(

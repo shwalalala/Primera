@@ -4,9 +4,8 @@ import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.primera.feature.transcription.data.SpeechRecognitionManager
-import com.example.primera.feature.transcription.data.repository.TranscriptionRepository
-import com.example.primera.feature.transcription.domain.model.TranscriptionModel
-import com.google.firebase.auth.FirebaseAuth
+import com.example.primera.feature.transcription.data.TranscriptionRepository
+import com.example.primera.feature.transcription.domain.TranscriptionModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,8 +13,7 @@ import kotlinx.coroutines.launch
 
 class TranscriptionViewModel(
     private val repository: TranscriptionRepository,
-    private val speechManager: SpeechRecognitionManager,
-    private val auth: FirebaseAuth
+    private val speechManager: SpeechRecognitionManager
 ) : ViewModel(), SpeechRecognitionManager.SpeechRecognitionCallback {
 
     private val _uiState = MutableStateFlow<TranscriptionUiState>(TranscriptionUiState.Idle)
@@ -51,7 +49,7 @@ class TranscriptionViewModel(
                     languageCode = "en-US", // Default or detect
                     deviceModel = Build.MODEL,
                     appVersion = "1.0", // Hardcoded as per build.gradle for now
-                    userId = auth.currentUser?.uid ?: "",
+                    userId = "", // Handled by data layer
                     timestamp = System.currentTimeMillis()
                 )
 

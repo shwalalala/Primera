@@ -1,7 +1,7 @@
 package com.example.primera.feature.dashboard.ui
 
 import androidx.compose.ui.graphics.Color
-import com.example.primera.feature.dashboard.domain.model.DashboardData
+import com.example.primera.feature.dashboard.domain.DashboardData
 import java.util.*
 
 sealed class DashboardUiState {

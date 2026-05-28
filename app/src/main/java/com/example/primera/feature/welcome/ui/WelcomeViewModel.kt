@@ -2,7 +2,7 @@ package com.example.primera.feature.welcome.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.primera.core.data.repository.PreferenceRepository
+import com.example.primera.core.data.PreferenceRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
