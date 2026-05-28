@@ -34,6 +34,8 @@ class DashboardViewModel(
 
     private fun mapToUiModel(data: DashboardData): DashboardUiModel {
         val week = DashboardBusinessLogic.getWeekNumber(data.dueDate)
+        val isWatchSynced = data.steps > 0 || data.heartRateBpm > 0 || data.sleepHours > 0 || data.sleepMinutes > 0
+        
         return DashboardUiModel(
             userName = data.userName,
             timeOfDay = DashboardBusinessLogic.getTimeOfDay(),
@@ -42,14 +44,16 @@ class DashboardViewModel(
             dayNumber = DashboardBusinessLogic.getDayNumber(data.dueDate),
             daysLeft = DashboardBusinessLogic.getDaysLeft(data.dueDate),
             babySize = DashboardBusinessLogic.getBabySize(week),
+            babyEmoji = DashboardBusinessLogic.getBabyEmoji(week),
             heartRateBpm = data.heartRateBpm,
-            heartRateTrendingUp = true, // Placeholder logic
-            heartRateVsLastWeek = 5,    // Placeholder logic
+            heartRateTrendingUp = true, 
+            heartRateVsLastWeek = 5,    
             steps = data.steps,
             stepsGoal = data.stepsGoal,
             sleepHours = data.sleepHours,
             sleepMinutes = data.sleepMinutes,
             sleepQuality = DashboardBusinessLogic.getSleepQuality(data.sleepHours, data.sleepMinutes),
+            isWatchSynced = isWatchSynced,
             recentLogs = data.recentLogs.map { log ->
                 DashboardLogUiItem(
                     category = log.category,
@@ -58,7 +62,7 @@ class DashboardViewModel(
                     accentColor = getCategoryColor(log.category)
                 )
             },
-            weekDays = getDefaultWeekDays()
+            weekDays = getCurrentWeekDays()
         )
     }
 
@@ -71,15 +75,28 @@ class DashboardViewModel(
         }
     }
 
-    private fun getDefaultWeekDays() = listOf(
-        DashboardWeekDayItem("S", 22, false),
-        DashboardWeekDayItem("M", 23, true),
-        DashboardWeekDayItem("T", 24, false),
-        DashboardWeekDayItem("W", 25, false),
-        DashboardWeekDayItem("T", 26, false),
-        DashboardWeekDayItem("F", 27, false),
-        DashboardWeekDayItem("S", 28, false)
-    )
+    private fun getCurrentWeekDays(): List<DashboardWeekDayItem> {
+        val calendar = Calendar.getInstance()
+        val today = calendar.get(Calendar.DAY_OF_YEAR)
+        
+        // Set to the first day of the week (Sunday)
+        calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek)
+        
+        val days = mutableListOf<DashboardWeekDayItem>()
+        val dayInitials = listOf("S", "M", "T", "W", "T", "F", "S")
+        
+        for (i in 0..6) {
+            days.add(
+                DashboardWeekDayItem(
+                    initial = dayInitials[i],
+                    date = calendar.get(Calendar.DAY_OF_MONTH),
+                    isSelected = calendar.get(Calendar.DAY_OF_YEAR) == today
+                )
+            )
+            calendar.add(Calendar.DAY_OF_MONTH, 1)
+        }
+        return days
+    }
 
     fun onViewAllLogs() {}
     fun onAddLog() {}

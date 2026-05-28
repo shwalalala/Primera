@@ -18,6 +18,7 @@ data class DashboardUiModel(
     val dayNumber: Int,
     val daysLeft: Int,
     val babySize: String,
+    val babyEmoji: String,
     val heartRateBpm: Int,
     val heartRateTrendingUp: Boolean,
     val heartRateVsLastWeek: Int,
@@ -26,6 +27,7 @@ data class DashboardUiModel(
     val sleepHours: Int,
     val sleepMinutes: Int,
     val sleepQuality: String,
+    val isWatchSynced: Boolean,
     val recentLogs: List<DashboardLogUiItem>,
     val weekDays: List<DashboardWeekDayItem>
 )

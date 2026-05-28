@@ -30,13 +30,13 @@ class DashboardDataSource {
                 if (snapshot != null && snapshot.exists()) {
                     try {
                         val fullName = snapshot.getString("fullName")
-                        val dueDateTimestamp = snapshot.getTimestamp("dueDate")
+                        val dueDateTimestamp = snapshot.getTimestamp("eddDate") ?: snapshot.getTimestamp("dueDate")
                         val dueDate = dueDateTimestamp?.toDate()
-                        val steps = snapshot.getLong("steps")
-                        val stepsGoal = snapshot.getLong("stepsGoal")
-                        val heartRateBpm = snapshot.getLong("heartRateBpm")
-                        val sleepHours = snapshot.getLong("sleepHours")
-                        val sleepMinutes = snapshot.getLong("sleepMinutes")
+                        val steps = snapshot.getLong("steps") ?: 0L
+                        val stepsGoal = snapshot.getLong("stepsGoal") ?: 8000L
+                        val heartRateBpm = snapshot.getLong("heartRateBpm") ?: 0L
+                        val sleepHours = snapshot.getLong("sleepHours") ?: 0L
+                        val sleepMinutes = snapshot.getLong("sleepMinutes") ?: 0L
                         
                         val userDto = UserDto(
                             fullName = fullName,
