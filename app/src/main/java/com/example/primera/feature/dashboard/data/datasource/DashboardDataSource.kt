@@ -66,7 +66,7 @@ class DashboardDataSource {
             return@callbackFlow
         }
 
-        val listener = firestore.collection("activity_logs")
+        val listener = firestore.collection("checkins")
             .whereEqualTo("userId", userId)
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .limit(5)
@@ -83,6 +83,7 @@ class DashboardDataSource {
                         val description = doc.getString("description")
                         val timestamp = doc.getTimestamp("timestamp")?.toDate()
                         HealthLogDto(
+                            id = doc.id,
                             type = type,
                             category = category,
                             message = message,

@@ -54,12 +54,12 @@ fun AppNavGraph(
             when (effect) {
                 is AuthEffect.NavigateToDashboard -> {
                     navController.navigate(Routes.DASHBOARD) {
-                        popUpTo(Routes.AUTH_SCREEN) { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
                 }
                 is AuthEffect.NavigateToOnboarding -> {
                     navController.navigate(Routes.ONBOARDING) {
-                        popUpTo(Routes.AUTH_SCREEN) { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
                 }
                 is AuthEffect.NavigateToLogin -> {
@@ -102,15 +102,11 @@ fun AppNavGraph(
         ) {
             composable(Routes.SPLASH) {
                 SplashScreen(
-                    onTimeout = {
-                        navController.navigate(Routes.WELCOME) {
-                            popUpTo(Routes.SPLASH) { inclusive = true }
-                        }
+                    onTimeout = { 
+                        // Handled by AuthEffect or local logic if session is missing
                     },
                     onNavigateToAuth = {
-                        navController.navigate(Routes.AUTH_SCREEN) {
-                            popUpTo(Routes.SPLASH) { inclusive = true }
-                        }
+                        // Handled by AuthEffect
                     }
                 )
             }
@@ -150,6 +146,18 @@ fun AppNavGraph(
                     onLogout = { authViewModel.logout() },
                     onLogClick = { log ->
                         checkinsViewModel.loadCheckinForEdit(log)
+                        navController.navigate(Routes.DAILY_CHECKIN)
+                    },
+                    onViewAllLogs = {
+                        navController.navigate(Routes.CHECKIN)
+                    },
+                    onAddLog = {
+                        checkinsViewModel.prepareNewCheckin()
+                        navController.navigate(Routes.DAILY_CHECKIN)
+                    },
+                    onInputManually = {
+                        // Assuming this also leads to daily checkin or a specific manual input screen
+                        checkinsViewModel.prepareNewCheckin()
                         navController.navigate(Routes.DAILY_CHECKIN)
                     }
                 )

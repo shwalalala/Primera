@@ -23,6 +23,9 @@ fun DashboardScreen(
     modifier: Modifier = Modifier,
     onLogout: () -> Unit,
     onLogClick: (DashboardLogUiItem) -> Unit,
+    onViewAllLogs: () -> Unit,
+    onAddLog: () -> Unit,
+    onInputManually: () -> Unit,
     viewModel: DashboardViewModel = viewModel(factory = ViewModelProvider.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -47,9 +50,9 @@ fun DashboardScreen(
                     DashboardTopBar(state.data.userName, onLogout)
                     DashboardContent(
                         state = state.data,
-                        onViewAllLogs = viewModel::onViewAllLogs,
-                        onAddLog = viewModel::onAddLog,
-                        onInputManually = viewModel::onInputManually,
+                        onViewAllLogs = onViewAllLogs,
+                        onAddLog = onAddLog,
+                        onInputManually = onInputManually,
                         onLogClick = onLogClick,
                         onSyncWatch = { /* Trigger watch sync logic */ }
                     )

@@ -29,8 +29,8 @@ class DashboardRepositoryImpl(
                 recentLogs = logsDtoList.map { dto ->
                     DashboardHealthLog(
                         id = dto.id,
-                        category = dto.type ?: dto.category ?: "Other",
-                        description = dto.message ?: dto.description ?: "",
+                        category = dto.category ?: dto.type ?: "Check-in",
+                        description = dto.description ?: dto.message ?: "",
                         timestamp = dto.timestamp ?: Date()
                     )
                 }

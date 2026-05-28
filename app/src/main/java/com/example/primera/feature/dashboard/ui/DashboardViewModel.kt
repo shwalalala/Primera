@@ -20,17 +20,53 @@ class DashboardViewModel(
 
     val uiState: StateFlow<DashboardUiState> = repository.observeDashboardData()
         .map { data ->
-            if (data == null) DashboardUiState.Error("User not found")
-            else DashboardUiState.Success(mapToUiModel(data))
+            if (data == null) {
+                DashboardUiState.Success(createDefaultUiModel())
+            } else {
+                DashboardUiState.Success(mapToUiModel(data))
+            } as DashboardUiState
+        }
+        .onStart { 
+            // Optional: emit Loading explicitly if needed
         }
         .catch { e ->
-            emit(DashboardUiState.Error(e.message ?: "An unexpected error occurred"))
+            // If the index is still building, we might get an error. 
+            // We can choose to show an empty state or the error.
+            if (e.message?.contains("index") == true) {
+                emit(DashboardUiState.Success(createDefaultUiModel()))
+            } else {
+                emit(DashboardUiState.Error(e.message ?: "An unexpected error occurred"))
+            }
         }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = DashboardUiState.Loading
         )
+
+    private fun createDefaultUiModel(): DashboardUiModel {
+        return DashboardUiModel(
+            userName = "Guest",
+            timeOfDay = DashboardBusinessLogic.getTimeOfDay(),
+            trimester = "Unknown",
+            weekNumber = 1,
+            dayNumber = 0,
+            daysLeft = 0,
+            babySize = "Unknown",
+            babyEmoji = "👶",
+            heartRateBpm = 0,
+            heartRateTrendingUp = false,
+            heartRateVsLastWeek = 0,
+            steps = 0,
+            stepsGoal = 8000,
+            sleepHours = 0,
+            sleepMinutes = 0,
+            sleepQuality = "Unknown",
+            isWatchSynced = false,
+            recentLogs = emptyList(),
+            weekDays = getCurrentWeekDays()
+        )
+    }
 
     private fun mapToUiModel(data: DashboardData): DashboardUiModel {
         val week = DashboardBusinessLogic.getWeekNumber(data.dueDate)
