@@ -1,9 +1,14 @@
 package com.example.primera.feature.onboarding.ui
 
+import com.example.primera.feature.onboarding.domain.model.PregnancyHistory
 import java.util.Date
 
+enum class OnboardingStep {
+    BIRTHDAY, WEIGHT, HEIGHT, LMP, EDD, FIRST_PREGNANCY, PREGNANCY_HISTORY, PREPARING
+}
+
 data class OnboardingState(
-    val currentStep: OnboardingStep = OnboardingStep.NAME,
+    val currentStep: OnboardingStep = OnboardingStep.BIRTHDAY,
     val firstName: String = "",
     val lastName: String = "",
     val middleName: String = "",
@@ -15,25 +20,30 @@ data class OnboardingState(
     val isFirstPregnancy: Boolean? = null,
     
     // Pregnancy History (if not first)
-    val pregnancyNumber: Int = 1,
-    val historyDeliveryDate: Date? = null,
-    val deliveryType: String = "", // Vaginal, C-section
-    val birthOutcome: String = "", // Miscarriage, Alive, Stillborn
-    val childrenDelivered: String = "", // Single, Twins, Multiple
-    val complications: List<String> = emptyList(),
+    val selectedPregnancyIndex: Int = 0,
+    val pregnancyHistories: List<PregnancyHistory> = listOf(PregnancyHistory(pregnancyNumber = 1)),
+    val showConfirmationDialog: Boolean = false,
     
     val preparationProgress: Float = 0f,
     val isCompleted: Boolean = false
-)
+) {
+    val currentPregnancy: PregnancyHistory
+        get() = pregnancyHistories.getOrElse(selectedPregnancyIndex) { PregnancyHistory(pregnancyNumber = selectedPregnancyIndex + 1) }
 
-enum class OnboardingStep {
-    NAME,
-    BIRTHDAY,
-    WEIGHT,
-    HEIGHT,
-    LMP,
-    EDD,
-    FIRST_PREGNANCY,
-    PREGNANCY_HISTORY,
-    PREPARING
+    fun isPregnancyComplete(index: Int): Boolean {
+        val history = pregnancyHistories.getOrNull(index) ?: return false
+        return history.deliveryDate != null && 
+               history.deliveryType.isNotBlank() && 
+               history.childrenDelivered.isNotBlank()
+    }
+
+    fun canProceedToStep(step: OnboardingStep): Boolean {
+        return when (step) {
+            OnboardingStep.PREPARING -> {
+                if (isFirstPregnancy == true) true
+                else pregnancyHistories.all { isPregnancyComplete(pregnancyHistories.indexOf(it)) }
+            }
+            else -> true
+        }
+    }
 }
