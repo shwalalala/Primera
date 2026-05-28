@@ -37,4 +37,17 @@ class DashboardRepositoryImpl(
             )
         }
     }
+
+    override suspend fun updateStepsGoal(goal: Long): Result<Unit> {
+        return dataSource.updateStepsGoal(goal)
+    }
+
+    override suspend fun updateHealthData(
+        steps: Long,
+        heartRate: Long,
+        sleepHours: Long,
+        sleepMinutes: Long
+    ): Result<Unit> {
+        return dataSource.updateHealthData(steps, heartRate, sleepHours, sleepMinutes)
+    }
 }
