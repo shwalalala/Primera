@@ -106,13 +106,12 @@ fun AppNavGraph(
 
             composable(Routes.WELCOME) {
                 WelcomeScreen(onGetStarted = {
-                    // Temporarily bypass AUTH_SCREEN for testing
-                    // navController.navigate(Routes.AUTH_SCREEN) {
-                    //    popUpTo(Routes.WELCOME) { inclusive = true }
-                    // }
-                    navController.navigate(Routes.ONBOARDING) {
+                     navController.navigate(Routes.AUTH_SCREEN) {
                         popUpTo(Routes.WELCOME) { inclusive = true }
-                    }
+                     }
+//                    navController.navigate(Routes.ONBOARDING) {
+//                        popUpTo(Routes.WELCOME) { inclusive = true }
+//                    }
                 })
             }
 
