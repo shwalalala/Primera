@@ -2,6 +2,9 @@ package com.example.primera.feature.transcription.domain
 
 data class TranscriptionModel(
     val transcribedText: String,
+    val detectedSymptoms: List<String>,
+    val hasWarning: Boolean,
+    val warningMessage: String?,
     val audioDuration: Long,
     val confidenceScore: Float,
     val languageCode: String,
@@ -10,6 +13,6 @@ data class TranscriptionModel(
     val userId: String,
     val timestamp: Long
 ) {
-    val confidencePercent: String 
+    val confidencePercent: String
         get() = "${(confidenceScore * 100).toInt()}%"
 }

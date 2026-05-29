@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.primera.feature.transcription.data.SpeechRecognitionManager
 import com.example.primera.feature.transcription.data.TranscriptionRepository
+import com.example.primera.feature.transcription.domain.SymptomExtractor
 import com.example.primera.feature.transcription.domain.TranscriptionModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,18 +39,24 @@ class TranscriptionViewModel(
 
     fun saveTranscription() {
         val currentState = _uiState.value
+
         if (currentState is TranscriptionUiState.Success) {
             viewModelScope.launch {
                 _uiState.value = TranscriptionUiState.Uploading
-                
+
+                val detectedSymptoms = SymptomExtractor.extract(_transcribedText.value)
+
                 val model = TranscriptionModel(
                     transcribedText = _transcribedText.value,
+                    detectedSymptoms = detectedSymptoms,
+                    hasWarning = false,
+                    warningMessage = null,
                     audioDuration = currentState.durationMs,
                     confidenceScore = currentState.confidence,
-                    languageCode = "en-US", // Default or detect
+                    languageCode = "en-US",
                     deviceModel = Build.MODEL,
-                    appVersion = "1.0", // Hardcoded as per build.gradle for now
-                    userId = "", // Handled by data layer
+                    appVersion = "1.0",
+                    userId = "",
                     timestamp = System.currentTimeMillis()
                 )
 
@@ -72,7 +79,6 @@ class TranscriptionViewModel(
         _uiState.value = TranscriptionUiState.Idle
     }
 
-    // SpeechRecognitionCallback implementation
     override fun onListeningStarted() {
         _uiState.value = TranscriptionUiState.Listening
     }
@@ -95,6 +101,7 @@ class TranscriptionViewModel(
             9 -> "Insufficient permissions."
             else -> "Speech recognition error: $errorCode"
         }
+
         _uiState.value = TranscriptionUiState.Error(
             message = errorMessage,
             isRetryable = true

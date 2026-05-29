@@ -1,11 +1,20 @@
 package com.example.primera.core.navigation
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -17,23 +26,31 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.primera.PrimeraApplication
 import com.example.primera.core.di.ViewModelProvider
-import com.example.primera.feature.auth.ui.*
+import com.example.primera.core.theme.BackgroundCream
+import com.example.primera.core.theme.PrimeraLilac
+import com.example.primera.core.theme.TextPrimary
+import com.example.primera.core.theme.TextSecondary
+import com.example.primera.feature.auth.ui.AuthEffect
+import com.example.primera.feature.auth.ui.AuthTab
+import com.example.primera.feature.auth.ui.AuthUiState
+import com.example.primera.feature.auth.ui.AuthViewModel
+import com.example.primera.feature.auth.ui.LoginScreen
+import com.example.primera.feature.auth.ui.RegisterScreen
 import com.example.primera.feature.checkins.ui.CheckinsOverviewScreen
 import com.example.primera.feature.checkins.ui.CheckinsViewModel
 import com.example.primera.feature.checkins.ui.DailyCheckinScreen
 import com.example.primera.feature.dashboard.ui.DashboardScreen
 import com.example.primera.feature.insights.ui.InsightsScreen
 import com.example.primera.feature.onboarding.ui.OnboardingHostScreen
+import com.example.primera.feature.smartwatchconnection.ui.SmartwatchRoute
 import com.example.primera.feature.splash.ui.SplashScreen
+import com.example.primera.feature.transcription.domain.SymptomExtractor
 import com.example.primera.feature.transcription.ui.TranscriptionScreen
 import com.example.primera.feature.transcription.ui.TranscriptionViewModel
-
-import com.example.primera.core.theme.*
-import com.example.primera.feature.smartwatchconnection.ui.SmartwatchRoute
 import com.example.primera.feature.welcome.ui.WelcomeScreen
 
-// Routes where the bottom nav should be visible
 private val bottomNavRoutes = setOf(
     Routes.DASHBOARD,
     Routes.DEVICE,
@@ -59,16 +76,19 @@ fun AppNavGraph(
                         popUpTo(0) { inclusive = true }
                     }
                 }
+
                 is AuthEffect.NavigateToOnboarding -> {
                     navController.navigate(Routes.ONBOARDING) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
+
                 is AuthEffect.NavigateToLogin -> {
                     navController.navigate(Routes.AUTH_SCREEN) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
+
                 is AuthEffect.NavigateToForgotPassword -> {
                     navController.navigate(Routes.FORGOT_PW)
                 }
@@ -81,37 +101,49 @@ fun AppNavGraph(
         bottomBar = {
             if (currentRoute in bottomNavRoutes) {
                 PrimeraBottomNav(
-                    currentRoute          = currentRoute ?: Routes.DASHBOARD,
+                    currentRoute = currentRoute ?: Routes.DASHBOARD,
                     onDestinationSelected = { dest ->
                         navController.navigate(dest.route) {
-                            popUpTo(Routes.DASHBOARD) { saveState = true }
+                            popUpTo(Routes.DASHBOARD) {
+                                saveState = true
+                            }
                             launchSingleTop = true
-                            restoreState    = true
+                            restoreState = true
                         }
                     },
-                    onFabClicked = { navController.navigate(Routes.TRANSCRIPTION) }
+                    onFabClicked = {
+                        navController.navigate(Routes.TRANSCRIPTION)
+                    }
                 )
             }
         }
     ) { innerPadding ->
         NavHost(
-            navController    = navController,
+            navController = navController,
             startDestination = startDestination,
-            modifier         = Modifier.padding(
+            modifier = Modifier.padding(
                 top = innerPadding.calculateTopPadding(),
-                bottom = if (currentRoute in bottomNavRoutes) innerPadding.calculateBottomPadding() else 0.dp
+                bottom = if (currentRoute in bottomNavRoutes) {
+                    innerPadding.calculateBottomPadding()
+                } else {
+                    0.dp
+                }
             )
         ) {
             composable(Routes.SPLASH) {
                 SplashScreen(
-                    onTimeout = { 
+                    onTimeout = {
                         navController.navigate(Routes.WELCOME) {
-                            popUpTo(Routes.SPLASH) { inclusive = true }
+                            popUpTo(Routes.SPLASH) {
+                                inclusive = true
+                            }
                         }
                     },
                     onNavigateToAuth = {
                         navController.navigate(Routes.AUTH_SCREEN) {
-                            popUpTo(Routes.SPLASH) { inclusive = true }
+                            popUpTo(Routes.SPLASH) {
+                                inclusive = true
+                            }
                         }
                     }
                 )
@@ -121,7 +153,9 @@ fun AppNavGraph(
                 WelcomeScreen(
                     onNavigateToAuth = {
                         navController.navigate(Routes.AUTH_SCREEN) {
-                            popUpTo(Routes.WELCOME) { inclusive = true }
+                            popUpTo(Routes.WELCOME) {
+                                inclusive = true
+                            }
                         }
                     }
                 )
@@ -129,10 +163,13 @@ fun AppNavGraph(
 
             composable(Routes.AUTH_SCREEN) {
                 val state by authViewModel.uiState.collectAsStateWithLifecycle()
+
                 AuthScreenHost(
-                    state          = state,
-                    authViewModel  = authViewModel,
-                    onTermsClicked = { navController.navigate(Routes.FORGOT_PW) }
+                    state = state,
+                    authViewModel = authViewModel,
+                    onTermsClicked = {
+                        navController.navigate(Routes.FORGOT_PW)
+                    }
                 )
             }
 
@@ -140,16 +177,22 @@ fun AppNavGraph(
                 OnboardingHostScreen(
                     onOnboardingComplete = {
                         navController.navigate(Routes.DASHBOARD) {
-                            popUpTo(Routes.ONBOARDING) { inclusive = true }
+                            popUpTo(Routes.ONBOARDING) {
+                                inclusive = true
+                            }
                         }
                     }
                 )
             }
 
             composable(Routes.DASHBOARD) {
-                val checkinsViewModel: CheckinsViewModel = viewModel(factory = ViewModelProvider.Factory)
+                val checkinsViewModel: CheckinsViewModel =
+                    viewModel(factory = ViewModelProvider.Factory)
+
                 DashboardScreen(
-                    onLogout = { authViewModel.logout() },
+                    onLogout = {
+                        authViewModel.logout()
+                    },
                     onLogClick = { log ->
                         checkinsViewModel.loadCheckinForEdit(log)
                         navController.navigate(Routes.DAILY_CHECKIN)
@@ -162,7 +205,6 @@ fun AppNavGraph(
                         navController.navigate(Routes.DAILY_CHECKIN)
                     },
                     onInputManually = {
-                        // Assuming this also leads to daily checkin or a specific manual input screen
                         checkinsViewModel.prepareNewCheckin()
                         navController.navigate(Routes.DAILY_CHECKIN)
                     }
@@ -170,25 +212,33 @@ fun AppNavGraph(
             }
 
             composable(Routes.DEVICE) {
-//                PlaceholderScreen("Device Screen")
                 SmartwatchRoute()
             }
 
             composable(Routes.INSIGHT) {
-                val application = androidx.compose.ui.platform.LocalContext.current.applicationContext as com.example.primera.PrimeraApplication
+                val application = androidx.compose.ui.platform.LocalContext.current.applicationContext
+                        as PrimeraApplication
+
                 InsightsScreen(
-                    onBack = { navController.popBackStack() },
+                    onBack = {
+                        navController.popBackStack()
+                    },
                     goalsRepository = application.container.goalsRepository
                 )
             }
 
             composable(Routes.CHECKIN) {
-                val parentEntry = remember(it) { navController.getBackStackEntry(Routes.DASHBOARD) }
-                val checkinsViewModel: CheckinsViewModel = viewModel(parentEntry, factory = ViewModelProvider.Factory)
+                val parentEntry = remember(it) {
+                    navController.getBackStackEntry(Routes.DASHBOARD)
+                }
+
+                val checkinsViewModel: CheckinsViewModel =
+                    viewModel(parentEntry, factory = ViewModelProvider.Factory)
+
                 CheckinsOverviewScreen(
-                    onNavigateToDailyCheckin = { 
+                    onNavigateToDailyCheckin = {
                         checkinsViewModel.prepareNewCheckin()
-                        navController.navigate(Routes.DAILY_CHECKIN) 
+                        navController.navigate(Routes.DAILY_CHECKIN)
                     },
                     onLogClick = { log ->
                         checkinsViewModel.loadCheckinForEdit(log)
@@ -199,11 +249,20 @@ fun AppNavGraph(
             }
 
             composable(Routes.DAILY_CHECKIN) {
-                val parentEntry = remember(it) { navController.getBackStackEntry(Routes.DASHBOARD) }
-                val checkinsViewModel: CheckinsViewModel = viewModel(parentEntry, factory = ViewModelProvider.Factory)
+                val parentEntry = remember(it) {
+                    navController.getBackStackEntry(Routes.DASHBOARD)
+                }
+
+                val checkinsViewModel: CheckinsViewModel =
+                    viewModel(parentEntry, factory = ViewModelProvider.Factory)
+
                 DailyCheckinScreen(
-                    onBack = { navController.popBackStack() },
-                    onReview = { navController.navigate(Routes.CHECKIN) },
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onReview = {
+                        navController.navigate(Routes.CHECKIN)
+                    },
                     viewModel = checkinsViewModel
                 )
             }
@@ -213,13 +272,34 @@ fun AppNavGraph(
             }
 
             composable(Routes.TRANSCRIPTION) {
-                val transcriptionViewModel: TranscriptionViewModel = viewModel(factory = ViewModelProvider.Factory)
+                val transcriptionViewModel: TranscriptionViewModel =
+                    viewModel(factory = ViewModelProvider.Factory)
+
+                val parentEntry = remember(it) {
+                    navController.getBackStackEntry(Routes.DASHBOARD)
+                }
+
+                val checkinsViewModel: CheckinsViewModel =
+                    viewModel(parentEntry, factory = ViewModelProvider.Factory)
+
                 TranscriptionScreen(
                     viewModel = transcriptionViewModel,
-                    onBack = { navController.popBackStack() }
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onUseInCheckin = { transcribedText ->
+                        val detectedSymptoms = SymptomExtractor.extract(transcribedText)
+
+                        checkinsViewModel.prepareNewCheckin()
+                        checkinsViewModel.applyVoiceInputToCheckin(
+                            transcribedText = transcribedText,
+                            detectedSymptoms = detectedSymptoms
+                        )
+
+                        navController.navigate(Routes.DAILY_CHECKIN)
+                    }
                 )
             }
-
         }
     }
 }
@@ -232,7 +312,7 @@ fun PlaceholderScreen(name: String) {
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        (BackgroundCream),
+                        BackgroundCream,
                         PrimeraLilac.copy(alpha = 0.45f)
                     )
                 )
@@ -245,7 +325,9 @@ fun PlaceholderScreen(name: String) {
                 style = MaterialTheme.typography.displayMedium,
                 color = TextPrimary
             )
+
             Spacer(Modifier.height(8.dp))
+
             Text(
                 text = "Coming soon...",
                 style = MaterialTheme.typography.bodyMedium,
@@ -256,30 +338,31 @@ fun PlaceholderScreen(name: String) {
 }
 
 @Composable
-private fun AuthScreenHost(
+fun AuthScreenHost(
     state: AuthUiState,
     authViewModel: AuthViewModel,
     onTermsClicked: () -> Unit
 ) {
     when (state.activeTab) {
         AuthTab.LOGIN -> LoginScreen(
-            state                  = state,
-            onEmailChange          = authViewModel::onEmailChange,
-            onPasswordChange       = authViewModel::onPasswordChange,
-            onRememberMeToggle     = authViewModel::onRememberMeToggle,
+            state = state,
+            onEmailChange = authViewModel::onEmailChange,
+            onPasswordChange = authViewModel::onPasswordChange,
+            onRememberMeToggle = authViewModel::onRememberMeToggle,
             onForgotPasswordClicked = authViewModel::onForgotPasswordClicked,
-            onLoginClicked         = authViewModel::onLoginClicked,
-            onTabSelected          = authViewModel::onTabSelected
+            onLoginClicked = authViewModel::onLoginClicked,
+            onTabSelected = authViewModel::onTabSelected
         )
+
         AuthTab.SIGNUP -> RegisterScreen(
-            state                  = state,
-            onFullNameChange       = authViewModel::onFullNameChange,
-            onEmailChange          = authViewModel::onEmailChange,
-            onPasswordChange       = authViewModel::onPasswordChange,
-            onAgreedToTermsToggle  = authViewModel::onAgreedToTermsToggle,
-            onTermsClicked         = onTermsClicked,
-            onSignUpClicked        = authViewModel::onSignUpClicked,
-            onTabSelected          = authViewModel::onTabSelected
+            state = state,
+            onFullNameChange = authViewModel::onFullNameChange,
+            onEmailChange = authViewModel::onEmailChange,
+            onPasswordChange = authViewModel::onPasswordChange,
+            onAgreedToTermsToggle = authViewModel::onAgreedToTermsToggle,
+            onTermsClicked = onTermsClicked,
+            onSignUpClicked = authViewModel::onSignUpClicked,
+            onTabSelected = authViewModel::onTabSelected
         )
     }
 }
