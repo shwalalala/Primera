@@ -214,6 +214,102 @@ fun SimpleLineChart(
 }
 
 @Composable
+fun MoodLineChart(
+    data: List<Float>,
+    modifier: Modifier = Modifier,
+    labels: List<String> = emptyList(),
+    lineColor: Color = PrimeraViolet
+) {
+    if (data.isEmpty()) {
+        EmptyChartPlaceholder(modifier = modifier)
+        return
+    }
+
+    val textMeasurer = rememberTextMeasurer()
+    val labelTextStyle = TextStyle(
+        color = TextSecondary,
+        fontSize = 10.sp,
+        textAlign = TextAlign.Center
+    )
+    val emojiStyle = TextStyle(fontSize = 14.sp)
+    val moods = listOf("😄", "🙂", "😐", "😕", "☹️") // Corresponds to values 5 down to 1
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+        ) {
+            val leftPadding = 35.dp.toPx()
+            val bottomPadding = 25.dp.toPx()
+            val topPadding = 15.dp.toPx()
+            val chartWidth = size.width - leftPadding - 16.dp.toPx()
+            val chartHeight = size.height - bottomPadding - topPadding
+
+            // Draw Y-axis emojis and horizontal lines
+            moods.forEachIndexed { index, emoji ->
+                val y = topPadding + (index.toFloat() / (moods.size - 1)) * chartHeight
+                
+                // Draw Emoji
+                val measuredEmoji = textMeasurer.measure(emoji, emojiStyle)
+                drawText(
+                    textLayoutResult = measuredEmoji,
+                    topLeft = Offset(8.dp.toPx(), y - measuredEmoji.size.height / 2f)
+                )
+                
+                // Draw Horizontal Guide Line
+                drawLine(
+                    color = Color.LightGray.copy(alpha = 0.3f),
+                    start = Offset(leftPadding, y),
+                    end = Offset(size.width, y),
+                    strokeWidth = 1.dp.toPx()
+                )
+            }
+
+            if (data.isNotEmpty()) {
+                val spacing = if (data.size > 1) chartWidth / (data.size - 1) else 0f
+                val path = Path()
+
+                data.forEachIndexed { index, value ->
+                    // Value is 1 (Angry) to 5 (Happy). 
+                    // Mapping: 5 -> top (index 0), 1 -> bottom (index 4)
+                    val normalizedValue = (5f - value).coerceIn(0f, 4f) / 4f
+                    val x = leftPadding + (if (data.size > 1) index * spacing else chartWidth / 2f)
+                    val y = topPadding + normalizedValue * chartHeight
+
+                    if (index == 0) path.moveTo(x, y)
+                    else path.lineTo(x, y)
+
+                    // Draw Point
+                    drawCircle(
+                        color = lineColor,
+                        radius = 4.dp.toPx(),
+                        center = Offset(x, y)
+                    )
+                    
+                    // Draw Label below X-axis
+                    if (index < labels.size) {
+                        val measuredLabel = textMeasurer.measure(labels[index], labelTextStyle)
+                        drawText(
+                            textLayoutResult = measuredLabel,
+                            topLeft = Offset(x - measuredLabel.size.width / 2f, size.height - bottomPadding + 6.dp.toPx())
+                        )
+                    }
+                }
+
+                if (data.size > 1) {
+                    drawPath(
+                        path = path,
+                        color = lineColor,
+                        style = Stroke(width = 2.dp.toPx())
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun EmptyChartPlaceholder(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier

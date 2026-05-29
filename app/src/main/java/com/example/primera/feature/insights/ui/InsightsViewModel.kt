@@ -143,6 +143,7 @@ class InsightsViewModel(
                 bmiStatus = bmiStatus,
                 rawGoals = filteredGoals,
                 wellnessGoals = filteredGoals.map { goal ->
+                    val isMandatory = goal.title == "Hydration" || goal.title == "Movement"
                     InsightGoalUiItem(
                         id = goal.id ?: "",
                         icon = goal.icon ?: "🎯",
@@ -150,7 +151,8 @@ class InsightsViewModel(
                         current = String.format(Locale.getDefault(), "%.1f", goal.currentValue),
                         target = String.format(Locale.getDefault(), "%.1f %s", goal.targetValue, goal.unit ?: ""),
                         progress = if (goal.targetValue > 0) (goal.currentValue / goal.targetValue).toFloat().coerceIn(0f, 1f) else 0f,
-                        color = goal.accentColorHex?.let { parseHexColor(it) } ?: Color(0xFF64B5F6)
+                        color = goal.accentColorHex?.let { parseHexColor(it) } ?: Color(0xFF64B5F6),
+                        isDeletable = !isMandatory
                     )
                 },
                 weightTrend = ChartData(
@@ -338,8 +340,8 @@ class InsightsViewModel(
     }
 
     private fun extractActivityValues(goals: List<com.example.primera.feature.goals.data.GoalDto>): List<Float> {
-        // Find "Walking" or "Yoga" or "Movement" goals
-        val movementKeywords = listOf("walking", "yoga", "movement", "exercise", "steps", "reps", "min")
+        // Focus on "Movement" and "Steps" specifically as requested
+        val movementKeywords = listOf("walking", "yoga", "movement", "exercise", "steps")
         val activityGoals = goals.filter { goal ->
             val title = goal.title?.lowercase() ?: ""
             movementKeywords.any { it in title }
@@ -348,11 +350,10 @@ class InsightsViewModel(
         return if (activityGoals.isEmpty()) {
             emptyList()
         } else {
-            // If we have multiple, let's take the top 7 most recent ones
-            activityGoals.sortedByDescending { it.timestamp }
-                .take(7)
+            // Take values from these goals, sorted by date
+            activityGoals.sortedBy { it.timestamp }
                 .map { it.currentValue.toFloat() }
-                .reversed()
+                .takeLast(7) // Show up to last 7 data points
         }
     }
 
@@ -404,6 +405,14 @@ class InsightsViewModel(
 
     fun onPeriodSelected(period: String) {
         _activePeriod.value = period
+        _weightPeriod.value = period
+        _moodPeriod.value = period
+        _activityPeriod.value = period
+        
+        // Reset offsets to show the most recent data for the new period
+        _weightOffset.value = 0
+        _moodOffset.value = 0
+        _activityOffset.value = 0
     }
 
     fun onWeightPeriodSelected(period: String) { _weightPeriod.value = period }
@@ -420,4 +429,10 @@ class InsightsViewModel(
     fun onActivityPrevious() { _activityOffset.value -= 1 }
     fun onActivityNext() { _activityOffset.value += 1 }
     fun onActivityBarClick(index: Int) { _highlightedActivityIndex.value = index }
+
+    fun deleteGoal(goalId: String) {
+        viewModelScope.launch {
+            goalsRepository.deleteGoal(goalId)
+        }
+    }
 }

@@ -14,8 +14,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -101,7 +103,8 @@ fun GoalItemCard(
     progress: Float,
     modifier: Modifier = Modifier,
     accentColor: Color = Color(0xFF64B5F6),
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
+    onDelete: (() -> Unit)? = null
 ) {
     Row(
         modifier = modifier
@@ -136,11 +139,27 @@ fun GoalItemCard(
                     fontWeight = FontWeight.SemiBold,
                     color = TextPrimary
                 )
-                Text(
-                    text = "$currentValue / $targetValue",
-                    fontSize = 11.sp,
-                    color = TextSecondary
-                )
+                
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "$currentValue / $targetValue",
+                        fontSize = 11.sp,
+                        color = TextSecondary
+                    )
+                    if (onDelete != null) {
+                        IconButton(
+                            onClick = onDelete,
+                            modifier = Modifier.size(24.dp).padding(start = 4.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Delete Goal",
+                                tint = Color.Red.copy(alpha = 0.6f),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
             }
             
             Spacer(Modifier.height(8.dp))
