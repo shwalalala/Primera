@@ -132,6 +132,7 @@ private fun DashboardScreenPreview() {
                 sleepHours = 7,
                 sleepMinutes = 45,
                 sleepQuality = "Good quality",
+                spO2 = 98,
                 isWatchSynced = true,
                 recentLogs = emptyList(),
                 weekDays = listOf(

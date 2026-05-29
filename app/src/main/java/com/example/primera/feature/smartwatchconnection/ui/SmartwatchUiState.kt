@@ -6,5 +6,9 @@ data class SmartwatchUiState(
     val isLoading: Boolean = false,
     val message: String = "Please request Health Connect permissions.",
     val smartwatchHealth: SmartwatchHealth? = null,
-    val hasPermissions: Boolean = false
+    val hasPermissions: Boolean = false,
+    val isDataVisible: Boolean = false,
+    val bpmHistory: List<Float> = emptyList(),
+    val sleepHistory: List<Float> = emptyList(),
+    val historyLabels: List<String> = emptyList()
 )

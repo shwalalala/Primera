@@ -221,7 +221,16 @@ fun StatsGrid(
                 trendColor = TrendGreen,
                 modifier = Modifier.weight(1f)
             )
-            InputManuallyCard(onClick = onInputManually, modifier = Modifier.weight(1f))
+            HealthStatCard(
+                title = "SpO₂",
+                value = if (state.isWatchSynced) (state.spO2?.toString() ?: "--") else "--",
+                unit = "%",
+                icon = painterResource(R.drawable.sp02),
+                iconBgColor = Color(0xFFFFEBEE),
+                trendText = if (state.isWatchSynced) "Normal" else null,
+                trendColor = TrendGreen,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }

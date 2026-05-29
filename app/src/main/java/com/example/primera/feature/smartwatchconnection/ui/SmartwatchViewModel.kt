@@ -88,6 +88,12 @@ class SmartwatchViewModel(
                 val smartwatchHealth =
                     healthConnectManager.readTodaySmartwatchHealth()
 
+                val historicalData = healthConnectManager.readPastWeekSmartwatchHealth()
+                val sortedDates = historicalData.keys.sorted()
+                val bpmHistory = sortedDates.map { historicalData[it]?.averageHeartRate?.toFloat() ?: 0f }
+                val sleepHistory = sortedDates.map { (historicalData[it]?.sleepMinutes ?: 0L).toFloat() / 60f }
+                val labels = sortedDates.map { "${it.monthValue}.${it.dayOfMonth}" }
+
                 healthRepository.saveSmartwatchHealth(
                     smartwatchHealth = smartwatchHealth
                 )
@@ -95,6 +101,10 @@ class SmartwatchViewModel(
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     smartwatchHealth = smartwatchHealth,
+                    bpmHistory = bpmHistory,
+                    sleepHistory = sleepHistory,
+                    historyLabels = labels,
+                    isDataVisible = true,
                     message = "Smartwatch health data saved to Firebase."
                 )
 
@@ -107,5 +117,9 @@ class SmartwatchViewModel(
                 )
             }
         }
+    }
+
+    fun onBackToSources() {
+        _uiState.value = _uiState.value.copy(isDataVisible = false)
     }
 }

@@ -93,6 +93,38 @@ class HealthConnectManager(
         )
     }
 
+    suspend fun readPastWeekSmartwatchHealth(): Map<LocalDate, SmartwatchHealth> {
+        val zoneId = ZoneId.systemDefault()
+        val today = LocalDate.now(zoneId)
+        val result = mutableMapOf<LocalDate, SmartwatchHealth>()
+
+        for (i in 0 until 7) {
+            val date = today.minusDays(i.toLong())
+            val startTime = date.atStartOfDay(zoneId).toInstant()
+            val endTime = date.plusDays(1).atStartOfDay(zoneId).toInstant().minusMillis(1)
+
+            val aggregateResponse = healthConnectClient.aggregate(
+                AggregateRequest(
+                    metrics = setOf(
+                        HeartRateRecord.BPM_AVG,
+                        SleepSessionRecord.SLEEP_DURATION_TOTAL
+                    ),
+                    timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+                )
+            )
+
+            val avgHr = aggregateResponse[HeartRateRecord.BPM_AVG]
+            val sleepDur = aggregateResponse[SleepSessionRecord.SLEEP_DURATION_TOTAL]
+
+            result[date] = SmartwatchHealth(
+                date = date.toString(),
+                averageHeartRate = avgHr,
+                sleepMinutes = sleepDur?.toMinutes() ?: 0L
+            )
+        }
+        return result
+    }
+
     private suspend fun readLatestHeartRate(
         startTime: Instant,
         endTime: Instant

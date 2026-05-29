@@ -70,6 +70,7 @@ class DashboardViewModel(
             sleepHours = 0,
             sleepMinutes = 0,
             sleepQuality = "Unknown",
+            spO2 = null,
             isWatchSynced = false,
             recentLogs = emptyList(),
             weekDays = getCurrentWeekDays()
@@ -101,6 +102,7 @@ class DashboardViewModel(
             sleepHours = data.sleepHours,
             sleepMinutes = data.sleepMinutes,
             sleepQuality = DashboardBusinessLogic.getSleepQuality(data.sleepHours, data.sleepMinutes),
+            spO2 = data.spO2,
             isWatchSynced = isWatchSynced,
             recentLogs = data.recentLogs
                 .map { log ->
