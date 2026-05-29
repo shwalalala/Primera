@@ -24,14 +24,14 @@ class SpeechRecognitionManager(
 
     fun start(callback: SpeechRecognitionCallback) {
         this.callback = callback
-        
+
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
             callback.onError(SpeechRecognizer.ERROR_CLIENT)
             return
         }
 
         cleanup()
-        
+
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
             setRecognitionListener(this@SpeechRecognitionManager)
         }
@@ -73,11 +73,11 @@ class SpeechRecognitionManager(
     override fun onResults(results: Bundle?) {
         val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
         val confidences = results?.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES)
-        
+
         val text = matches?.getOrNull(0) ?: ""
         val confidence = confidences?.getOrNull(0) ?: 0.0f
         val duration = System.currentTimeMillis() - startTime
-        
+
         callback?.onResult(text, confidence, duration)
     }
 

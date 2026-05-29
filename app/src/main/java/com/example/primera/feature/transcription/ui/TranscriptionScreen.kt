@@ -3,9 +3,26 @@ package com.example.primera.feature.transcription.ui
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -14,8 +31,16 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,9 +52,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.primera.core.theme.*
+import com.example.primera.core.theme.BackgroundCream
+import com.example.primera.core.theme.InputBorder
+import com.example.primera.core.theme.PrimeraLilac
+import com.example.primera.core.theme.PrimeraTheme
+import com.example.primera.core.theme.PrimeraViolet
+import com.example.primera.core.theme.TextPrimary
+import com.example.primera.core.theme.TextSecondary
 import com.example.primera.core.utils.clickableNoRipple
 import com.example.primera.ui.components.FullScreenLoadingOverlay
 import com.example.primera.ui.components.PrimeraGradientButton
@@ -37,7 +67,8 @@ import com.example.primera.ui.components.PrimeraGradientButton
 @Composable
 fun TranscriptionScreen(
     viewModel: TranscriptionViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onUseInCheckin: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val transcribedText by viewModel.transcribedText.collectAsStateWithLifecycle()
@@ -59,6 +90,11 @@ fun TranscriptionScreen(
         onStopListening = viewModel::stopListening,
         onTextEdited = viewModel::onTextEdited,
         onSave = viewModel::saveTranscription,
+        onUseInCheckin = {
+            if (transcribedText.isNotBlank()) {
+                onUseInCheckin(transcribedText)
+            }
+        },
         onDismissError = viewModel::dismissError,
         onBack = onBack
     )
@@ -72,6 +108,7 @@ private fun TranscriptionContent(
     onStopListening: () -> Unit,
     onTextEdited: (String) -> Unit,
     onSave: () -> Unit,
+    onUseInCheckin: () -> Unit,
     onDismissError: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -80,7 +117,10 @@ private fun TranscriptionContent(
             .fillMaxSize()
             .background(
                 brush = Brush.verticalGradient(
-                    colors = listOf(BackgroundCream, PrimeraLilac.copy(alpha = 0.45f))
+                    colors = listOf(
+                        BackgroundCream,
+                        PrimeraLilac.copy(alpha = 0.45f)
+                    )
                 )
             )
             .statusBarsPadding()
@@ -93,15 +133,19 @@ private fun TranscriptionContent(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(16.dp))
-            
-            Row(
+
+            androidx.compose.foundation.layout.Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back"
+                    )
                 }
+
                 Text(
                     text = "Voice Transcription",
                     style = MaterialTheme.typography.headlineMedium.copy(
@@ -109,11 +153,12 @@ private fun TranscriptionContent(
                         color = TextPrimary
                     )
                 )
+
                 Spacer(Modifier.width(48.dp))
             }
-            
+
             Spacer(Modifier.height(8.dp))
-            
+
             Text(
                 text = "Tap the microphone to start recording your thoughts",
                 style = MaterialTheme.typography.bodyMedium,
@@ -135,7 +180,11 @@ private fun TranscriptionContent(
 
             Spacer(Modifier.weight(1f))
 
-            if (uiState is TranscriptionUiState.Success || uiState is TranscriptionUiState.Uploading || uiState is TranscriptionUiState.Uploaded) {
+            if (
+                uiState is TranscriptionUiState.Success ||
+                uiState is TranscriptionUiState.Uploading ||
+                uiState is TranscriptionUiState.Uploaded
+            ) {
                 OutlinedTextField(
                     value = transcribedText,
                     onValueChange = onTextEdited,
@@ -146,7 +195,10 @@ private fun TranscriptionContent(
                     trailingIcon = {
                         if (transcribedText.isNotEmpty()) {
                             IconButton(onClick = { onTextEdited("") }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear text")
+                                Icon(
+                                    Icons.Default.Clear,
+                                    contentDescription = "Clear text"
+                                )
                             }
                         }
                     },
@@ -171,10 +223,24 @@ private fun TranscriptionContent(
                 Spacer(Modifier.height(24.dp))
 
                 PrimeraGradientButton(
-                    text = if (uiState is TranscriptionUiState.Uploaded) "Saved!" else "Save to Firestore",
+                    text = if (uiState is TranscriptionUiState.Uploaded) {
+                        "Saved!"
+                    } else {
+                        "Save to Firestore"
+                    },
                     onClick = onSave,
                     enabled = uiState is TranscriptionUiState.Success,
                     isLoading = uiState is TranscriptionUiState.Uploading
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                PrimeraGradientButton(
+                    text = "Use in Check-In",
+                    onClick = onUseInCheckin,
+                    enabled = transcribedText.isNotBlank() &&
+                            (uiState is TranscriptionUiState.Success || uiState is TranscriptionUiState.Uploaded),
+                    isLoading = false
                 )
             }
         }
@@ -204,17 +270,22 @@ private fun MicrophoneButton(
     onClick: () -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+
     val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 1.2f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
+            animation = tween(
+                durationMillis = 1000,
+                easing = FastOutSlowInEasing
+            ),
             repeatMode = RepeatMode.Reverse
         ),
         label = "scale"
     )
 
     val buttonScale = if (uiState is TranscriptionUiState.Listening) scale else 1f
+
     val buttonColor = when (uiState) {
         is TranscriptionUiState.Listening -> Color.Red
         is TranscriptionUiState.Uploaded -> Color.Green
@@ -232,7 +303,10 @@ private fun MicrophoneButton(
             .clip(CircleShape)
             .background(
                 Brush.linearGradient(
-                    colors = listOf(buttonColor, buttonColor.copy(alpha = 0.8f))
+                    colors = listOf(
+                        buttonColor,
+                        buttonColor.copy(alpha = 0.8f)
+                    )
                 )
             )
             .clickableNoRipple(onClick = onClick)
@@ -261,6 +335,7 @@ private fun TranscriptionScreenPreview() {
             onStopListening = {},
             onTextEdited = {},
             onSave = {},
+            onUseInCheckin = {},
             onDismissError = {},
             onBack = {}
         )
@@ -272,12 +347,17 @@ private fun TranscriptionScreenPreview() {
 private fun TranscriptionScreenSuccessPreview() {
     PrimeraTheme {
         TranscriptionContent(
-            uiState = TranscriptionUiState.Success("Hello, this is a test transcription.", 0.95f, 5000L),
-            transcribedText = "Hello, this is a test transcription.",
+            uiState = TranscriptionUiState.Success(
+                "I feel dizzy and I have headache.",
+                0.95f,
+                5000L
+            ),
+            transcribedText = "I feel dizzy and I have headache.",
             onStartListening = {},
             onStopListening = {},
             onTextEdited = {},
             onSave = {},
+            onUseInCheckin = {},
             onDismissError = {},
             onBack = {}
         )

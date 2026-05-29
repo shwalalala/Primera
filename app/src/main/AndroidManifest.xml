@@ -17,6 +17,10 @@
     <!-- Health Connect package -->
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
+
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
     </queries>
 
     <application
