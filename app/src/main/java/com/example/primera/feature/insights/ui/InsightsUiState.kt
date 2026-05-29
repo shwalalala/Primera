@@ -35,7 +35,8 @@ data class InsightGoalUiItem(
     val current: String,
     val target: String,
     val progress: Float,
-    val color: Color
+    val color: Color,
+    val isDeletable: Boolean = true
 )
 
 data class ChartData(

@@ -75,6 +75,7 @@ fun InsightsScreen(
                         onGoalClick = { goalId ->
                             editingGoal = state.data.rawGoals.find { it.id == goalId }
                         },
+                        onDeleteGoal = viewModel::deleteGoal,
                         viewModel = viewModel
                     )
                 }
@@ -155,6 +156,7 @@ fun InsightsContent(
     onPeriodSelected: (String) -> Unit,
     onAddGoal: () -> Unit,
     onGoalClick: (String) -> Unit,
+    onDeleteGoal: (String) -> Unit,
     viewModel: InsightsViewModel, // Pass viewModel to handle individual chart actions
     modifier: Modifier = Modifier
 ) {
@@ -244,7 +246,8 @@ fun InsightsContent(
                         targetValue = goal.target,
                         progress = goal.progress,
                         accentColor = goal.color,
-                        onClick = { onGoalClick(goal.id) }
+                        onClick = { onGoalClick(goal.id) },
+                        onDelete = if (goal.isDeletable) { { onDeleteGoal(goal.id) } } else null
                     )
                     Spacer(Modifier.height(12.dp))
                 }
@@ -353,11 +356,9 @@ fun InsightsContent(
                     onPrevious = viewModel::onMoodPrevious,
                     onNext = viewModel::onMoodNext
                 ) {
-                    SimpleBarChart(
+                    MoodLineChart(
                         data = data.moodTrend.values,
-                        labels = data.moodTrend.labels,
-                        highlightedIndex = data.moodTrend.highlightedIndex,
-                        onBarClick = viewModel::onMoodBarClick
+                        labels = data.moodTrend.labels
                     )
                 }
                 Spacer(Modifier.height(16.dp))
@@ -366,7 +367,7 @@ fun InsightsContent(
                 ChartContainer(
                     title = {
                         FeatureChartHeader(
-                            title = "Activity",
+                            title = "Movement (Steps)",
                             selectedPeriod = data.activityTrend.title.substringAfter("(").substringBefore(")"),
                             onPeriodSelected = viewModel::onActivityPeriodSelected
                         )
@@ -390,6 +391,5 @@ fun InsightsContent(
 @Preview(showBackground = true)
 @Composable
 private fun InsightsPreview() {
-    // Note: This preview is broken in simple IDE view due to viewModel parameter, 
-    // but the actual app will work correctly.
+
 }

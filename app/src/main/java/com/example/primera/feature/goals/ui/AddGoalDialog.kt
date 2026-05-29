@@ -26,6 +26,7 @@ import com.example.primera.core.theme.NunitoSans
 import com.example.primera.core.theme.PrimeraViolet
 import com.example.primera.core.theme.SurfaceWhite
 import com.example.primera.feature.goals.data.GoalDto
+import com.example.primera.ui.components.GoalIcon
 import java.util.Date
 
 private data class GoalOption(
@@ -44,20 +45,20 @@ fun AddGoalDialog(
 ) {
     val goalOptions = remember {
         listOf(
-            GoalOption("Yoga", "min", "🧘", "#A1D386"),
-            GoalOption("Walking", "steps", "🚶", "#FFAB91"),
-            GoalOption("Hydration", "L", "💧", "#64B5F6"),
-            GoalOption("Pelvic Floor Exercise", "reps", "✨", "#CE93D8"),
-            GoalOption("Vitamins", "count", "💊", "#FFF176"),
-            GoalOption("Meditation", "min", "🧠", "#81C784"),
-            GoalOption("Fruits/Veg", "servings", "🍎", "#FF8A65"),
-            GoalOption("Journaling", "pages", "📓", "#BA68C8"),
-            GoalOption("Stretching", "min", "🙆", "#4DB6AC"),
-            GoalOption("Nap Time", "hours", "😴", "#9575CD"),
-            GoalOption("Reading", "pages", "📖", "#F06292"),
-            GoalOption("Deep Breathing", "min", "🌬️", "#4DD0E1"),
-            GoalOption("Foot Care", "min", "🦶", "#FFD54F"),
-            GoalOption("Belly Massage", "min", "🤰", "#F48FB1")
+            GoalOption("Hydration", "ml", "R.drawable.water", "#93C5FD"),
+            GoalOption("Yoga", "min", "R.drawable.yoga", "#A1D386"),
+            GoalOption("Walking", "steps", "R.drawable.steps", "#FFAB91"),
+            GoalOption("Pelvic Floor Exercise", "reps", "R.drawable.heart", "#CE93D8"),
+            GoalOption("Vitamins", "count", "R.drawable.log", "#FFF176"),
+            GoalOption("Meditation", "min", "R.drawable.yoga", "#81C784"),
+            GoalOption("Fruits/Veg", "servings", "R.drawable.apple", "#FF8A65"),
+            GoalOption("Journaling", "pages", "R.drawable.log", "#BA68C8"),
+            GoalOption("Stretching", "min", "R.drawable.yoga", "#4DB6AC"),
+            GoalOption("Nap Time", "hours", "R.drawable.sleep", "#9575CD"),
+            GoalOption("Reading", "pages", "R.drawable.log", "#F06292"),
+            GoalOption("Deep Breathing", "min", "R.drawable.heart", "#4DD0E1"),
+            GoalOption("Foot Care", "min", "R.drawable.log", "#FFD54F"),
+            GoalOption("Belly Massage", "min", "R.drawable.heart", "#F48FB1")
         )
     }
 
@@ -65,7 +66,7 @@ fun AddGoalDialog(
         "#A1D386", "#FFAB91", "#64B5F6", "#CE93D8", 
         "#FFF176", "#81C784", "#FF8A65", "#BA68C8",
         "#4DB6AC", "#9575CD", "#F06292", "#4DD0E1",
-        "#FFD54F", "#F48FB1"
+        "#FFD54F", "#F48FB1", "#93C5FD"
     )
 
     var selectedOption by remember { 
@@ -133,10 +134,10 @@ fun AddGoalDialog(
                             unfocusedBorderColor = Color.LightGray
                         ),
                         leadingIcon = {
-                            Text(
-                                text = selectedOption.icon, 
-                                fontSize = 20.sp,
-                                color = Color(selectedColorHex.toColorInt())
+                            GoalIcon(
+                                icon = selectedOption.icon,
+                                tint = Color(selectedColorHex.toColorInt()),
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     )
@@ -153,7 +154,11 @@ fun AddGoalDialog(
                                 DropdownMenuItem(
                                     text = {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(option.icon, modifier = Modifier.padding(end = 8.dp))
+                                            GoalIcon(
+                                                icon = option.icon,
+                                                tint = Color(option.colorHex.toColorInt()),
+                                                modifier = Modifier.padding(end = 8.dp).size(20.dp)
+                                            )
                                             Text(
                                                 text = option.title, 
                                                 fontFamily = NunitoSans,
@@ -172,41 +177,53 @@ fun AddGoalDialog(
                     }
                 }
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                // Target Input
+                OutlinedTextField(
+                    value = targetValue,
+                    onValueChange = { if (it.all { char -> char.isDigit() || char == '.' }) targetValue = it },
+                    label = { Text("Target Goal", fontFamily = NunitoSans) },
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedTextField(
-                        value = accomplishedValue,
-                        onValueChange = { if (it.all { char -> char.isDigit() || char == '.' }) accomplishedValue = it },
-                        label = { Text("Accomplished", fontFamily = NunitoSans) },
-                        modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = PrimeraViolet,
-                            unfocusedBorderColor = Color.LightGray
-                        )
+                    suffix = { Text(selectedOption.unit, fontFamily = NunitoSans) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PrimeraViolet,
+                        unfocusedBorderColor = Color.LightGray
                     )
+                )
 
-                    OutlinedTextField(
-                        value = targetValue,
-                        onValueChange = { if (it.all { char -> char.isDigit() || char == '.' }) targetValue = it },
-                        label = { Text("Target", fontFamily = NunitoSans) },
-                        modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = PrimeraViolet,
-                            unfocusedBorderColor = Color.LightGray
+                // Accomplished Slider
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        Text(
+                            text = "Accomplished",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            fontFamily = NunitoSans,
+                            color = Color.Gray
                         )
-                    )
-
-                    Text(
-                        text = selectedOption.unit,
-                        fontSize = 14.sp,
-                        fontFamily = NunitoSans,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(start = 4.dp)
+                        Text(
+                            text = "$accomplishedValue ${selectedOption.unit}",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = NunitoSans,
+                            color = PrimeraViolet
+                        )
+                    }
+                    Slider(
+                        value = accomplishedValue.toFloatOrNull() ?: 0f,
+                        onValueChange = { 
+                            accomplishedValue = if (it % 1f == 0f) it.toInt().toString() else "%.1f".format(it)
+                        },
+                        valueRange = 0f..(targetValue.toFloatOrNull() ?: 100f).coerceAtLeast(1f),
+                        colors = SliderDefaults.colors(
+                            thumbColor = PrimeraViolet,
+                            activeTrackColor = PrimeraViolet,
+                            inactiveTrackColor = PrimeraViolet.copy(alpha = 0.24f)
+                        )
                     )
                 }
 
