@@ -29,6 +29,7 @@ import com.example.primera.feature.transcription.ui.TranscriptionScreen
 import com.example.primera.feature.transcription.ui.TranscriptionViewModel
 
 import com.example.primera.core.theme.*
+import com.example.primera.feature.smartwatchconnection.ui.SmartwatchRoute
 import com.example.primera.feature.welcome.ui.WelcomeScreen
 
 // Routes where the bottom nav should be visible
@@ -168,7 +169,8 @@ fun AppNavGraph(
             }
 
             composable(Routes.DEVICE) {
-                PlaceholderScreen("Device Screen")
+//                PlaceholderScreen("Device Screen")
+                SmartwatchRoute()
             }
 
             composable(Routes.INSIGHT) {
@@ -212,6 +214,7 @@ fun AppNavGraph(
                     onBack = { navController.popBackStack() }
                 )
             }
+
         }
     }
 }
