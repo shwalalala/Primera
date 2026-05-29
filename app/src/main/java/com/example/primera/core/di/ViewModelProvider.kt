@@ -7,6 +7,7 @@ import com.example.primera.PrimeraApplication
 import com.example.primera.feature.auth.ui.AuthViewModel
 import com.example.primera.feature.checkins.ui.CheckinsViewModel
 import com.example.primera.feature.dashboard.ui.DashboardViewModel
+import com.example.primera.feature.insights.ui.InsightsViewModel
 import com.example.primera.feature.onboarding.ui.OnboardingViewModel
 import com.example.primera.feature.splash.ui.SplashViewModel
 import com.example.primera.feature.transcription.data.SpeechRecognitionManager
@@ -25,7 +26,10 @@ object ViewModelProvider {
                     container.authRepository,
                     container.preferenceRepository
                 )
-                DashboardViewModel::class.java -> DashboardViewModel(container.dashboardRepository)
+                DashboardViewModel::class.java -> DashboardViewModel(
+                    container.dashboardRepository,
+                    container.goalsRepository
+                )
                 OnboardingViewModel::class.java -> OnboardingViewModel(
                     container.onboardingRepository,
                     container.preferenceRepository
@@ -36,6 +40,11 @@ object ViewModelProvider {
                 TranscriptionViewModel::class.java -> TranscriptionViewModel(
                     container.transcriptionRepository,
                     SpeechRecognitionManager(application)
+                )
+                InsightsViewModel::class.java -> InsightsViewModel(
+                    container.dashboardRepository,
+                    container.checkinsRepository,
+                    container.goalsRepository
                 )
                 else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             } as T

@@ -10,6 +10,7 @@ data class DashboardData(
     val heartRateBpm: Int,
     val sleepHours: Int,
     val sleepMinutes: Int,
+    val heightCm: Int? = null,
     val recentLogs: List<DashboardHealthLog>
 )
 

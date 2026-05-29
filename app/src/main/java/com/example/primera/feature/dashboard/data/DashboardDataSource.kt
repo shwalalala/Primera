@@ -1,6 +1,7 @@
 package com.example.primera.feature.dashboard.data
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -20,41 +21,35 @@ class DashboardDataSource {
             return@callbackFlow
         }
 
-        val listener = firestore.collection("users").document(userId)
+        val registration: ListenerRegistration = firestore.collection("users").document(userId)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    close(error)
+                    trySend(null)
                     return@addSnapshotListener
                 }
-                if (snapshot != null && snapshot.exists()) {
+                
+                val userDto = if (snapshot != null && snapshot.exists()) {
                     try {
-                        val fullName = snapshot.getString("fullName")
-                        val dueDateTimestamp = snapshot.getTimestamp("eddDate") ?: snapshot.getTimestamp("dueDate")
-                        val dueDate = dueDateTimestamp?.toDate()
-                        val steps = snapshot.getLong("steps") ?: 0L
-                        val stepsGoal = snapshot.getLong("stepsGoal") ?: 8000L
-                        val heartRateBpm = snapshot.getLong("heartRateBpm") ?: 0L
-                        val sleepHours = snapshot.getLong("sleepHours") ?: 0L
-                        val sleepMinutes = snapshot.getLong("sleepMinutes") ?: 0L
-                        
-                        val userDto = UserDto(
-                            fullName = fullName,
-                            dueDate = dueDate,
-                            steps = steps,
-                            stepsGoal = stepsGoal,
-                            heartRateBpm = heartRateBpm,
-                            sleepHours = sleepHours,
-                            sleepMinutes = sleepMinutes
+                        UserDto(
+                            fullName = snapshot.getString("fullName"),
+                            dueDate = (snapshot.getTimestamp("eddDate") ?: snapshot.getTimestamp("dueDate"))?.toDate(),
+                            steps = snapshot.getLong("steps") ?: 0L,
+                            stepsGoal = snapshot.getLong("stepsGoal") ?: 8000L,
+                            heartRateBpm = snapshot.getLong("heartRateBpm") ?: 0L,
+                            sleepHours = snapshot.getLong("sleepHours") ?: 0L,
+                            sleepMinutes = snapshot.getLong("sleepMinutes") ?: 0L,
+                            heightCm = snapshot.getLong("heightCm")
                         )
-                        trySend(userDto)
-                    } catch (e: Exception) {
-                        trySend(null)
+                    } catch (_: Exception) {
+                        null
                     }
                 } else {
-                    trySend(null)
+                    null
                 }
+                trySend(userDto)
             }
-        awaitClose { listener.remove() }
+            
+        awaitClose(registration::remove)
     }
 
     fun observeRecentLogs(): Flow<List<HealthLogDto>> = callbackFlow {
@@ -65,37 +60,32 @@ class DashboardDataSource {
             return@callbackFlow
         }
 
-        val listener = firestore.collection("checkins")
+        val registration: ListenerRegistration = firestore.collection("checkins")
             .whereEqualTo("userId", userId)
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .limit(5)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    // We don't necessarily want to close the flow on error if it's transient
+                    trySend(emptyList())
                     return@addSnapshotListener
                 }
                 val logs = snapshot?.documents?.mapNotNull { doc ->
                     try {
-                        val type = doc.getString("type")
-                        val category = doc.getString("category")
-                        val message = doc.getString("message")
-                        val description = doc.getString("description")
-                        val timestamp = doc.getTimestamp("timestamp")?.toDate()
                         HealthLogDto(
                             id = doc.id,
-                            type = type,
-                            category = category,
-                            message = message,
-                            description = description,
-                            timestamp = timestamp
+                            type = doc.getString("type"),
+                            category = doc.getString("category"),
+                            message = doc.getString("message"),
+                            description = doc.getString("description"),
+                            timestamp = doc.getTimestamp("timestamp")?.toDate(),
                         )
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         null
                     }
                 } ?: emptyList()
                 trySend(logs)
             }
-        awaitClose { listener.remove() }
+        awaitClose(registration::remove)
     }
 
     suspend fun updateStepsGoal(goal: Long): Result<Unit> {
