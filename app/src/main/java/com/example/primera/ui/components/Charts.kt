@@ -2,6 +2,7 @@ package com.example.primera.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -20,7 +21,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,10 +34,11 @@ import com.example.primera.core.theme.PrimeraTheme
 import com.example.primera.core.theme.SurfaceWhite
 import com.example.primera.core.theme.TextPrimary
 import com.example.primera.core.theme.TextSecondary
+import com.example.primera.core.theme.PrimeraViolet
 
 @Composable
 fun ChartContainer(
-    title: String,
+    title: @Composable () -> Unit,
     dateRange: String,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
@@ -45,12 +52,7 @@ fun ChartContainer(
             .background(SurfaceWhite)
             .padding(16.dp)
     ) {
-        Text(
-            text = title,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = TextPrimary
-        )
+        title()
         
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -76,39 +78,87 @@ fun ChartContainer(
 fun SimpleBarChart(
     data: List<Float>,
     modifier: Modifier = Modifier,
-    barColor: Color = Color(0xFFAED581), // Light green
+    labels: List<String> = emptyList(),
+    barColor: Color = PrimeraViolet,
     highlightedIndex: Int = -1,
-    highlightColor: Color = Color(0xFF8BC34A) // Darker green
+    onBarClick: (Int) -> Unit = {}
 ) {
     if (data.isEmpty()) {
         EmptyChartPlaceholder(modifier = modifier)
         return
     }
 
-    val maxValue = data.maxOrNull() ?: 1f
-    
-    Canvas(modifier = modifier.fillMaxWidth().height(150.dp)) {
-        val spacing = 20.dp.toPx()
-        val barWidth = (size.width - (data.size - 1) * spacing) / data.size
-        
-        data.forEachIndexed { index, value ->
-            val barHeight = (value / maxValue) * size.height
-            val x = index * (barWidth + spacing)
-            val y = size.height - barHeight
+    val maxValue = (data.maxOrNull() ?: 1f).coerceAtLeast(1f)
+    val textMeasurer = rememberTextMeasurer()
+    val valueTextStyle = TextStyle(
+        color = TextPrimary,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        textAlign = TextAlign.Center
+    )
+    val labelTextStyle = TextStyle(
+        color = TextSecondary,
+        fontSize = 10.sp,
+        textAlign = TextAlign.Center
+    )
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+                .pointerInput(data) {
+                    detectTapGestures { offset ->
+                        val spacing = 16.dp.toPx()
+                        val barWidth = (size.width - (data.size + 1) * spacing) / data.size
+                        data.forEachIndexed { index, _ ->
+                            val xStart = spacing + index * (barWidth + spacing)
+                            if (offset.x >= xStart && offset.x <= xStart + barWidth) {
+                                onBarClick(index)
+                            }
+                        }
+                    }
+                }
+        ) {
+            val spacing = 16.dp.toPx()
+            val availableWidth = size.width - (data.size + 1) * spacing
+            val barWidth = availableWidth / data.size
             
-            drawRoundRect(
-                color = if (index == highlightedIndex) highlightColor else barColor,
-                topLeft = Offset(x, y),
-                size = Size(barWidth, barHeight),
-                cornerRadius = CornerRadius(4.dp.toPx())
-            )
-            
-            if (index == highlightedIndex) {
-                drawCircle(
-                    color = Color.White,
-                    radius = 4.dp.toPx(),
-                    center = Offset(x + barWidth / 2f, y + 8.dp.toPx())
+            // Draw from bottom, leave space for labels
+            val bottomPadding = 25.dp.toPx()
+            val topPadding = 25.dp.toPx()
+            val chartHeight = size.height - bottomPadding - topPadding
+
+            data.forEachIndexed { index, value ->
+                val barHeight = (value / maxValue) * chartHeight
+                val x = spacing + index * (barWidth + spacing)
+                val y = size.height - bottomPadding - barHeight
+                
+                // Draw Bar
+                drawRoundRect(
+                    color = if (index == highlightedIndex) barColor else barColor.copy(alpha = 0.6f),
+                    topLeft = Offset(x, y),
+                    size = Size(barWidth, barHeight),
+                    cornerRadius = CornerRadius(4.dp.toPx())
                 )
+
+                // Draw Value above bar
+                val valueText = if (value % 1f == 0f) value.toInt().toString() else "%.1f".format(value)
+                val measuredValue = textMeasurer.measure(valueText, valueTextStyle)
+                drawText(
+                    textLayoutResult = measuredValue,
+                    topLeft = Offset(x + (barWidth - measuredValue.size.width) / 2f, y - measuredValue.size.height - 4.dp.toPx())
+                )
+
+                // Draw Label below bar
+                if (index < labels.size) {
+                    val labelText = labels[index]
+                    val measuredLabel = textMeasurer.measure(labelText, labelTextStyle)
+                    drawText(
+                        textLayoutResult = measuredLabel,
+                        topLeft = Offset(x + (barWidth - measuredLabel.size.width) / 2f, size.height - bottomPadding + 4.dp.toPx())
+                    )
+                }
             }
         }
     }
@@ -185,25 +235,15 @@ private fun ChartsPreview() {
     PrimeraTheme {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             ChartContainer(
-                title = "Weight(kg)",
+                title = { Text("Weight(kg)", fontWeight = FontWeight.SemiBold) },
                 dateRange = "March 10 - March 16, 2024",
                 onPrevious = {},
                 onNext = {}
             ) {
                 SimpleBarChart(
                     data = listOf(45f, 48f, 52f, 60f, 55f, 40f, 35f),
+                    labels = listOf("11.02", "12.02", "13.02", "14.02", "15.02", "16.02", "17.02"),
                     highlightedIndex = 3
-                )
-            }
-            
-            ChartContainer(
-                title = "Mood Trend",
-                dateRange = "March 10 - March 16, 2024",
-                onPrevious = {},
-                onNext = {}
-            ) {
-                SimpleLineChart(
-                    data = listOf(3f, 4f, 2f, 5f, 4f, 3f, 4f)
                 )
             }
         }

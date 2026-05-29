@@ -90,6 +90,24 @@ class GoalsRepositoryImpl : GoalsRepository {
         }
     }
 
+    override suspend fun updateGoal(goal: GoalDto): Result<Unit> {
+        return try {
+            val goalId = goal.id ?: throw Exception("Goal ID is required for update")
+            val goalData = hashMapOf(
+                "title" to goal.title,
+                "icon" to goal.icon,
+                "targetValue" to goal.targetValue,
+                "currentValue" to goal.currentValue,
+                "unit" to goal.unit,
+                "accentColorHex" to goal.accentColorHex
+            )
+            firestore.collection("goals").document(goalId).update(goalData as Map<String, Any>).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun deleteGoal(goalId: String): Result<Unit> {
         return try {
             firestore.collection("goals").document(goalId).delete().await()
@@ -131,7 +149,7 @@ class GoalsRepositoryImpl : GoalsRepository {
             if (!hasHydration) {
                 addGoal(GoalDto(
                     title = "Hydration",
-                    icon = "💧",
+                    icon = "R.drawable.water",
                     currentValue = 0.0,
                     targetValue = 2.5,
                     unit = "L",
@@ -144,7 +162,7 @@ class GoalsRepositoryImpl : GoalsRepository {
             if (!hasMovement) {
                 addGoal(GoalDto(
                     title = "Movement",
-                    icon = "🏃",
+                    icon = "R.drawable.steps",
                     currentValue = 0.0,
                     targetValue = 30.0,
                     unit = "min",

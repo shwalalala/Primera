@@ -116,11 +116,19 @@ fun FeatureTopBar(
                 DropdownMenu(
                     expanded = showPeriodMenu,
                     onDismissRequest = { showPeriodMenu = false },
-                    modifier = Modifier.background(SurfaceWhite)
+                    modifier = Modifier
+                        .background(SurfaceWhite)
+                        .border(1.dp, MenuButtonBorder, RoundedCornerShape(12.dp))
                 ) {
                     listOf("Daily", "Weekly", "Monthly", "Yearly").forEach { period ->
                         DropdownMenuItem(
-                            text = { Text(period, fontSize = 14.sp) },
+                            text = { 
+                                Text(
+                                    text = period, 
+                                    fontSize = 14.sp,
+                                    color = TextPrimary
+                                ) 
+                            },
                             onClick = {
                                 onPeriodSelected(period)
                                 showPeriodMenu = false

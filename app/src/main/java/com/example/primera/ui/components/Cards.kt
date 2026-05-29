@@ -1,6 +1,7 @@
 package com.example.primera.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,20 +13,60 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.primera.core.theme.PrimeraTheme
+import com.example.primera.core.theme.PrimeraViolet
 import com.example.primera.core.theme.SurfaceWhite
 import com.example.primera.core.theme.TextPrimary
 import com.example.primera.core.theme.TextSecondary
+
+@Composable
+fun GoalIcon(
+    icon: String,
+    modifier: Modifier = Modifier,
+    tint: Color = PrimeraViolet
+) {
+    if (icon.startsWith("R.drawable.")) {
+        val context = LocalContext.current
+        val resName = icon.substringAfter("R.drawable.")
+        val resId = context.resources.getIdentifier(resName, "drawable", context.packageName)
+        if (resId != 0) {
+            Icon(
+                painter = painterResource(id = resId),
+                contentDescription = null,
+                modifier = modifier,
+                tint = tint
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.Favorite,
+                contentDescription = null,
+                modifier = modifier,
+                tint = tint
+            )
+        }
+    } else {
+        Text(
+            text = icon,
+            fontSize = 20.sp,
+            modifier = modifier
+        )
+    }
+}
 
 @Composable
 fun InsightTipCard(
@@ -59,13 +100,15 @@ fun GoalItemCard(
     targetValue: String,
     progress: Float,
     modifier: Modifier = Modifier,
-    accentColor: Color = Color(0xFF64B5F6) // Default blue for Hydration
+    accentColor: Color = Color(0xFF64B5F6),
+    onClick: () -> Unit = {}
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(SurfaceWhite)
+            .clickable { onClick() }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -76,7 +119,7 @@ fun GoalItemCard(
                 .background(accentColor.copy(alpha = 0.1f)),
             contentAlignment = Alignment.Center
         ) {
-            Text(icon, fontSize = 20.sp)
+            GoalIcon(icon = icon, tint = accentColor, modifier = Modifier.size(20.dp))
         }
         
         Spacer(Modifier.width(12.dp))
