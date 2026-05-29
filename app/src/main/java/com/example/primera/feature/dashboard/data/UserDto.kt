@@ -10,5 +10,6 @@ data class UserDto(
     val heartRateBpm: Long? = null,
     val sleepHours: Long? = null,
     val sleepMinutes: Long? = null,
+    val spO2: Long? = null,
     val heightCm: Long? = null
 )

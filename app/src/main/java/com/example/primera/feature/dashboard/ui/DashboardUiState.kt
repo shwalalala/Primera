@@ -27,6 +27,7 @@ data class DashboardUiModel(
     val sleepHours: Int,
     val sleepMinutes: Int,
     val sleepQuality: String,
+    val spO2: Int?,
     val isWatchSynced: Boolean,
     val recentLogs: List<DashboardLogUiItem>,
     val weekDays: List<DashboardWeekDayItem>

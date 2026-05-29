@@ -25,6 +25,7 @@ class DashboardRepositoryImpl(
                 heartRateBpm = userDto.heartRateBpm?.toInt() ?: 72,
                 sleepHours = userDto.sleepHours?.toInt() ?: 0,
                 sleepMinutes = userDto.sleepMinutes?.toInt() ?: 0,
+                spO2 = userDto.spO2?.toInt(),
                 heightCm = userDto.heightCm?.toInt(),
                 recentLogs = logsDtoList.map { dto ->
                     DashboardHealthLog(

@@ -33,6 +33,9 @@ fun SmartwatchRoute(
         },
         onReadAndSave = {
             viewModel.readAndSaveSmartwatchHealth()
+        },
+        onBackToSources = {
+            viewModel.onBackToSources()
         }
     )
 }
