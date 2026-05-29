@@ -9,5 +9,6 @@ data class UserDto(
     val stepsGoal: Long? = null,
     val heartRateBpm: Long? = null,
     val sleepHours: Long? = null,
-    val sleepMinutes: Long? = null
+    val sleepMinutes: Long? = null,
+    val heightCm: Long? = null
 )

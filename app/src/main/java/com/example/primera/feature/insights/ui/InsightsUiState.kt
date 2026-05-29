@@ -19,7 +19,10 @@ data class InsightsUiModel(
     val goalsCompletionTipColor: Color = Color(0xFFFFCC80),
     val healthWarningTip: String? = null,
     val healthWarningTipColor: Color = Color(0xFFCE93D8),
+    val bmiValue: Float? = null,
+    val bmiStatus: String? = null,
     val wellnessGoals: List<InsightGoalUiItem> = emptyList(),
+    val rawGoals: List<com.example.primera.feature.goals.data.GoalDto> = emptyList(),
     val weightTrend: ChartData = ChartData(),
     val activityTrend: ChartData = ChartData(),
     val moodTrend: ChartData = ChartData()
@@ -39,5 +42,6 @@ data class ChartData(
     val title: String = "",
     val dateRange: String = "",
     val values: List<Float> = emptyList(),
+    val labels: List<String> = emptyList(),
     val highlightedIndex: Int = -1
 )

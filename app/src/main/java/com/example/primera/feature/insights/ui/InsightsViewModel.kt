@@ -9,6 +9,7 @@ import com.example.primera.feature.dashboard.data.DashboardRepository
 import com.example.primera.feature.goals.data.GoalsRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.*
 
 class InsightsViewModel(
@@ -19,6 +20,28 @@ class InsightsViewModel(
 
     private val _activePeriod = MutableStateFlow("Weekly")
     val activePeriod: StateFlow<String> = _activePeriod.asStateFlow()
+
+    private val _weightPeriod = MutableStateFlow("Weekly")
+    val weightPeriod: StateFlow<String> = _weightPeriod.asStateFlow()
+
+    private val _weightOffset = MutableStateFlow(0)
+    val weightOffset: StateFlow<Int> = _weightOffset.asStateFlow()
+
+    private val _moodPeriod = MutableStateFlow("Weekly")
+    val moodPeriod: StateFlow<String> = _moodPeriod.asStateFlow()
+
+    private val _moodOffset = MutableStateFlow(0)
+    val moodOffset: StateFlow<Int> = _moodOffset.asStateFlow()
+
+    private val _activityPeriod = MutableStateFlow("Weekly")
+    val activityPeriod: StateFlow<String> = _activityPeriod.asStateFlow()
+
+    private val _activityOffset = MutableStateFlow(0)
+    val activityOffset: StateFlow<Int> = _activityOffset.asStateFlow()
+
+    private val _highlightedWeightIndex = MutableStateFlow(-1)
+    private val _highlightedMoodIndex = MutableStateFlow(-1)
+    private val _highlightedActivityIndex = MutableStateFlow(-1)
 
     init {
         viewModelScope.launch {
@@ -31,11 +54,27 @@ class InsightsViewModel(
         checkinsRepository.observeLogs(),
         checkinsRepository.observeUserWeight(),
         goalsRepository.observeGoals(),
-        _activePeriod
-    ) { dashboardData, logs, weightData, goals, period ->
+        combine(_activePeriod, _weightPeriod, _moodPeriod, _activityPeriod) { p -> p },
+        combine(_weightOffset, _moodOffset, _activityOffset) { o -> o }
+    ) { args ->
+        val dashboardData = args[0] as com.example.primera.feature.dashboard.domain.DashboardData?
+        val logs = args[1] as List<com.example.primera.feature.checkins.data.CheckinLogDto>
+        val weightData = args[2] as com.example.primera.feature.checkins.data.CheckinUserDto?
+        val goals = args[3] as List<com.example.primera.feature.goals.data.GoalDto>
+        val periods = args[4] as Array<String>
+        val offsets = args[5] as Array<Int>
+
+        val activePeriod = periods[0]
+        val weightPeriod = periods[1]
+        val moodPeriod = periods[2]
+        val activityPeriod = periods[3]
         
-        val filteredGoals = filterGoalsByPeriod(goals, period)
-        val filteredLogs = filterLogsByPeriod(logs, period)
+        val weightOffset = offsets[0]
+        val moodOffset = offsets[1]
+        val activityOffset = offsets[2]
+
+        val filteredGoals = filterGoalsByPeriod(goals, activePeriod, 0)
+        val filteredLogsForProgress = filterLogsByPeriod(logs, activePeriod, 0)
 
         // Goal counts should match the period wording
         val totalGoalsCount = filteredGoals.size
@@ -43,7 +82,7 @@ class InsightsViewModel(
         
         // Progress Calculation
         val baseScore = if (totalGoalsCount > 0) (completedGoalsCount.toFloat() / totalGoalsCount) else 0f
-        val checkinOffset = calculateCheckinOffset(filteredLogs)
+        val checkinOffset = calculateCheckinOffset(filteredLogsForProgress)
         val finalProgress = (baseScore + checkinOffset).coerceIn(0f, 1f)
 
         val statusText = when {
@@ -58,7 +97,33 @@ class InsightsViewModel(
             else -> Color(0xFFF28B82)
         }
 
-        val healthWarning = generateHealthWarning(filteredLogs, period)
+        val healthWarning = generateHealthWarning(filteredLogsForProgress, activePeriod)
+
+        val weightLogsForChart = filterLogsByPeriod(logs, weightPeriod, weightOffset)
+        val weightValues = extractWeightValues(weightLogsForChart, weightData?.weightKg?.toFloat() ?: 0f)
+
+        val moodLogsForChart = filterLogsByPeriod(logs, moodPeriod, moodOffset)
+        val moodValues = extractMoodValues(moodLogsForChart)
+
+        val activityGoals = filterGoalsByPeriod(goals, activityPeriod, activityOffset)
+        val activityValues = extractActivityValues(activityGoals)
+
+        // BMI Calculation
+        val heightCm = dashboardData?.heightCm?.toFloat() ?: 0f
+        val currentWeight = weightData?.weightKg?.toFloat() ?: 0f
+        var bmiValue: Float? = null
+        var bmiStatus: String? = null
+        
+        if (heightCm > 0 && currentWeight > 0) {
+            val heightMeters = heightCm / 100f
+            bmiValue = currentWeight / (heightMeters * heightMeters)
+            bmiStatus = when {
+                bmiValue < 18.5f -> "Underweight"
+                bmiValue < 25f -> "Healthy"
+                bmiValue < 30f -> "Overweight"
+                else -> "Obese"
+            }
+        }
 
         InsightsUiState.Success(
             InsightsUiModel(
@@ -66,14 +131,17 @@ class InsightsViewModel(
                 physiqueSubtitle = if (finalProgress >= 1f) "100%" else "${(finalProgress * 100).toInt()}%",
                 physiqueStatus = statusText,
                 progressColor = progressColor,
-                activePeriod = period,
-                completedGoalsText = "This $period, you've completed $completedGoalsCount/$totalGoalsCount goals.",
+                activePeriod = activePeriod,
+                completedGoalsText = "This $activePeriod, you've completed $completedGoalsCount/$totalGoalsCount goals.",
                 goalsCompletionTip = if (completedGoalsCount == totalGoalsCount && totalGoalsCount > 0) 
                     "You're doing great, Mom. Keep it up!" 
                     else getRandomGoalTip(),
                 goalsCompletionTipColor = progressColor.copy(alpha = 0.8f),
                 healthWarningTip = healthWarning,
                 healthWarningTipColor = if (healthWarning != null) Color(0xFFCE93D8) else Color.Transparent,
+                bmiValue = bmiValue,
+                bmiStatus = bmiStatus,
+                rawGoals = filteredGoals,
                 wellnessGoals = filteredGoals.map { goal ->
                     InsightGoalUiItem(
                         id = goal.id ?: "",
@@ -86,20 +154,25 @@ class InsightsViewModel(
                     )
                 },
                 weightTrend = ChartData(
-                    title = "Weight(kg)",
-                    dateRange = getDateRangeText(period),
-                    values = extractWeightValues(weightData?.weightKg?.toFloat() ?: 0f)
+                    title = "Weight ($weightPeriod)",
+                    dateRange = getDateRangeText(weightPeriod, weightOffset),
+                    values = weightValues,
+                    labels = getChartLabels(weightPeriod, weightOffset),
+                    highlightedIndex = _highlightedWeightIndex.value
                 ),
                 moodTrend = ChartData(
-                    title = "Mood Trend",
-                    dateRange = getDateRangeText(period),
-                    values = extractMoodValues(filteredLogs)
+                    title = "Mood ($moodPeriod)",
+                    dateRange = getDateRangeText(moodPeriod, moodOffset),
+                    values = moodValues,
+                    labels = getChartLabels(moodPeriod, moodOffset),
+                    highlightedIndex = _highlightedMoodIndex.value
                 ),
                 activityTrend = ChartData(
-                    title = "This week's activity",
-                    dateRange = getDateRangeText(period),
-                    values = getDummyActivityValues(period),
-                    highlightedIndex = 6
+                    title = "Activity ($activityPeriod)",
+                    dateRange = getDateRangeText(activityPeriod, activityOffset),
+                    values = activityValues,
+                    labels = getChartLabels(activityPeriod, activityOffset),
+                    highlightedIndex = _highlightedActivityIndex.value
                 )
             )
         )
@@ -123,10 +196,17 @@ class InsightsViewModel(
     private fun generateHealthWarning(logs: List<com.example.primera.feature.checkins.data.CheckinLogDto>, period: String): String? {
         val symptoms = mutableListOf<String>()
         logs.forEach { log ->
-            val desc = log.description?.lowercase() ?: ""
-            if (desc.contains("headache") || desc.contains("aching head")) symptoms.add("headaches")
-            if (desc.contains("nausea")) symptoms.add("nausea")
-            if (desc.contains("back pain")) symptoms.add("back pain")
+            val desc = log.description ?: ""
+            // Parse "Symptoms: Back Pain; Mood: Happy; ..."
+            if (desc.contains("Symptoms:")) {
+                val symptomsPart = desc.substringAfter("Symptoms:").substringBefore(";")
+                if (symptomsPart.isNotBlank() && !symptomsPart.contains("none", ignoreCase = true)) {
+                    symptomsPart.split(",").forEach { 
+                        val s = it.trim()
+                        if (s.isNotBlank()) symptoms.add(s)
+                    }
+                }
+            }
         }
         
         if (symptoms.isEmpty()) return null
@@ -149,33 +229,47 @@ class InsightsViewModel(
         return "This $periodWording, you reported $symptomText. Monitor your symptoms closely and prioritize rest and hydration. If they continue for more than 3 days, consult your doctor."
     }
 
-    private fun filterGoalsByPeriod(goals: List<com.example.primera.feature.goals.data.GoalDto>, period: String): List<com.example.primera.feature.goals.data.GoalDto> {
+    private fun filterGoalsByPeriod(goals: List<com.example.primera.feature.goals.data.GoalDto>, period: String, offset: Int): List<com.example.primera.feature.goals.data.GoalDto> {
         val calendar = Calendar.getInstance()
-        val now = calendar.time
+        applyOffset(calendar, period, offset)
+        val targetDate = calendar.time
+        
         return goals.filter { goal ->
-            val goalDate = goal.timestamp ?: now
+            val goalDate = goal.timestamp ?: Date()
             when (period) {
-                "Daily" -> isSameDay(goalDate, now)
-                "Weekly" -> isSameWeek(goalDate, now)
-                "Monthly" -> isSameMonth(goalDate, now)
-                "Yearly" -> isSameYear(goalDate, now)
+                "Daily" -> isSameDay(goalDate, targetDate)
+                "Weekly" -> isSameWeek(goalDate, targetDate)
+                "Monthly" -> isSameMonth(goalDate, targetDate)
+                "Yearly" -> isSameYear(goalDate, targetDate)
                 else -> true
             }
         }
     }
 
-    private fun filterLogsByPeriod(logs: List<com.example.primera.feature.checkins.data.CheckinLogDto>, period: String): List<com.example.primera.feature.checkins.data.CheckinLogDto> {
+    private fun filterLogsByPeriod(logs: List<com.example.primera.feature.checkins.data.CheckinLogDto>, period: String, offset: Int): List<com.example.primera.feature.checkins.data.CheckinLogDto> {
         val calendar = Calendar.getInstance()
-        val now = calendar.time
+        applyOffset(calendar, period, offset)
+        val targetDate = calendar.time
+
         return logs.filter { log ->
-            val logDate = log.timestamp ?: now
+            val logDate = log.timestamp ?: Date()
             when (period) {
-                "Daily" -> isSameDay(logDate, now)
-                "Weekly" -> isSameWeek(logDate, now)
-                "Monthly" -> isSameMonth(logDate, now)
-                "Yearly" -> isSameYear(logDate, now)
+                "Daily" -> isSameDay(logDate, targetDate)
+                "Weekly" -> isSameWeek(logDate, targetDate)
+                "Monthly" -> isSameMonth(logDate, targetDate)
+                "Yearly" -> isSameYear(logDate, targetDate)
                 else -> true
             }
+        }
+    }
+
+    private fun applyOffset(calendar: Calendar, period: String, offset: Int) {
+        if (offset == 0) return
+        when (period) {
+            "Daily" -> calendar.add(Calendar.DAY_OF_YEAR, offset)
+            "Weekly" -> calendar.add(Calendar.WEEK_OF_YEAR, offset)
+            "Monthly" -> calendar.add(Calendar.MONTH, offset)
+            "Yearly" -> calendar.add(Calendar.YEAR, offset)
         }
     }
 
@@ -192,20 +286,22 @@ class InsightsViewModel(
         return offset
     }
 
-    private fun getDateRangeText(period: String): String {
+    private fun getDateRangeText(period: String, offset: Int): String {
+        val calendar = Calendar.getInstance()
+        applyOffset(calendar, period, offset)
+        
         return when (period) {
-            "Daily" -> "Today"
-            "Weekly" -> "Current Week"
-            "Monthly" -> "Current Month"
-            "Yearly" -> "2024"
+            "Daily" -> SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(calendar.time)
+            "Weekly" -> {
+                val end = calendar.time
+                calendar.add(Calendar.DAY_OF_YEAR, -6)
+                val start = calendar.time
+                val sdf = SimpleDateFormat("MMM d", Locale.getDefault())
+                "${sdf.format(start)} - ${sdf.format(end)}"
+            }
+            "Monthly" -> SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(calendar.time)
+            "Yearly" -> SimpleDateFormat("yyyy", Locale.getDefault()).format(calendar.time)
             else -> "Range"
-        }
-    }
-
-    private fun getDummyActivityValues(period: String): List<Float> {
-        return when (period) {
-            "Daily" -> listOf(2000f, 4000f, 6000f, 8000f)
-            else -> listOf(2000f, 4000f, 6000f, 8000f, 7000f, 5000f, 6432f)
         }
     }
 
@@ -241,28 +337,87 @@ class InsightsViewModel(
         }
     }
 
-    private fun extractWeightValues(currentWeight: Float): List<Float> {
-        return if (currentWeight > 0) listOf(currentWeight - 0.5f, currentWeight - 0.3f, currentWeight - 0.1f, currentWeight, currentWeight + 0.2f, currentWeight + 0.4f, currentWeight) else emptyList()
+    private fun extractActivityValues(goals: List<com.example.primera.feature.goals.data.GoalDto>): List<Float> {
+        // Find "Walking" or "Yoga" or "Movement" goals
+        val movementKeywords = listOf("walking", "yoga", "movement", "exercise", "steps", "reps", "min")
+        val activityGoals = goals.filter { goal ->
+            val title = goal.title?.lowercase() ?: ""
+            movementKeywords.any { it in title }
+        }
+        
+        return if (activityGoals.isEmpty()) {
+            emptyList()
+        } else {
+            // If we have multiple, let's take the top 7 most recent ones
+            activityGoals.sortedByDescending { it.timestamp }
+                .take(7)
+                .map { it.currentValue.toFloat() }
+                .reversed()
+        }
+    }
+
+    private fun getChartLabels(period: String, offset: Int): List<String> {
+        val calendar = Calendar.getInstance()
+        applyOffset(calendar, period, offset)
+        val sdf = SimpleDateFormat("dd.MM", Locale.getDefault())
+        
+        return when (period) {
+            "Daily" -> listOf(sdf.format(calendar.time))
+            "Weekly" -> {
+                calendar.add(Calendar.DAY_OF_YEAR, -6)
+                (0..6).map {
+                    val label = sdf.format(calendar.time)
+                    calendar.add(Calendar.DAY_OF_YEAR, 1)
+                    label
+                }
+            }
+            "Monthly" -> (0..3).map { "W${it + 1}" }
+            "Yearly" -> (0..11).map { "M${it + 1}" }
+            else -> emptyList()
+        }
+    }
+
+    private fun extractWeightValues(logs: List<com.example.primera.feature.checkins.data.CheckinLogDto>, latestWeight: Float): List<Float> {
+        val weights = logs.mapNotNull { log ->
+            val desc = log.description ?: ""
+            if (desc.contains("Weight:")) {
+                desc.substringAfter("Weight:").substringBefore("kg").trim().toFloatOrNull()
+            } else null
+        }
+        return if (weights.isEmpty()) {
+            if (latestWeight > 0) listOf(latestWeight) else emptyList()
+        } else weights
     }
 
     private fun extractMoodValues(logs: List<com.example.primera.feature.checkins.data.CheckinLogDto>): List<Float> {
-        val moodValues = logs.filter { it.category == "Mood" || it.description?.contains("Mood:") == true }
-            .map { log ->
-                when {
-                    log.description?.contains("Happy") == true -> 5f
-                    log.description?.contains("Normal") == true -> 3f
-                    log.description?.contains("Sad") == true -> 2f
-                    log.description?.contains("Angry") == true -> 1f
-                    else -> 3f
-                }
+        return logs.map { log ->
+            val moodPart = log.description?.substringAfter("Mood:")?.substringBefore(";")?.trim() ?: ""
+            when {
+                moodPart.contains("Happy", ignoreCase = true) -> 5f
+                moodPart.contains("Normal", ignoreCase = true) -> 3f
+                moodPart.contains("Sad", ignoreCase = true) -> 2f
+                moodPart.contains("Angry", ignoreCase = true) -> 1f
+                else -> 3f
             }
-        return if (moodValues.isEmpty()) listOf(3f, 4f, 3f, 5f, 4f, 3f, 4f) else moodValues.take(7).reversed()
+        }
     }
 
     fun onPeriodSelected(period: String) {
         _activePeriod.value = period
     }
 
-    fun onPreviousRange() {}
-    fun onNextRange() {}
+    fun onWeightPeriodSelected(period: String) { _weightPeriod.value = period }
+    fun onWeightPrevious() { _weightOffset.value -= 1 }
+    fun onWeightNext() { _weightOffset.value += 1 }
+    fun onWeightBarClick(index: Int) { _highlightedWeightIndex.value = index }
+
+    fun onMoodPeriodSelected(period: String) { _moodPeriod.value = period }
+    fun onMoodPrevious() { _moodOffset.value -= 1 }
+    fun onMoodNext() { _moodOffset.value += 1 }
+    fun onMoodBarClick(index: Int) { _highlightedMoodIndex.value = index }
+
+    fun onActivityPeriodSelected(period: String) { _activityPeriod.value = period }
+    fun onActivityPrevious() { _activityOffset.value -= 1 }
+    fun onActivityNext() { _activityOffset.value += 1 }
+    fun onActivityBarClick(index: Int) { _highlightedActivityIndex.value = index }
 }
