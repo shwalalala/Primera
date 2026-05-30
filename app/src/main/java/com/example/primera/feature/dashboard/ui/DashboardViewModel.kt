@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.primera.feature.dashboard.data.DashboardRepository
 import com.example.primera.feature.dashboard.domain.DashboardBusinessLogic
 import com.example.primera.feature.dashboard.domain.DashboardData
+import com.example.primera.feature.smartwatchconnection.data.HealthConnectManager
 import com.example.primera.core.theme.LogBaby
 import com.example.primera.core.theme.LogNutrition
 import com.example.primera.core.theme.LogOther
@@ -17,7 +18,8 @@ import java.util.*
 
 class DashboardViewModel(
     private val repository: DashboardRepository,
-    private val goalsRepository: com.example.primera.feature.goals.data.GoalsRepository
+    private val goalsRepository: com.example.primera.feature.goals.data.GoalsRepository,
+    private val healthConnectManager: HealthConnectManager
 ) : ViewModel() {
 
     init {
@@ -79,7 +81,7 @@ class DashboardViewModel(
 
     private fun mapToUiModel(data: DashboardData): DashboardUiModel {
         val week = DashboardBusinessLogic.getWeekNumber(data.dueDate)
-        val isWatchSynced = data.steps > 0 || data.heartRateBpm > 0 || data.sleepHours > 0 || data.sleepMinutes > 0
+        val isWatchSynced = data.steps > 0 || data.heartRateBpm > 0 || data.sleepHours > 0 || data.sleepMinutes > 0 || (data.spO2 ?: 0) > 0
         
         // BUG-001 Fix: For now, we don't have historical HR, so we just set trending to false 
         // unless we implement local caching or more complex DB reads.
@@ -178,21 +180,26 @@ class DashboardViewModel(
     fun onAddLog() {}
     fun onInputManually() {}
 
-    // FEAT-002: Watch Sync Stub
+    // FEAT-002: Watch Sync with Actual Data
     fun onSyncWatch() {
         viewModelScope.launch {
-            // Simulate watch sync by generating random but plausible data
-            val randomSteps = (5000..10000).random().toLong()
-            val randomHR = (70..85).random().toLong()
-            val randomSleepHours = (6..8).random().toLong()
-            val randomSleepMinutes = (0..59).random().toLong()
-            
-            repository.updateHealthData(
-                steps = randomSteps,
-                heartRate = randomHR,
-                sleepHours = randomSleepHours,
-                sleepMinutes = randomSleepMinutes
-            )
+            if (healthConnectManager.hasAllPermissions()) {
+                try {
+                    val healthData = healthConnectManager.readTodaySmartwatchHealth()
+                    repository.updateHealthData(
+                        steps = healthData.steps,
+                        heartRate = healthData.currentHeartRate ?: 0L,
+                        sleepHours = healthData.sleepMinutes / 60,
+                        sleepMinutes = healthData.sleepMinutes % 60,
+                        spO2 = healthData.spO2?.toLong()
+                    )
+                } catch (e: Exception) {
+                    // Log error or handle gracefully
+                }
+            } else {
+                // If no permissions, for now we just log it.
+                // In a real app, we might want to navigate to a permission screen.
+            }
         }
     }
 

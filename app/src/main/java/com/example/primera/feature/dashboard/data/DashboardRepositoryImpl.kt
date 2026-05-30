@@ -47,8 +47,9 @@ class DashboardRepositoryImpl(
         steps: Long,
         heartRate: Long,
         sleepHours: Long,
-        sleepMinutes: Long
+        sleepMinutes: Long,
+        spO2: Long?
     ): Result<Unit> {
-        return dataSource.updateHealthData(steps, heartRate, sleepHours, sleepMinutes)
+        return dataSource.updateHealthData(steps, heartRate, sleepHours, sleepMinutes, spO2)
     }
 }
