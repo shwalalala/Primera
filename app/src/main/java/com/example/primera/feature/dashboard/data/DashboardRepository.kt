@@ -8,4 +8,6 @@ interface DashboardRepository {
     fun observeDashboardData(): Flow<DashboardData?>
     suspend fun updateStepsGoal(goal: Long): Result<Unit>
     suspend fun updateHealthData(steps: Long, heartRate: Long, sleepHours: Long, sleepMinutes: Long, spO2: Long? = null): Result<Unit>
+    suspend fun saveHistoricalRecord(record: com.example.primera.feature.smartwatchconnection.domain.SmartwatchHealth): Result<Unit>
+    fun observeHealthRecords(): Flow<List<com.example.primera.feature.smartwatchconnection.domain.SmartwatchHealth>>
 }
