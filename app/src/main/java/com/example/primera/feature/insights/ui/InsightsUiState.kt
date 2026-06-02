@@ -25,7 +25,10 @@ data class InsightsUiModel(
     val rawGoals: List<com.example.primera.feature.goals.data.GoalDto> = emptyList(),
     val weightTrend: ChartData = ChartData(),
     val activityTrend: ChartData = ChartData(),
-    val moodTrend: ChartData = ChartData()
+    val moodTrend: ChartData = ChartData(),
+    val heartRateTrend: ChartData = ChartData(),
+    val sleepTrend: ChartData = ChartData(),
+    val spO2Trend: ChartData = ChartData()
 )
 
 data class InsightGoalUiItem(

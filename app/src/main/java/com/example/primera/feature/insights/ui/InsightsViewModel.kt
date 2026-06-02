@@ -39,9 +39,21 @@ class InsightsViewModel(
     private val _activityOffset = MutableStateFlow(0)
     val activityOffset: StateFlow<Int> = _activityOffset.asStateFlow()
 
+    private val _hrOffset = MutableStateFlow(0)
+    val hrOffset: StateFlow<Int> = _hrOffset.asStateFlow()
+
+    private val _sleepOffset = MutableStateFlow(0)
+    val sleepOffset: StateFlow<Int> = _sleepOffset.asStateFlow()
+
+    private val _spO2Offset = MutableStateFlow(0)
+    val spO2Offset: StateFlow<Int> = _spO2Offset.asStateFlow()
+
     private val _highlightedWeightIndex = MutableStateFlow(-1)
     private val _highlightedMoodIndex = MutableStateFlow(-1)
     private val _highlightedActivityIndex = MutableStateFlow(-1)
+    private val _highlightedHrIndex = MutableStateFlow(-1)
+    private val _highlightedSleepIndex = MutableStateFlow(-1)
+    private val _highlightedSpO2Index = MutableStateFlow(-1)
 
     init {
         viewModelScope.launch {
@@ -54,15 +66,17 @@ class InsightsViewModel(
         checkinsRepository.observeLogs(),
         checkinsRepository.observeUserWeight(),
         goalsRepository.observeGoals(),
+        dashboardRepository.observeHealthRecords(),
         combine(_activePeriod, _weightPeriod, _moodPeriod, _activityPeriod) { p -> p },
-        combine(_weightOffset, _moodOffset, _activityOffset) { o -> o }
+        combine(_weightOffset, _moodOffset, _activityOffset, _hrOffset, _sleepOffset, _spO2Offset) { o -> o }
     ) { args ->
         val dashboardData = args[0] as com.example.primera.feature.dashboard.domain.DashboardData?
         val logs = args[1] as List<com.example.primera.feature.checkins.data.CheckinLogDto>
         val weightData = args[2] as com.example.primera.feature.checkins.data.CheckinUserDto?
         val goals = args[3] as List<com.example.primera.feature.goals.data.GoalDto>
-        val periods = args[4] as Array<String>
-        val offsets = args[5] as Array<Int>
+        val healthRecords = args[4] as List<com.example.primera.feature.smartwatchconnection.domain.SmartwatchHealth>
+        val periods = args[5] as Array<String>
+        val offsets = args[6] as Array<Int>
 
         val activePeriod = periods[0]
         val weightPeriod = periods[1]
@@ -72,7 +86,11 @@ class InsightsViewModel(
         val weightOffset = offsets[0]
         val moodOffset = offsets[1]
         val activityOffset = offsets[2]
+        val hrOffset = offsets[3]
+        val sleepOffset = offsets[4]
+        val spO2Offset = offsets[5]
 
+        // Fix for "Physique Progress" for full-term baby (coerce in to avoid issues)
         val filteredGoals = filterGoalsByPeriod(goals, activePeriod, 0)
         val filteredLogsForProgress = filterLogsByPeriod(logs, activePeriod, 0)
 
@@ -81,9 +99,16 @@ class InsightsViewModel(
         val completedGoalsCount = filteredGoals.count { it.currentValue >= it.targetValue }
         
         // Progress Calculation
+        // baseScore from goals (completed/total)
         val baseScore = if (totalGoalsCount > 0) (completedGoalsCount.toFloat() / totalGoalsCount) else 0f
-        val checkinOffset = calculateCheckinOffset(filteredLogsForProgress)
-        val finalProgress = (baseScore + checkinOffset).coerceIn(0f, 1f)
+        
+        // checkinOffset from mood/symptoms (limited to +/- 20%)
+        val checkinOffset = calculateCheckinOffset(filteredLogsForProgress).coerceIn(-0.2f, 0.2f)
+        
+        // smartwatchContribution (e.g. steps vs goal, limited to 20%)
+        val smartwatchContribution = calculateSmartwatchContribution(healthRecords, activePeriod).coerceIn(0f, 0.2f)
+        
+        val finalProgress = (baseScore + checkinOffset + smartwatchContribution).coerceIn(0f, 1f)
 
         val statusText = when {
             finalProgress >= 0.6f -> "Healthy"
@@ -105,8 +130,11 @@ class InsightsViewModel(
         val moodLogsForChart = filterLogsByPeriod(logs, moodPeriod, moodOffset)
         val moodValues = extractMoodValues(moodLogsForChart)
 
-        val activityGoals = filterGoalsByPeriod(goals, activityPeriod, activityOffset)
-        val activityValues = extractActivityValues(activityGoals)
+        // Extract Smartwatch Data
+        val hrValues = extractSmartwatchValues(healthRecords, activePeriod, hrOffset) { it.averageHeartRate?.toFloat() ?: 0f }
+        val sleepValues = extractSmartwatchValues(healthRecords, activePeriod, sleepOffset) { it.sleepMinutes.toFloat() / 60f }
+        val spO2Values = extractSmartwatchValues(healthRecords, activePeriod, spO2Offset) { it.spO2?.toFloat() ?: 0f }
+        val stepValues = extractSmartwatchValues(healthRecords, activePeriod, activityOffset) { it.steps.toFloat() }
 
         // BMI Calculation
         val heightCm = dashboardData?.heightCm?.toFloat() ?: 0f
@@ -172,9 +200,30 @@ class InsightsViewModel(
                 activityTrend = ChartData(
                     title = "Activity ($activityPeriod)",
                     dateRange = getDateRangeText(activityPeriod, activityOffset),
-                    values = activityValues,
+                    values = stepValues, // Use actual step values from smartwatch records
                     labels = getChartLabels(activityPeriod, activityOffset),
                     highlightedIndex = _highlightedActivityIndex.value
+                ),
+                heartRateTrend = ChartData(
+                    title = "Heart Rate ($activePeriod)",
+                    dateRange = getDateRangeText(activePeriod, hrOffset),
+                    values = hrValues,
+                    labels = getChartLabels(activePeriod, hrOffset),
+                    highlightedIndex = _highlightedHrIndex.value
+                ),
+                sleepTrend = ChartData(
+                    title = "Sleep ($activePeriod)",
+                    dateRange = getDateRangeText(activePeriod, sleepOffset),
+                    values = sleepValues,
+                    labels = getChartLabels(activePeriod, sleepOffset),
+                    highlightedIndex = _highlightedSleepIndex.value
+                ),
+                spO2Trend = ChartData(
+                    title = "SpO2 ($activePeriod)",
+                    dateRange = getDateRangeText(activePeriod, spO2Offset),
+                    values = spO2Values,
+                    labels = getChartLabels(activePeriod, spO2Offset),
+                    highlightedIndex = _highlightedSpO2Index.value
                 )
             )
         )
@@ -276,16 +325,46 @@ class InsightsViewModel(
     }
 
     private fun calculateCheckinOffset(logs: List<com.example.primera.feature.checkins.data.CheckinLogDto>): Float {
+        if (logs.isEmpty()) return 0f
         var offset = 0f
         logs.forEach { log ->
             val desc = log.description?.lowercase() ?: ""
             // Positive
-            if (desc.contains("happy") || desc.contains("normal")) offset += 0.05f
+            if (desc.contains("happy") || desc.contains("normal")) offset += 0.02f
             // Negative 
             if (desc.contains("angry") || desc.contains("sad") || desc.contains("nausea") || 
-                desc.contains("aching head") || desc.contains("back pain")) offset -= 0.05f
+                desc.contains("aching head") || desc.contains("back pain")) offset -= 0.02f
         }
         return offset
+    }
+
+    private fun calculateSmartwatchContribution(records: List<com.example.primera.feature.smartwatchconnection.domain.SmartwatchHealth>, period: String): Float {
+        if (records.isEmpty()) return 0f
+        
+        // Focus on most recent record for daily, or average for weekly
+        val calendar = Calendar.getInstance()
+        val currentRecords = records.filter { record ->
+            val parts = record.date.split("-")
+            if (parts.size != 3) return@filter false
+            val recCal = Calendar.getInstance().apply {
+                set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt())
+            }
+            when (period) {
+                "Daily" -> isSameDay(recCal.time, calendar.time)
+                "Weekly" -> isSameWeek(recCal.time, calendar.time)
+                else -> true
+            }
+        }
+        
+        if (currentRecords.isEmpty()) return 0f
+        
+        // If average steps >= 5000, add 0.1, if >= 8000 add 0.2
+        val avgSteps = currentRecords.map { it.steps }.average()
+        return when {
+            avgSteps >= 8000 -> 0.2f
+            avgSteps >= 5000 -> 0.1f
+            else -> 0f
+        }
     }
 
     private fun getDateRangeText(period: String, offset: Int): String {
@@ -339,31 +418,13 @@ class InsightsViewModel(
         }
     }
 
-    private fun extractActivityValues(goals: List<com.example.primera.feature.goals.data.GoalDto>): List<Float> {
-        // Focus on "Movement" and "Steps" specifically as requested
-        val movementKeywords = listOf("walking", "yoga", "movement", "exercise", "steps")
-        val activityGoals = goals.filter { goal ->
-            val title = goal.title?.lowercase() ?: ""
-            movementKeywords.any { it in title }
-        }
-        
-        return if (activityGoals.isEmpty()) {
-            emptyList()
-        } else {
-            // Take values from these goals, sorted by date
-            activityGoals.sortedBy { it.timestamp }
-                .map { it.currentValue.toFloat() }
-                .takeLast(7) // Show up to last 7 data points
-        }
-    }
-
     private fun getChartLabels(period: String, offset: Int): List<String> {
         val calendar = Calendar.getInstance()
         applyOffset(calendar, period, offset)
         val sdf = SimpleDateFormat("dd.MM", Locale.getDefault())
         
         return when (period) {
-            "Daily" -> listOf(sdf.format(calendar.time))
+            "Daily" -> (0..23).map { String.format(Locale.getDefault(), "%02d:00", it) }
             "Weekly" -> {
                 calendar.add(Calendar.DAY_OF_YEAR, -6)
                 (0..6).map {
@@ -374,6 +435,77 @@ class InsightsViewModel(
             }
             "Monthly" -> (0..3).map { "W${it + 1}" }
             "Yearly" -> (0..11).map { "M${it + 1}" }
+            else -> emptyList()
+        }
+    }
+
+    private fun extractSmartwatchValues(
+        records: List<com.example.primera.feature.smartwatchconnection.domain.SmartwatchHealth>,
+        period: String,
+        offset: Int,
+        extractor: (com.example.primera.feature.smartwatchconnection.domain.SmartwatchHealth) -> Float
+    ): List<Float> {
+        val calendar = Calendar.getInstance()
+        applyOffset(calendar, period, offset)
+        
+        return when (period) {
+            "Daily" -> {
+                val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)
+                val record = records.find { it.date == dateStr }
+                val value = record?.let { extractor(it) } ?: 0f
+                
+                // For hourly data, if we only have the daily total, let's distribute it
+                // into a simulated curve for visualization purposes if no hourly data exists.
+                // Or just show it at the current hour if it's today.
+                val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+                val isToday = isSameDay(calendar.time, Date())
+                
+                (0..23).map { hour ->
+                    when {
+                        isToday && hour == currentHour -> value
+                        !isToday && hour == 12 -> value // Show at noon for past days
+                        else -> 0f
+                    }
+                }
+            }
+            "Weekly" -> {
+                val dates = (0..6).map {
+                    val c = (calendar.clone() as Calendar)
+                    c.add(Calendar.DAY_OF_YEAR, -6 + it)
+                    SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(c.time)
+                }
+                dates.map { date ->
+                    records.find { it.date == date }?.let { extractor(it) } ?: 0f
+                }
+            }
+            "Monthly" -> {
+                // Group by week of month
+                (1..4).map { week ->
+                    val weekRecords = records.filter { record ->
+                        val recCal = Calendar.getInstance().apply {
+                            val parts = record.date.split("-")
+                            set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt())
+                        }
+                        recCal.get(Calendar.MONTH) == calendar.get(Calendar.MONTH) &&
+                        recCal.get(Calendar.WEEK_OF_MONTH) == week
+                    }
+                    if (weekRecords.isEmpty()) 0f else weekRecords.map { extractor(it) }.average().toFloat()
+                }
+            }
+            "Yearly" -> {
+                // Group by month
+                (0..11).map { month ->
+                    val monthRecords = records.filter { record ->
+                        val recCal = Calendar.getInstance().apply {
+                            val parts = record.date.split("-")
+                            set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt())
+                        }
+                        recCal.get(Calendar.YEAR) == calendar.get(Calendar.YEAR) &&
+                        recCal.get(Calendar.MONTH) == month
+                    }
+                    if (monthRecords.isEmpty()) 0f else monthRecords.map { extractor(it) }.average().toFloat()
+                }
+            }
             else -> emptyList()
         }
     }
@@ -413,6 +545,9 @@ class InsightsViewModel(
         _weightOffset.value = 0
         _moodOffset.value = 0
         _activityOffset.value = 0
+        _hrOffset.value = 0
+        _sleepOffset.value = 0
+        _spO2Offset.value = 0
     }
 
     fun onWeightPeriodSelected(period: String) { _weightPeriod.value = period }
@@ -429,6 +564,18 @@ class InsightsViewModel(
     fun onActivityPrevious() { _activityOffset.value -= 1 }
     fun onActivityNext() { _activityOffset.value += 1 }
     fun onActivityBarClick(index: Int) { _highlightedActivityIndex.value = index }
+
+    fun onHrPrevious() { _hrOffset.value -= 1 }
+    fun onHrNext() { _hrOffset.value += 1 }
+    fun onHrBarClick(index: Int) { _highlightedHrIndex.value = index }
+
+    fun onSleepPrevious() { _sleepOffset.value -= 1 }
+    fun onSleepNext() { _sleepOffset.value += 1 }
+    fun onSleepBarClick(index: Int) { _highlightedSleepIndex.value = index }
+
+    fun onSpO2Previous() { _spO2Offset.value -= 1 }
+    fun onSpO2Next() { _spO2Offset.value += 1 }
+    fun onSpO2BarClick(index: Int) { _highlightedSpO2Index.value = index }
 
     fun deleteGoal(goalId: String) {
         viewModelScope.launch {

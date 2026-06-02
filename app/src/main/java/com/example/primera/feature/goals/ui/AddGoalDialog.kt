@@ -45,7 +45,8 @@ fun AddGoalDialog(
 ) {
     val goalOptions = remember {
         listOf(
-            GoalOption("Hydration", "ml", "R.drawable.water", "#93C5FD"),
+            GoalOption("Hydration", "L", "R.drawable.water", "#93C5FD"),
+            GoalOption("Movement", "min", "R.drawable.steps", "#AED581"),
             GoalOption("Yoga", "min", "R.drawable.yoga", "#A1D386"),
             GoalOption("Walking", "steps", "R.drawable.steps", "#FFAB91"),
             GoalOption("Pelvic Floor Exercise", "reps", "R.drawable.heart", "#CE93D8"),
@@ -70,9 +71,10 @@ fun AddGoalDialog(
     )
 
     var selectedOption by remember { 
-        mutableStateOf(
-            goalOptions.find { it.title == editingGoal?.title } ?: goalOptions[0]
-        ) 
+        val initialTitle = editingGoal?.title ?: "Hydration"
+        val option = goalOptions.find { it.title.equals(initialTitle, ignoreCase = true) } 
+            ?: GoalOption(initialTitle, editingGoal?.unit ?: "", editingGoal?.icon ?: "R.drawable.log", editingGoal?.accentColorHex ?: "#64B5F6")
+        mutableStateOf(option)
     }
     
     var targetValue by remember { 

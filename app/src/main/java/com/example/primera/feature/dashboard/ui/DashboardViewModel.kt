@@ -19,7 +19,8 @@ import java.util.*
 class DashboardViewModel(
     private val repository: DashboardRepository,
     private val goalsRepository: com.example.primera.feature.goals.data.GoalsRepository,
-    private val healthConnectManager: HealthConnectManager
+    private val healthConnectManager: HealthConnectManager,
+    private val preferenceRepository: com.example.primera.core.data.PreferenceRepository
 ) : ViewModel() {
 
     init {
@@ -81,11 +82,10 @@ class DashboardViewModel(
 
     private fun mapToUiModel(data: DashboardData): DashboardUiModel {
         val week = DashboardBusinessLogic.getWeekNumber(data.dueDate)
-        val isWatchSynced = data.steps > 0 || data.heartRateBpm > 0 || data.sleepHours > 0 || data.sleepMinutes > 0 || (data.spO2 ?: 0) > 0
+        val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
         
-        // BUG-001 Fix: For now, we don't have historical HR, so we just set trending to false 
-        // unless we implement local caching or more complex DB reads.
-        // Let's at least remove the hardcoded 'true' and '5'.
+        // Watch sync is active if the user has performed at least one sync session
+        val isWatchSynced = preferenceRepository.isWatchSyncEnabled(userId)
         
         return DashboardUiModel(
             userName = data.userName,
@@ -183,9 +183,12 @@ class DashboardViewModel(
     // FEAT-002: Watch Sync with Actual Data
     fun onSyncWatch() {
         viewModelScope.launch {
-            if (healthConnectManager.hasAllPermissions()) {
-                try {
+            try {
+                if (healthConnectManager.isAvailable() && healthConnectManager.hasAllPermissions()) {
+                    // Start sync process
                     val healthData = healthConnectManager.readTodaySmartwatchHealth()
+                    
+                    // Save to repository (Firestore)
                     repository.updateHealthData(
                         steps = healthData.steps,
                         heartRate = healthData.currentHeartRate ?: 0L,
@@ -193,12 +196,16 @@ class DashboardViewModel(
                         sleepMinutes = healthData.sleepMinutes % 60,
                         spO2 = healthData.spO2?.toLong()
                     )
-                } catch (e: Exception) {
-                    // Log error or handle gracefully
+                    
+                    // Also save to historical records for consistency across all screens
+                    repository.saveHistoricalRecord(healthData)
+                    
+                    // Mark as synced locally for this user session
+                    val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
+                    preferenceRepository.setWatchSyncEnabled(userId, true)
                 }
-            } else {
-                // If no permissions, for now we just log it.
-                // In a real app, we might want to navigate to a permission screen.
+            } catch (e: Exception) {
+                android.util.Log.e("DashboardViewModel", "Sync failed during dashboard 'Sync Now' click", e)
             }
         }
     }
