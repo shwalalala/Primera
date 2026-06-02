@@ -83,7 +83,7 @@ object DashboardBusinessLogic {
             38 -> "Leek"
             39 -> "Mini watermelon"
             40 -> "Small pumpkin"
-            else -> "Baby"
+            else -> "Full-term baby"
         }
     }
 

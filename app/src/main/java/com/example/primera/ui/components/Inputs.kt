@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -23,29 +26,45 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.primera.core.theme.*
+import java.util.Calendar
 import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PrimeraDatePicker(
     selectedDate: Date?,
     onDateSelected: (Date) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    yearRange: IntRange = 1900..2100,
+    selectableDates: SelectableDates = object : SelectableDates {}
 ) {
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = selectedDate?.time ?: System.currentTimeMillis()
+        initialSelectedDateMillis = selectedDate?.time ?: System.currentTimeMillis(),
+        yearRange = yearRange,
+        selectableDates = selectableDates
     )
 
     LaunchedEffect(datePickerState.selectedDateMillis) {
         datePickerState.selectedDateMillis?.let {
-            onDateSelected(Date(it))
+            if (it != (selectedDate?.time ?: 0L)) {
+                onDateSelected(Date(it))
+            }
         }
     }
 
-    Box(
-        modifier = Modifier
+    // Custom Header with Dropdowns
+    val displayedMonthCalendar = remember(datePickerState.displayedMonthMillis) {
+        Calendar.getInstance().apply { timeInMillis = datePickerState.displayedMonthMillis }
+    }
+    
+    val currentMonth = displayedMonthCalendar.get(Calendar.MONTH)
+    val currentYear = displayedMonthCalendar.get(Calendar.YEAR)
+
+    Column(
+        modifier = modifier
             .shadow(
-                elevation = 10.dp,
+                elevation = 8.dp,
                 shape = RoundedCornerShape(24.dp),
                 ambientColor = Color.Black.copy(alpha = 0.08f),
                 spotColor = Color.Black.copy(alpha = 0.08f)
@@ -57,7 +76,42 @@ fun PrimeraDatePicker(
                 color = Color(0xFFEAEAEA),
                 shape = RoundedCornerShape(24.dp)
             )
+            .padding(bottom = 16.dp) // Extra padding to prevent Sunday/bottom being cut off
     ) {
+        // Custom Month/Year Dropdown Header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            MonthDropdown(
+                selectedMonth = currentMonth,
+                onMonthSelected = { newMonth ->
+                    val cal = Calendar.getInstance().apply {
+                        timeInMillis = datePickerState.displayedMonthMillis
+                        set(Calendar.MONTH, newMonth)
+                    }
+                    datePickerState.displayedMonthMillis = cal.timeInMillis
+                },
+                modifier = Modifier.weight(1f)
+            )
+            
+            YearDropdown(
+                selectedYear = currentYear,
+                yearRange = yearRange,
+                onYearSelected = { newYear ->
+                    val cal = Calendar.getInstance().apply {
+                        timeInMillis = datePickerState.displayedMonthMillis
+                        set(Calendar.YEAR, newYear)
+                    }
+                    datePickerState.displayedMonthMillis = cal.timeInMillis
+                },
+                modifier = Modifier.weight(0.8f)
+            )
+        }
+
         DatePicker(
             state = datePickerState,
             showModeToggle = false,
@@ -65,21 +119,114 @@ fun PrimeraDatePicker(
             headline = null,
             colors = DatePickerDefaults.colors(
                 selectedDayContainerColor = PrimeraViolet,
+                selectedDayContentColor = Color.White,
                 todayContentColor = PrimeraViolet,
                 todayDateBorderColor = PrimeraViolet,
                 containerColor = Color.White,
                 navigationContentColor = TextPrimary,
+                weekdayContentColor = TextPrimary, // Ensure Sunday/Weekdays are TextPrimary
+                dayContentColor = TextPrimary // Ensure dates are TextPrimary
             ),
-            modifier = modifier
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }
+
+@Composable
+private fun MonthDropdown(
+    selectedMonth: Int,
+    onMonthSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val months = listOf(
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    )
+    var expanded by remember { mutableStateOf(false) }
+
+    Box(modifier = modifier) {
+        Surface(
+            onClick = { expanded = true },
+            color = BackgroundCream,
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(months[selectedMonth], fontSize = 14.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+                Icon(Icons.Default.ArrowDropDown, null, tint = TextSecondary, modifier = Modifier.size(20.dp))
+            }
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(SurfaceWhite).heightIn(max = 300.dp)
+        ) {
+            months.forEachIndexed { index, month ->
+                DropdownMenuItem(
+                    text = { Text(month, color = TextPrimary) },
+                    onClick = {
+                        onMonthSelected(index)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun YearDropdown(
+    selectedYear: Int,
+    yearRange: IntRange,
+    onYearSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val years = yearRange.toList().reversed()
+
+    Box(modifier = modifier) {
+        Surface(
+            onClick = { expanded = true },
+            color = BackgroundCream,
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(selectedYear.toString(), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+                Icon(Icons.Default.ArrowDropDown, null, tint = TextSecondary, modifier = Modifier.size(20.dp))
+            }
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(SurfaceWhite).heightIn(max = 300.dp)
+        ) {
+            years.forEach { year ->
+                DropdownMenuItem(
+                    text = { Text(year.toString(), color = TextPrimary) },
+                    onClick = {
+                        onYearSelected(year)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
 @Composable
 fun PrimeraTextField(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,
-
     modifier: Modifier = Modifier,
     isPassword: Boolean = false,
     keyboardType: KeyboardType = KeyboardType.Text,
@@ -218,7 +365,11 @@ private fun InputsPreview() {
                 onValueChange = {},
                 placeholder = "Enter your email"
             )
+            Spacer(Modifier.height(16.dp))
+            PrimeraDatePicker(
+                selectedDate = null,
+                onDateSelected = {}
+            )
         }
     }
 }
-

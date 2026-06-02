@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class WelcomeViewModel(
-    private val preferenceRepository: PreferenceRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(WelcomeUiState())
     val uiState: StateFlow<WelcomeUiState> = _uiState.asStateFlow()
@@ -37,7 +36,9 @@ class WelcomeViewModel(
 
     fun onGetStarted() {
         viewModelScope.launch {
-            preferenceRepository.setOnboardingCompleted()
+            // This is the initial walkthrough, we can use a "guest" or "walkthrough" ID 
+            // to track if the app has shown the walkthrough once, or just skip per-user tracking here.
+            // For now, let's just navigate to Auth as the user usually creates an account after this.
             _effect.send(WelcomeEffect.NavigateToAuth)
         }
     }

@@ -248,9 +248,14 @@ fun BirthdayStep(state: OnboardingState, viewModel: OnboardingViewModel) {
         onContinue = { viewModel.nextStep() },
         isContinueEnabled = state.birthday != null
     ) {
+        val calendar = Calendar.getInstance()
+        val minYear = calendar.get(Calendar.YEAR) - 100
+        val maxYear = calendar.get(Calendar.YEAR) - 13
+        
         PrimeraDatePicker(
             selectedDate = state.birthday,
             onDateSelected = { viewModel.onBirthdayChange(it) },
+            yearRange = minYear..maxYear,
             modifier = Modifier.fillMaxWidth()
         )
     }
@@ -303,9 +308,13 @@ fun LmpStep(state: OnboardingState, viewModel: OnboardingViewModel) {
         onContinue = { viewModel.nextStep() },
         isContinueEnabled = state.lmpDate != null
     ) {
+        val calendar = Calendar.getInstance()
+        val currentYear = calendar.get(Calendar.YEAR)
+        
         PrimeraDatePicker(
             selectedDate = state.lmpDate,
             onDateSelected = { viewModel.onLmpDateChange(it) },
+            yearRange = (currentYear - 1)..currentYear,
             modifier = Modifier.fillMaxWidth()
         )
     }
@@ -318,9 +327,12 @@ fun EddStep(state: OnboardingState, viewModel: OnboardingViewModel) {
         onContinue = { viewModel.nextStep() },
         isContinueEnabled = state.eddDate != null
     ) {
+        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+        
         PrimeraDatePicker(
             selectedDate = state.eddDate,
             onDateSelected = { viewModel.onEddDateChange(it) },
+            yearRange = currentYear..(currentYear + 1),
             modifier = Modifier.fillMaxWidth()
         )
     }

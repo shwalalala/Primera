@@ -37,6 +37,7 @@ import com.example.primera.core.theme.PrimeraTheme
 fun SplashScreen(
     onTimeout: () -> Unit,
     onNavigateToAuth: () -> Unit,
+    onNavigateToDashboard: () -> Unit,
     viewModel: SplashViewModel = viewModel(factory = ViewModelProvider.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -47,6 +48,7 @@ fun SplashScreen(
             when (effect) {
                 is SplashEffect.Navigate -> onTimeout()
                 is SplashEffect.NavigateToAuth -> onNavigateToAuth()
+                is SplashEffect.NavigateToDashboard -> onNavigateToDashboard()
             }
         }
     }

@@ -8,4 +8,5 @@ sealed class SplashUiState {
 sealed class SplashEffect {
     object Navigate : SplashEffect()
     object NavigateToAuth : SplashEffect()
+    object NavigateToDashboard : SplashEffect()
 }

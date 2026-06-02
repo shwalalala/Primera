@@ -145,6 +145,13 @@ fun AppNavGraph(
                                 inclusive = true
                             }
                         }
+                    },
+                    onNavigateToDashboard = {
+                        navController.navigate(Routes.DASHBOARD) {
+                            popUpTo(Routes.SPLASH) {
+                                inclusive = true
+                            }
+                        }
                     }
                 )
             }
@@ -356,7 +363,9 @@ fun AuthScreenHost(
 
         AuthTab.SIGNUP -> RegisterScreen(
             state = state,
-            onFullNameChange = authViewModel::onFullNameChange,
+            onFirstNameChange = authViewModel::onFirstNameChange,
+            onLastNameChange = authViewModel::onLastNameChange,
+            onMiddleNameChange = authViewModel::onMiddleNameChange,
             onEmailChange = authViewModel::onEmailChange,
             onPasswordChange = authViewModel::onPasswordChange,
             onAgreedToTermsToggle = authViewModel::onAgreedToTermsToggle,
