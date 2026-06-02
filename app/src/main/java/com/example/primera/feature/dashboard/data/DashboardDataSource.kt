@@ -38,6 +38,7 @@ class DashboardDataSource {
                             heartRateBpm = snapshot.getLong("heartRateBpm") ?: 0L,
                             sleepHours = snapshot.getLong("sleepHours") ?: 0L,
                             sleepMinutes = snapshot.getLong("sleepMinutes") ?: 0L,
+                            spO2 = snapshot.getLong("spO2"),
                             heightCm = snapshot.getLong("heightCm")
                         )
                     } catch (_: Exception) {
@@ -104,20 +105,22 @@ class DashboardDataSource {
         steps: Long,
         heartRate: Long,
         sleepHours: Long,
-        sleepMinutes: Long
+        sleepMinutes: Long,
+        spO2: Long? = null
     ): Result<Unit> {
         return try {
             val userId = auth.currentUser?.uid ?: return Result.failure(Exception("Not authenticated"))
+            val updates = mutableMapOf<String, Any>(
+                "steps" to steps,
+                "heartRateBpm" to heartRate,
+                "sleepHours" to sleepHours,
+                "sleepMinutes" to sleepMinutes,
+                "updatedAt" to Date()
+            )
+            spO2?.let { updates["spO2"] = it }
+            
             firestore.collection("users").document(userId)
-                .update(
-                    mapOf(
-                        "steps" to steps,
-                        "heartRateBpm" to heartRate,
-                        "sleepHours" to sleepHours,
-                        "sleepMinutes" to sleepMinutes,
-                        "updatedAt" to Date()
-                    )
-                )
+                .update(updates)
                 .await()
             Result.success(Unit)
         } catch (e: Exception) {

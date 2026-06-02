@@ -19,6 +19,7 @@ import com.example.primera.feature.transcription.data.TranscriptionRepository
 import com.example.primera.feature.transcription.data.TranscriptionRepositoryImpl
 import com.example.primera.feature.goals.data.GoalsRepository
 import com.example.primera.feature.goals.data.GoalsRepositoryImpl
+import com.example.primera.feature.smartwatchconnection.data.HealthConnectManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -30,6 +31,7 @@ interface AppContainer {
     val checkinsRepository: CheckinsRepository
     val goalsRepository: GoalsRepository
     val preferenceRepository: PreferenceRepository
+    val healthConnectManager: HealthConnectManager
 }
 
 class AppContainerImpl(private val context: Context) : AppContainer {
@@ -80,5 +82,9 @@ class AppContainerImpl(private val context: Context) : AppContainer {
 
     override val preferenceRepository: PreferenceRepository by lazy {
         PreferenceRepositoryImpl(context)
+    }
+
+    override val healthConnectManager: HealthConnectManager by lazy {
+        HealthConnectManager(context)
     }
 }

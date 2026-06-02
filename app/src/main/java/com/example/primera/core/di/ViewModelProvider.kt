@@ -28,7 +28,8 @@ object ViewModelProvider {
                 )
                 DashboardViewModel::class.java -> DashboardViewModel(
                     container.dashboardRepository,
-                    container.goalsRepository
+                    container.goalsRepository,
+                    container.healthConnectManager
                 )
                 OnboardingViewModel::class.java -> OnboardingViewModel(
                     container.onboardingRepository,
