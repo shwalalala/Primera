@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -39,7 +38,8 @@ fun SmartwatchScreen(
     uiState: SmartwatchUiState,
     onRequestPermissions: () -> Unit,
     onReadAndSave: () -> Unit,
-    onBackToSources: () -> Unit
+    onBackToSources: () -> Unit,
+    onOpenHealthConnect: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -67,7 +67,8 @@ fun SmartwatchScreen(
                 ConnectDeviceContent(
                     uiState = uiState,
                     onRequestPermissions = onRequestPermissions,
-                    onConnectAndSync = onReadAndSave
+                    onConnectAndSync = onReadAndSave,
+                    onOpenHealthConnect = onOpenHealthConnect
                 )
             }
         }
@@ -78,12 +79,16 @@ fun SmartwatchScreen(
 private fun ConnectDeviceContent(
     uiState: SmartwatchUiState,
     onRequestPermissions: () -> Unit,
-    onConnectAndSync: () -> Unit
+    onConnectAndSync: () -> Unit,
+    onOpenHealthConnect: () -> Unit
 ) {
+    val scrollState = rememberScrollState()
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .statusBarsPadding(),
+            .statusBarsPadding()
+            .verticalScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Top Bar
@@ -119,7 +124,7 @@ private fun ConnectDeviceContent(
             )
         }
 
-        Spacer(Modifier.height(56.dp))
+        Spacer(Modifier.height(32.dp))
 
         // Connection Illustration
         Row(
@@ -151,35 +156,47 @@ private fun ConnectDeviceContent(
             )
         }
 
-        Spacer(Modifier.height(48.dp))
+        Spacer(Modifier.height(32.dp))
 
         Text(
             "Connect your health data source",
-            fontSize = 26.sp,
+            fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = TextPrimary,
-            lineHeight = 32.sp,
+            lineHeight = 30.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 40.dp)
         )
 
-        Spacer(Modifier.height(48.dp))
+        Spacer(Modifier.height(32.dp))
 
         // Large rounded surface at the bottom
         Surface(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
+                .fillMaxWidth(),
             color = ArchFill.copy(alpha = 0.5f),
             shape = RoundedCornerShape(topStart = 48.dp, topEnd = 48.dp)
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 32.dp, vertical = 64.dp),
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp, vertical = 48.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top
             ) {
+                if (uiState.message.isNotBlank()) {
+                    val isError = uiState.message.contains("Error", ignoreCase = true) || 
+                                 uiState.message.contains("not available", ignoreCase = true) ||
+                                 uiState.message.contains("not support", ignoreCase = true)
+                    Text(
+                        text = uiState.message,
+                        color = if (isError) ErrorRed else TextPrimary,
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+                }
+
                 if (uiState.hasPermissions) {
                     Row(
                         modifier = Modifier
@@ -205,6 +222,20 @@ private fun ConnectDeviceContent(
                         )
                     }
                 } else {
+                    if (uiState.isPackageInstalled) {
+                        PrimeraGradientButton(
+                            text = "Open Health Connect",
+                            onClick = onOpenHealthConnect,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(Modifier.height(16.dp))
+                    }
+
+                    // Button to open common watch apps
+                    SourceAppLauncher(modifier = Modifier.fillMaxWidth())
+
+                    Spacer(Modifier.height(16.dp))
+
                     PrimeraGradientButton(
                         text = "Review and accept permissions",
                         onClick = onRequestPermissions,
@@ -220,53 +251,47 @@ private fun ConnectDeviceContent(
                     isLoading = uiState.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 )
+                
+                Spacer(Modifier.height(40.dp))
             }
         }
     }
 }
 
 @Composable
-private fun SourceCard(
-    title: String,
-    subtitle: String,
-    iconRes: Int,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(20.dp),
-        color = SurfaceWhite,
-        border = BorderStroke(1.dp, DashboardCardBorder)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+private fun SourceAppLauncher(modifier: Modifier = Modifier) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val watchApps = mapOf(
+        "OHealth" to "com.heytap.health.international",
+        "Huawei Health" to "com.huawei.health",
+        "Samsung Health" to "com.sec.android.app.shealth",
+        "Zepp / Amazfit" to "com.huami.watch.hmwatchManager",
+        "Fitbit" to "com.fitbit.FitbitMobile"
+    )
+
+    val installedApp = watchApps.entries.find { (_, pkg) ->
+        try {
+            context.packageManager.getPackageInfo(pkg, 0)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    installedApp?.let { (name, pkg) ->
+        OutlinedButton(
+            onClick = {
+                val intent = context.packageManager.getLaunchIntentForPackage(pkg)
+                if (intent != null) {
+                    context.startActivity(intent)
+                }
+            },
+            modifier = modifier,
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, PrimeraViolet),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimeraViolet)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(BackgroundCream),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(iconRes),
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            Spacer(Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(title, fontWeight = FontWeight.Bold, color = TextPrimary, fontSize = 15.sp)
-                Text(subtitle, color = TextSecondary, fontSize = 12.sp)
-            }
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = TextSecondary
-            )
+            Text("Open $name to Refresh Data", fontSize = 14.sp)
         }
     }
 }
@@ -438,7 +463,8 @@ private fun SmartwatchScreenPreview() {
             ),
             onRequestPermissions = {},
             onReadAndSave = {},
-            onBackToSources = {}
+            onBackToSources = {},
+            onOpenHealthConnect = {}
         )
     }
 }
@@ -455,7 +481,8 @@ private fun SmartwatchScreenPermissionsAcceptedPreview() {
             ),
             onRequestPermissions = {},
             onReadAndSave = {},
-            onBackToSources = {}
+            onBackToSources = {},
+            onOpenHealthConnect = {}
         )
     }
 }
@@ -471,7 +498,8 @@ private fun SmartwatchScreenDataPreview() {
             ),
             onRequestPermissions = {},
             onReadAndSave = {},
-            onBackToSources = {}
+            onBackToSources = {},
+            onOpenHealthConnect = {}
         )
     }
 }

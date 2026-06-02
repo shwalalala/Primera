@@ -18,8 +18,17 @@ import java.time.ZoneId
 class HealthConnectManager(
     private val context: Context
 ) {
-    private val healthConnectClient: HealthConnectClient by lazy {
-        HealthConnectClient.getOrCreate(context)
+    private fun getClient(): HealthConnectClient {
+        if (!isPackageInstalled()) {
+            throw Exception("Health Connect is not installed on this device.")
+        }
+        return try {
+            HealthConnectClient.getOrCreate(context)
+        } catch (e: IllegalStateException) {
+            throw Exception("Health Connect service is not available. Try opening the Health Connect app manually to initialize it.", e)
+        } catch (e: Exception) {
+            throw Exception("Could not initialize Health Connect: ${e.message}", e)
+        }
     }
 
     val permissions = setOf(
@@ -30,25 +39,64 @@ class HealthConnectManager(
     )
 
     fun isAvailable(): Boolean {
-        return HealthConnectClient.getSdkStatus(context) ==
-                HealthConnectClient.SDK_AVAILABLE
+        return try {
+            HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE
+        } catch (e: Exception) {
+            false
+        }
     }
 
-    suspend fun hasAllPermissions(): Boolean {
-        val grantedPermissions =
-            healthConnectClient.permissionController.getGrantedPermissions()
+    fun getAvailabilityStatus(): Int {
+        return try {
+            HealthConnectClient.getSdkStatus(context)
+        } catch (e: Exception) {
+            -1 // Unknown/Error state
+        }
+    }
 
+    /**
+     * Checks if the Health Connect package is actually installed,
+     * even if the SDK reports it as unavailable.
+     */
+    fun isPackageInstalled(): Boolean {
+        return try {
+            context.packageManager.getPackageInfo("com.google.android.apps.healthdata", 0)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    fun openHealthConnect() {
+        try {
+            val intent = context.packageManager.getLaunchIntentForPackage("com.google.android.apps.healthdata")
+            if (intent != null) {
+                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("HealthConnectManager", "Could not open Health Connect", e)
+        }
+    }
+
+    /**
+     * Checks permissions. Returns true if granted, false if not, 
+     * or throws an exception if the service is unreachable.
+     */
+    suspend fun hasAllPermissions(): Boolean {
+        val grantedPermissions = getClient().permissionController.getGrantedPermissions()
         return grantedPermissions.containsAll(permissions)
     }
 
     suspend fun readTodaySmartwatchHealth(): SmartwatchHealth {
+        val client = getClient()
         val zoneId = ZoneId.systemDefault()
         val today = LocalDate.now(zoneId)
 
         val startTime = today.atStartOfDay(zoneId).toInstant()
         val endTime = Instant.now()
 
-        val aggregateResponse = healthConnectClient.aggregate(
+        val aggregateResponse = client.aggregate(
             AggregateRequest(
                 metrics = setOf(
                     StepsRecord.COUNT_TOTAL,
@@ -65,11 +113,13 @@ class HealthConnectManager(
         )
 
         val currentHeartRate = readLatestHeartRate(
+            client = client,
             startTime = startTime,
             endTime = endTime
         )
 
         val latestSpO2 = readLatestSpO2(
+            client = client,
             startTime = startTime,
             endTime = endTime
         )
@@ -94,6 +144,7 @@ class HealthConnectManager(
     }
 
     suspend fun readPastWeekSmartwatchHealth(): Map<LocalDate, SmartwatchHealth> {
+        val client = getClient()
         val zoneId = ZoneId.systemDefault()
         val today = LocalDate.now(zoneId)
         val result = mutableMapOf<LocalDate, SmartwatchHealth>()
@@ -103,7 +154,7 @@ class HealthConnectManager(
             val startTime = date.atStartOfDay(zoneId).toInstant()
             val endTime = date.plusDays(1).atStartOfDay(zoneId).toInstant().minusMillis(1)
 
-            val aggregateResponse = healthConnectClient.aggregate(
+            val aggregateResponse = client.aggregate(
                 AggregateRequest(
                     metrics = setOf(
                         HeartRateRecord.BPM_AVG,
@@ -126,10 +177,11 @@ class HealthConnectManager(
     }
 
     private suspend fun readLatestHeartRate(
+        client: HealthConnectClient,
         startTime: Instant,
         endTime: Instant
     ): Long? {
-        val response = healthConnectClient.readRecords(
+        val response = client.readRecords(
             ReadRecordsRequest(
                 recordType = HeartRateRecord::class,
                 timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
@@ -143,10 +195,11 @@ class HealthConnectManager(
     }
 
     private suspend fun readLatestSpO2(
+        client: HealthConnectClient,
         startTime: Instant,
         endTime: Instant
     ): Double? {
-        val response = healthConnectClient.readRecords(
+        val response = client.readRecords(
             ReadRecordsRequest(
                 recordType = OxygenSaturationRecord::class,
                 timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
