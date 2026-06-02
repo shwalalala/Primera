@@ -2,6 +2,7 @@ package com.example.primera.feature.dashboard.data
 
 import com.example.primera.feature.dashboard.domain.DashboardData
 import com.example.primera.feature.dashboard.domain.DashboardHealthLog
+import com.example.primera.feature.smartwatchconnection.domain.SmartwatchHealth
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import java.util.*
@@ -22,7 +23,7 @@ class DashboardRepositoryImpl(
                 dueDate = userDto.dueDate,
                 steps = userDto.steps?.toInt() ?: 0,
                 stepsGoal = userDto.stepsGoal?.toInt() ?: 8000,
-                heartRateBpm = userDto.heartRateBpm?.toInt() ?: 72,
+                heartRateBpm = userDto.heartRateBpm?.toInt() ?: 0,
                 sleepHours = userDto.sleepHours?.toInt() ?: 0,
                 sleepMinutes = userDto.sleepMinutes?.toInt() ?: 0,
                 spO2 = userDto.spO2?.toInt(),
@@ -51,5 +52,13 @@ class DashboardRepositoryImpl(
         spO2: Long?
     ): Result<Unit> {
         return dataSource.updateHealthData(steps, heartRate, sleepHours, sleepMinutes, spO2)
+    }
+
+    override suspend fun saveHistoricalRecord(record: SmartwatchHealth): Result<Unit> {
+        return dataSource.saveHistoricalRecord(record)
+    }
+
+    override fun observeHealthRecords(): Flow<List<SmartwatchHealth>> {
+        return dataSource.observeHealthRecords()
     }
 }

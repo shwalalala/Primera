@@ -23,7 +23,9 @@ import com.example.primera.ui.components.*
 @Composable
 fun RegisterScreen(
     state: AuthUiState,
-    onFullNameChange: (String) -> Unit,
+    onFirstNameChange: (String) -> Unit,
+    onLastNameChange: (String) -> Unit,
+    onMiddleNameChange: (String) -> Unit,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onAgreedToTermsToggle: (Boolean) -> Unit,
@@ -82,11 +84,29 @@ fun RegisterScreen(
             Spacer(Modifier.height(32.dp))
             
             PrimeraTextField(
-                value = state.fullName,
-                onValueChange = onFullNameChange,
-                placeholder = "Full Name",
-                isError = state.fullNameError != null,
-                errorMessage = state.fullNameError
+                value = state.firstName,
+                onValueChange = onFirstNameChange,
+                placeholder = "First Name",
+                isError = state.firstNameError != null,
+                errorMessage = state.firstNameError
+            )
+            
+            Spacer(Modifier.height(16.dp))
+
+            PrimeraTextField(
+                value = state.lastName,
+                onValueChange = onLastNameChange,
+                placeholder = "Last Name",
+                isError = state.lastNameError != null,
+                errorMessage = state.lastNameError
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            PrimeraTextField(
+                value = state.middleName,
+                onValueChange = onMiddleNameChange,
+                placeholder = "Middle Name (Optional)"
             )
             
             Spacer(Modifier.height(16.dp))
@@ -161,7 +181,9 @@ private fun RegisterScreenPreview() {
     PrimeraTheme {
         RegisterScreen(
             state = AuthUiState(activeTab = AuthTab.SIGNUP),
-            onFullNameChange = {},
+            onFirstNameChange = {},
+            onLastNameChange = {},
+            onMiddleNameChange = {},
             onEmailChange = {},
             onPasswordChange = {},
             onAgreedToTermsToggle = {},

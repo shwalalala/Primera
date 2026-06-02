@@ -26,9 +26,18 @@ class AuthDataSource {
         auth.signOut()
     }
 
-    suspend fun createUserDocument(userId: String, fullName: String, email: String) {
+    suspend fun createUserDocument(
+        userId: String,
+        firstName: String,
+        lastName: String,
+        middleName: String,
+        email: String
+    ) {
         val userData = hashMapOf(
-            "fullName" to fullName,
+            "firstName" to firstName,
+            "lastName" to lastName,
+            "middleName" to middleName,
+            "fullName" to "$firstName $lastName",
             "email" to email,
             "createdAt" to Date()
         )

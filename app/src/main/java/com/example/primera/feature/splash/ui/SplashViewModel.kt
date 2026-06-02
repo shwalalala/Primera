@@ -31,10 +31,18 @@ class SplashViewModel(
             delay(2500)  // 2.5 second splash duration
             _uiState.update { SplashUiState.Complete }
             
-            if (preferenceRepository.shouldShowOnboarding()) {
-                _effect.send(SplashEffect.Navigate)
+            val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+            if (currentUser != null) {
+                // If already logged in, go straight to Dashboard (bypassing Welcome)
+                _effect.send(SplashEffect.NavigateToDashboard)
             } else {
-                _effect.send(SplashEffect.NavigateToAuth)
+                // Not logged in, check if we should show Welcome walkthrough
+                // (using any valid ID for the general check, or just default to true if never seen)
+                if (preferenceRepository.shouldShowOnboarding("guest")) {
+                    _effect.send(SplashEffect.Navigate)
+                } else {
+                    _effect.send(SplashEffect.NavigateToAuth)
+                }
             }
         }
     }

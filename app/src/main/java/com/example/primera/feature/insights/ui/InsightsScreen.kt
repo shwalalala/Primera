@@ -383,6 +383,78 @@ fun InsightsContent(
                         onBarClick = viewModel::onActivityBarClick
                     )
                 }
+                Spacer(Modifier.height(16.dp))
+
+                // Heart Rate Chart
+                ChartContainer(
+                    title = {
+                        Text(
+                            text = "Heart Rate (BPM)",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextPrimary
+                        )
+                    },
+                    dateRange = data.heartRateTrend.dateRange,
+                    onPrevious = viewModel::onHrPrevious,
+                    onNext = viewModel::onHrNext
+                ) {
+                    SimpleBarChart(
+                        data = data.heartRateTrend.values,
+                        labels = data.heartRateTrend.labels,
+                        highlightedIndex = data.heartRateTrend.highlightedIndex,
+                        onBarClick = viewModel::onHrBarClick,
+                        barColor = HeartRateBg
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+
+                // Sleep Chart
+                ChartContainer(
+                    title = {
+                        Text(
+                            text = "Sleep (Hours)",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextPrimary
+                        )
+                    },
+                    dateRange = data.sleepTrend.dateRange,
+                    onPrevious = viewModel::onSleepPrevious,
+                    onNext = viewModel::onSleepNext
+                ) {
+                    SimpleBarChart(
+                        data = data.sleepTrend.values,
+                        labels = data.sleepTrend.labels,
+                        highlightedIndex = data.sleepTrend.highlightedIndex,
+                        onBarClick = viewModel::onSleepBarClick,
+                        barColor = SleepBg
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+
+                // SpO2 Chart
+                ChartContainer(
+                    title = {
+                        Text(
+                            text = "SpO2 (%)",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextPrimary
+                        )
+                    },
+                    dateRange = data.spO2Trend.dateRange,
+                    onPrevious = viewModel::onSpO2Previous,
+                    onNext = viewModel::onSpO2Next
+                ) {
+                    SimpleBarChart(
+                        data = data.spO2Trend.values,
+                        labels = data.spO2Trend.labels,
+                        highlightedIndex = data.spO2Trend.highlightedIndex,
+                        onBarClick = viewModel::onSpO2BarClick,
+                        barColor = Color(0xFFFFEBEE)
+                    )
+                }
             }
         }
     }

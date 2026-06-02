@@ -1,4 +1,5 @@
 package com.example.primera.feature.dashboard.data
+import com.example.primera.feature.smartwatchconnection.domain.SmartwatchHealth
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -89,6 +90,70 @@ class DashboardDataSource {
         awaitClose(registration::remove)
     }
 
+    fun observeHealthRecords(): Flow<List<SmartwatchHealth>> = callbackFlow {
+        val userId = auth.currentUser?.uid
+        if (userId == null) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+
+        val registration: ListenerRegistration = firestore.collection("users")
+            .document(userId)
+            .collection("smartwatchHealthRecords")
+            .orderBy("date", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                val records = snapshot?.documents?.mapNotNull { doc ->
+                    try {
+                        SmartwatchHealth(
+                            date = doc.getString("date") ?: "",
+                            steps = doc.getLong("steps") ?: 0L,
+                            currentHeartRate = doc.getLong("currentHeartRate"),
+                            averageHeartRate = doc.getLong("averageHeartRate"),
+                            minimumHeartRate = doc.getLong("minimumHeartRate"),
+                            maximumHeartRate = doc.getLong("maximumHeartRate"),
+                            spO2 = doc.getDouble("spO2"),
+                            sleepMinutes = doc.getLong("sleepMinutes") ?: 0L,
+                            syncedAt = doc.getLong("syncedAt") ?: 0L
+                        )
+                    } catch (_: Exception) {
+                        null
+                    }
+                } ?: emptyList()
+                trySend(records)
+            }
+        awaitClose(registration::remove)
+    }
+
+    suspend fun saveHistoricalRecord(record: SmartwatchHealth): Result<Unit> {
+        return try {
+            val userId = auth.currentUser?.uid ?: return Result.failure(Exception("Not authenticated"))
+            val updates = mapOf(
+                "date" to record.date,
+                "steps" to record.steps,
+                "currentHeartRate" to record.currentHeartRate,
+                "averageHeartRate" to record.averageHeartRate,
+                "minimumHeartRate" to record.minimumHeartRate,
+                "maximumHeartRate" to record.maximumHeartRate,
+                "spO2" to record.spO2,
+                "sleepMinutes" to record.sleepMinutes,
+                "syncedAt" to record.syncedAt
+            )
+            firestore.collection("users").document(userId)
+                .collection("smartwatchHealthRecords")
+                .document(record.date)
+                .set(updates)
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun updateStepsGoal(goal: Long): Result<Unit> {
         return try {
             val userId = auth.currentUser?.uid ?: return Result.failure(Exception("Not authenticated"))
@@ -110,12 +175,14 @@ class DashboardDataSource {
     ): Result<Unit> {
         return try {
             val userId = auth.currentUser?.uid ?: return Result.failure(Exception("Not authenticated"))
+            android.util.Log.d("DashboardDataSource", "Updating health data for $userId: Steps=$steps, HR=$heartRate")
+            
             val updates = mutableMapOf<String, Any>(
                 "steps" to steps,
                 "heartRateBpm" to heartRate,
                 "sleepHours" to sleepHours,
                 "sleepMinutes" to sleepMinutes,
-                "updatedAt" to Date()
+                "updatedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
             )
             spO2?.let { updates["spO2"] = it }
             
@@ -124,6 +191,7 @@ class DashboardDataSource {
                 .await()
             Result.success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("DashboardDataSource", "Failed to update health data", e)
             Result.failure(e)
         }
     }

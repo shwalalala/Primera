@@ -27,8 +27,27 @@ class OnboardingViewModel(
     fun onBirthdayChange(date: Date) = _state.update { it.copy(birthday = date) }
     fun onWeightChange(weight: Int) = _state.update { it.copy(weightKg = weight) }
     fun onHeightChange(height: Int) = _state.update { it.copy(heightCm = height) }
-    fun onLmpDateChange(date: Date) = _state.update { it.copy(lmpDate = date) }
-    fun onEddDateChange(date: Date) = _state.update { it.copy(eddDate = date) }
+    fun onLmpDateChange(date: Date) {
+        _state.update { state ->
+            // If EDD is not set, we can estimate it (LMP + 280 days)
+            val calendar = Calendar.getInstance().apply {
+                time = date
+                add(Calendar.DAY_OF_YEAR, 280)
+            }
+            state.copy(lmpDate = date, eddDate = state.eddDate ?: calendar.time)
+        }
+    }
+
+    fun onEddDateChange(date: Date) {
+        _state.update { state ->
+            // If LMP is not set, we can estimate it (EDD - 280 days)
+            val calendar = Calendar.getInstance().apply {
+                time = date
+                add(Calendar.DAY_OF_YEAR, -280)
+            }
+            state.copy(eddDate = date, lmpDate = state.lmpDate ?: calendar.time)
+        }
+    }
     
     fun onIsFirstPregnancyChange(isFirst: Boolean) {
         _state.update { it.copy(isFirstPregnancy = isFirst) }
@@ -179,7 +198,8 @@ class OnboardingViewModel(
             )
             
             repository.saveProfile(profile)
-            preferenceRepository.setOnboardingCompleted()
+            val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
+            preferenceRepository.setOnboardingCompleted(userId)
             
             for (i in 0..100 step 10) {
                 _state.update { it.copy(preparationProgress = i / 100f) }

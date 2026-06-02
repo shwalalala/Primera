@@ -9,6 +9,7 @@ import com.example.primera.feature.checkins.ui.CheckinsViewModel
 import com.example.primera.feature.dashboard.ui.DashboardViewModel
 import com.example.primera.feature.insights.ui.InsightsViewModel
 import com.example.primera.feature.onboarding.ui.OnboardingViewModel
+import com.example.primera.feature.smartwatchconnection.ui.SmartwatchViewModel
 import com.example.primera.feature.splash.ui.SplashViewModel
 import com.example.primera.feature.transcription.data.SpeechRecognitionManager
 import com.example.primera.feature.transcription.ui.TranscriptionViewModel
@@ -29,14 +30,15 @@ object ViewModelProvider {
                 DashboardViewModel::class.java -> DashboardViewModel(
                     container.dashboardRepository,
                     container.goalsRepository,
-                    container.healthConnectManager
+                    container.healthConnectManager,
+                    container.preferenceRepository
                 )
                 OnboardingViewModel::class.java -> OnboardingViewModel(
                     container.onboardingRepository,
                     container.preferenceRepository
                 )
                 SplashViewModel::class.java -> SplashViewModel(container.preferenceRepository)
-                WelcomeViewModel::class.java -> WelcomeViewModel(container.preferenceRepository)
+                WelcomeViewModel::class.java -> WelcomeViewModel()
                 CheckinsViewModel::class.java -> CheckinsViewModel(container.checkinsRepository)
                 TranscriptionViewModel::class.java -> TranscriptionViewModel(
                     container.transcriptionRepository,
@@ -46,6 +48,11 @@ object ViewModelProvider {
                     container.dashboardRepository,
                     container.checkinsRepository,
                     container.goalsRepository
+                )
+                SmartwatchViewModel::class.java -> SmartwatchViewModel(
+                    container.healthConnectManager,
+                    container.preferenceRepository,
+                    container.dashboardRepository
                 )
                 else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             } as T
