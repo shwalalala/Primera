@@ -16,7 +16,13 @@ class CheckinsRepositoryImpl(
     
     override suspend fun updateUserWeight(weightKg: Int): Result<Unit> = dataSource.updateUserWeight(weightKg)
 
-    override fun getCustomOptions(category: String): Set<String> = preferenceRepository.getCustomOptions(category)
+    override fun getCustomOptions(category: String): Set<String> {
+        val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: "anonymous"
+        return preferenceRepository.getCustomOptions(userId, category)
+    }
 
-    override fun addCustomOption(category: String, label: String) = preferenceRepository.addCustomOption(category, label)
+    override fun addCustomOption(category: String, label: String) {
+        val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: "anonymous"
+        preferenceRepository.addCustomOption(userId, category, label)
+    }
 }

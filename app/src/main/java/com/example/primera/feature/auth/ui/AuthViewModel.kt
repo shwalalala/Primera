@@ -27,8 +27,16 @@ class AuthViewModel(
         _state.update { it.copy(activeTab = tab, errorMessage = null) }
     }
 
-    fun onFullNameChange(value: String) {
-        _state.update { it.copy(fullName = value, fullNameError = null) }
+    fun onFirstNameChange(value: String) {
+        _state.update { it.copy(firstName = value, firstNameError = null) }
+    }
+
+    fun onLastNameChange(value: String) {
+        _state.update { it.copy(lastName = value, lastNameError = null) }
+    }
+
+    fun onMiddleNameChange(value: String) {
+        _state.update { it.copy(middleName = value) }
     }
 
     fun onEmailChange(value: String) {
@@ -60,15 +68,13 @@ class AuthViewModel(
                     _state.update { it.copy(
                         isLoading = false,
                         isAuthenticated = true,
-                        fullName = "",
+                        firstName = "",
+                        lastName = "",
+                        middleName = "",
                         email = "",
                         password = ""
                     ) }
-                    if (preferenceRepository.shouldShowOnboarding()) {
-                        _effect.send(AuthEffect.NavigateToOnboarding)
-                    } else {
-                        _effect.send(AuthEffect.NavigateToDashboard)
-                    }
+                    _effect.send(AuthEffect.NavigateToDashboard)
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isLoading = false, errorMessage = error.message) }
@@ -84,7 +90,9 @@ class AuthViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
             val result = authRepository.signUp(
-                currentState.fullName,
+                currentState.firstName,
+                currentState.lastName,
+                currentState.middleName,
                 currentState.email,
                 currentState.password
             )
@@ -94,7 +102,9 @@ class AuthViewModel(
                     _state.update { it.copy(
                         isLoading = false,
                         isAuthenticated = true,
-                        fullName = "",
+                        firstName = "",
+                        lastName = "",
+                        middleName = "",
                         email = "",
                         password = ""
                     ) }
@@ -118,7 +128,9 @@ class AuthViewModel(
             authRepository.logout()
             _state.update { it.copy(
                 isAuthenticated = false,
-                fullName = "",
+                firstName = "",
+                lastName = "",
+                middleName = "",
                 email = "",
                 password = ""
             ) }
@@ -130,11 +142,7 @@ class AuthViewModel(
         if (authRepository.isUserAuthenticated()) {
             _state.update { it.copy(isAuthenticated = true) }
             viewModelScope.launch {
-                if (preferenceRepository.shouldShowOnboarding()) {
-                    _effect.send(AuthEffect.NavigateToOnboarding)
-                } else {
-                    _effect.send(AuthEffect.NavigateToDashboard)
-                }
+                _effect.send(AuthEffect.NavigateToDashboard)
             }
         }
     }
@@ -156,14 +164,19 @@ class AuthViewModel(
     }
 
     private fun validateRegisterForm(): Boolean {
-        val fullName = _state.value.fullName
+        val firstName = _state.value.firstName
+        val lastName = _state.value.lastName
         val email = _state.value.email
         val password = _state.value.password
         val agreed = _state.value.agreedToTerms
         var isValid = true
 
-        if (fullName.isBlank()) {
-            _state.update { it.copy(fullNameError = "Full name is required") }
+        if (firstName.isBlank()) {
+            _state.update { it.copy(firstNameError = "First name is required") }
+            isValid = false
+        }
+        if (lastName.isBlank()) {
+            _state.update { it.copy(lastNameError = "Last name is required") }
             isValid = false
         }
         if (email.isBlank()) {

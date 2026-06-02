@@ -6,6 +6,8 @@ class AuthRepositoryImpl(
 
     override fun isUserAuthenticated(): Boolean = dataSource.isUserAuthenticated()
 
+    override fun getCurrentUserId(): String? = dataSource.getCurrentUserId()
+
     override suspend fun login(email: String, password: String): Result<Unit> {
         return try {
             dataSource.login(email, password)
@@ -16,11 +18,17 @@ class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun signUp(fullName: String, email: String, password: String): Result<Unit> {
+    override suspend fun signUp(
+        firstName: String,
+        lastName: String,
+        middleName: String,
+        email: String,
+        password: String
+    ): Result<Unit> {
         return try {
             val userId = dataSource.signUp(email, password)
-            dataSource.createUserDocument(userId, fullName, email)
-            dataSource.logActivity("Sign Up", "New user registered: $email with name $fullName", userId)
+            dataSource.createUserDocument(userId, firstName, lastName, middleName, email)
+            dataSource.logActivity("Sign Up", "New user registered: $email with name $firstName $lastName", userId)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
