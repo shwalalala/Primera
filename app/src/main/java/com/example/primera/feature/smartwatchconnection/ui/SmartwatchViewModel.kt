@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.primera.core.data.PreferenceRepository
 import com.example.primera.feature.smartwatchconnection.data.HealthConnectManager
-import com.example.primera.feature.smartwatchconnection.data.HealthRepository
 import androidx.health.connect.client.HealthConnectClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,12 +13,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.google.firebase.auth.FirebaseAuth
 import java.util.*
+import kotlin.math.abs
+import kotlin.time.Duration.Companion.milliseconds
 
 class SmartwatchViewModel(
     private val healthConnectManager: HealthConnectManager,
     private val preferenceRepository: PreferenceRepository,
     private val dashboardRepository: com.example.primera.feature.dashboard.data.DashboardRepository,
-    private val networkMonitor: com.example.primera.core.util.NetworkMonitor
+    private val networkMonitor: com.example.primera.core.util.NetworkMonitor,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SmartwatchUiState())
@@ -102,7 +103,7 @@ class SmartwatchViewModel(
         if (granted) {
             viewModelScope.launch {
                 val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
-                preferenceRepository.setWatchSyncEnabled(userId, true)
+                preferenceRepository.setWatchSyncEnabled(userId, enabled = true)
             }
         }
     }
@@ -124,7 +125,7 @@ class SmartwatchViewModel(
                 )
 
                 // Small delay to allow the system/sandbox to warm up
-                kotlinx.coroutines.delay(500)
+                kotlinx.coroutines.delay(500.milliseconds)
 
                 // Attempt read
                 _uiState.value = _uiState.value.copy(message = "Syncing with Health Connect...")
@@ -175,7 +176,7 @@ class SmartwatchViewModel(
                 )
 
                 val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
-                preferenceRepository.setWatchSyncEnabled(userId, true)
+                preferenceRepository.setWatchSyncEnabled(userId, enabled = true)
 
             } catch (e: Exception) {
                 Log.e("SmartwatchViewModel", "Sync failed", e)
@@ -186,7 +187,7 @@ class SmartwatchViewModel(
                         "Health Connect service didn't respond in time. This is common on Huawei devices. Please open the Health Connect app, then try syncing again."
                     rawMessage.contains("permission", ignoreCase = true) -> 
                         "Sync failed: Permissions not granted. Please ensure Primera is allowed in the Health Connect app."
-                    e is java.net.SocketTimeoutException || rawMessage.contains("timeout") ->
+                    (e is java.net.SocketTimeoutException || rawMessage.contains("timeout")) ->
                         "Connection timed out. Please try one more time."
                     else -> "Sync failed: ${e.localizedMessage ?: "Unknown error"}. Try opening Health Connect first."
                 }
@@ -211,7 +212,7 @@ class SmartwatchViewModel(
         val color = if (diff >= 0) 0xFFA1D386 else 0xFFF28B82 // Green if up, Red if down (can be context specific)
         
         val arrow = if (diff >= 0) "▲" else "▼"
-        val text = "$arrow ${Math.abs(diff).toInt()}% vs baseline"
+        val text = "$arrow ${abs(diff).toInt()}% vs baseline"
         
         return Pair(text, color)
     }

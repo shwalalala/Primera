@@ -10,7 +10,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
@@ -39,7 +38,7 @@ fun SmartwatchScreen(
     onRequestPermissions: () -> Unit,
     onReadAndSave: () -> Unit,
     onBackToSources: () -> Unit,
-    onOpenHealthConnect: () -> Unit
+    onOpenHealthConnect: () -> Unit,
 ) {
     Box(
         modifier = Modifier
@@ -274,7 +273,7 @@ private fun SourceAppLauncher(modifier: Modifier = Modifier) {
         try {
             context.packageManager.getPackageInfo(pkg, 0)
             true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }
@@ -282,8 +281,7 @@ private fun SourceAppLauncher(modifier: Modifier = Modifier) {
     installedApp?.let { (name, pkg) ->
         OutlinedButton(
             onClick = {
-                val intent = context.packageManager.getLaunchIntentForPackage(pkg)
-                if (intent != null) {
+                context.packageManager.getLaunchIntentForPackage(pkg)?.let { intent ->
                     context.startActivity(intent)
                 }
             },
@@ -481,8 +479,7 @@ private fun SmartwatchScreenPreview() {
             onRequestPermissions = {},
             onReadAndSave = {},
             onBackToSources = {},
-            onOpenHealthConnect = {}
-        )
+        ) { }
     }
 }
 
@@ -499,8 +496,7 @@ private fun SmartwatchScreenPermissionsAcceptedPreview() {
             onRequestPermissions = {},
             onReadAndSave = {},
             onBackToSources = {},
-            onOpenHealthConnect = {}
-        )
+        ) { }
     }
 }
 
@@ -516,7 +512,6 @@ private fun SmartwatchScreenDataPreview() {
             onRequestPermissions = {},
             onReadAndSave = {},
             onBackToSources = {},
-            onOpenHealthConnect = {}
-        )
+        ) { }
     }
 }

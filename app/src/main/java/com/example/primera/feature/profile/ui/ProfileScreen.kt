@@ -26,7 +26,7 @@ import java.util.*
 fun ProfileScreen(
     onBack: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    viewModel: ProfileViewModel = viewModel(factory = ViewModelProvider.Factory)
+    viewModel: ProfileViewModel = viewModel(factory = ViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -194,8 +194,8 @@ fun ProfileContent(
                     label = "Due Date",
                     value = state.eddDate?.let { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(it) } ?: "Not set",
                     isEditing = false,
-                    onValueChange = {},
-                    modifier = Modifier.clickable(enabled = state.isEditing) { showDatePicker = true }
+                    modifier = Modifier.clickable(enabled = state.isEditing) { showDatePicker = true },
+                    onValueChange = {}
                 )
             }
         }
@@ -207,9 +207,9 @@ fun ProfileField(
     label: String,
     value: String,
     isEditing: Boolean,
+    modifier: Modifier = Modifier,
     onValueChange: (String) -> Unit,
     keyboardType: KeyboardType = KeyboardType.Text,
-    modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.padding(vertical = 8.dp)) {
         Text(
@@ -239,6 +239,6 @@ fun ProfileField(
                 modifier = Modifier.padding(top = 4.dp)
             )
         }
-        Divider(modifier = Modifier.padding(top = 12.dp), color = InputBorder.copy(alpha = 0.5f))
+        HorizontalDivider(modifier = Modifier.padding(top = 12.dp), color = InputBorder.copy(alpha = 0.5f))
     }
 }

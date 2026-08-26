@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -47,9 +46,9 @@ import com.example.primera.core.theme.ToggleTrack
 
 @Composable
 fun ArchedAuthCard(
-    logo: @Composable (Modifier) -> Unit,
     modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
+    logo: @Composable (Modifier) -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     Box(
         modifier = modifier
@@ -77,7 +76,7 @@ fun ArchedAuthCard(
             contentAlignment = Alignment.TopCenter
         ) {
             val archRadius = maxWidth * 0.3f
-            logo(Modifier.offset(y = -archRadius / 2 - 35.dp))
+            logo(Modifier.offset(y = -(archRadius / 2) - 35.dp))
         }
 
         Column(
@@ -190,11 +189,11 @@ fun SocialIconButton(
 
 @Composable
 fun SocialAuthRow(
+    modifier: Modifier = Modifier,
     onGoogleClick: () -> Unit = {},
     onFacebookClick: () -> Unit = {},
     onAppleClick: () -> Unit = {},
     onPhoneClick: () -> Unit = {},
-    modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),

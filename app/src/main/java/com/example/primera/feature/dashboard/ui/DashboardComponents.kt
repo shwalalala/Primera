@@ -15,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -42,7 +41,7 @@ fun DashboardTopBar(userName: String, onLogout: () -> Unit, onProfileClick: () -
             .statusBarsPadding()
             .padding(horizontal = 20.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Box {
             Box(
@@ -165,8 +164,8 @@ fun BabyRingCard(
     daysLeft: Int,
     babySize: String,
     babyEmoji: String,
+    modifier: Modifier = Modifier,
     babyIllustration: Int? = null,
-    modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -206,9 +205,9 @@ fun SyncWatchButton(
 @Composable
 fun StatsGrid(
     state: DashboardUiModel,
+    modifier: Modifier = Modifier,
     onInputManually: () -> Unit,
     onSyncWatch: () -> Unit,
-    modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier.padding(horizontal = 20.dp),
@@ -295,8 +294,7 @@ fun RecentHealthLogsSection(
                     time = log.time,
                     description = log.description,
                     accentColor = log.accentColor,
-                    onClick = { onLogClick(log) }
-                )
+                ) { onLogClick(log) }
                 Spacer(Modifier.height(12.dp))
             }
         }

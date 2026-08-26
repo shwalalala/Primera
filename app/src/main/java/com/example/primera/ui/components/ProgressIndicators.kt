@@ -44,8 +44,8 @@ fun CircularPregnancyRing(
     dayNumber: Int,
     daysLeft: Int,
     babyEmoji: String,
+    modifier: Modifier = Modifier,
     babyIllustration: Int? = null,
-    modifier: Modifier = Modifier
 ) {
     InsightCircularProgress(
         progress = ((weekNumber - 1) + (dayNumber / 7f)) / 40f,
@@ -87,7 +87,7 @@ fun InsightCircularProgress(
     centerContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     progressColor: Color = RingProgressColor,
-    trackColor: Color = RingTrackColor
+    trackColor: Color = RingTrackColor,
 ) {
     val sweepAngle = (progress.coerceIn(0f, 1f)) * 300f
 

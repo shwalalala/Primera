@@ -8,11 +8,7 @@ plugins {
 
 android {
     namespace = "com.example.primera"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.example.primera"
@@ -79,8 +75,8 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     // Health Connect
-    implementation("androidx.health.connect:connect-client:1.1.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation(libs.healthConnect)
+    implementation(libs.coroutinesAndroid)
 
     // Gemini AI
     implementation(libs.google.generativeai)

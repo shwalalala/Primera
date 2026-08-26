@@ -12,7 +12,6 @@ import androidx.core.content.ContextCompat
 import com.example.primera.core.theme.PrimeraTheme
 import com.example.primera.core.navigation.AppNavGraph
 import com.example.primera.core.notification.ReminderManager
-import com.example.primera.feature.smartwatchconnection.ui.SmartwatchRoute
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,7 +37,7 @@ class MainActivity : ComponentActivity() {
                 ActivityCompat.requestPermissions(
                     this,
                     arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                    101
+                    101,
                 )
             }
         }

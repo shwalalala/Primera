@@ -110,7 +110,6 @@ class TranscriptionViewModel(
     }
 
     override fun onCleared() {
-        super.onCleared()
         speechManager.cleanup()
     }
 }

@@ -17,7 +17,7 @@ import java.util.Date
 class ProfileViewModel(
     private val dashboardRepository: DashboardRepository,
     private val checkinsRepository: CheckinsRepository,
-    private val onboardingRepository: OnboardingRepository
+    private val onboardingRepository: OnboardingRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -82,11 +82,10 @@ class ProfileViewModel(
             onboardingRepository.saveProfile(profile).fold(
                 onSuccess = {
                     _uiState.update { it.copy(isSaving = false, isEditing = false, successMessage = "Profile updated successfully") }
-                },
-                onFailure = { error ->
-                    _uiState.update { it.copy(isSaving = false, error = error.message ?: "Failed to save profile") }
                 }
-            )
+            ) { error ->
+                _uiState.update { it.copy(isSaving = false, error = error.message ?: "Failed to save profile") }
+            }
         }
     }
 
