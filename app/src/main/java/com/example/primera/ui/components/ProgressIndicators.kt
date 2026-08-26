@@ -44,13 +44,22 @@ fun CircularPregnancyRing(
     dayNumber: Int,
     daysLeft: Int,
     babyEmoji: String,
+    babyIllustration: Int? = null,
     modifier: Modifier = Modifier
 ) {
     InsightCircularProgress(
         progress = ((weekNumber - 1) + (dayNumber / 7f)) / 40f,
         centerContent = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(babyEmoji, fontSize = 72.sp)
+                if (babyIllustration != null) {
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(babyIllustration),
+                        contentDescription = null,
+                        modifier = Modifier.size(80.dp)
+                    )
+                } else {
+                    Text(babyEmoji, fontSize = 72.sp)
+                }
 
                 Spacer(Modifier.height(8.dp))
 

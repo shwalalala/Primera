@@ -9,9 +9,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.primera.core.di.ViewModelProvider
@@ -26,9 +29,11 @@ fun DashboardScreen(
     onViewAllLogs: () -> Unit,
     onAddLog: () -> Unit,
     onInputManually: () -> Unit,
+    onProfileClick: () -> Unit,
     viewModel: DashboardViewModel = viewModel(factory = ViewModelProvider.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
 
     Box(
         modifier = modifier
@@ -47,14 +52,20 @@ fun DashboardScreen(
             is DashboardUiState.Error -> ErrorContent(state.message)
             is DashboardUiState.Success -> {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    DashboardTopBar(state.data.userName, onLogout)
+                    DashboardTopBar(state.data.userName, onLogout, onProfileClick)
+                    
+                    if (!isOnline) {
+                        OfflineBanner()
+                    }
+
                     DashboardContent(
                         state = state.data,
                         onViewAllLogs = onViewAllLogs,
                         onAddLog = onAddLog,
                         onInputManually = onInputManually,
                         onLogClick = onLogClick,
-                        onSyncWatch = { viewModel.onSyncWatch() }
+                        onSyncWatch = { viewModel.onSyncWatch() },
+                        onProfileClick = onProfileClick
                     )
                 }
             }
@@ -70,6 +81,7 @@ fun DashboardContent(
     onInputManually: () -> Unit,
     onLogClick: (DashboardLogUiItem) -> Unit,
     onSyncWatch: () -> Unit,
+    onProfileClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -91,12 +103,17 @@ fun DashboardContent(
             dayNumber = state.dayNumber,
             daysLeft = state.daysLeft,
             babySize = state.babySize,
-            babyEmoji = state.babyEmoji
+            babyEmoji = state.babyEmoji,
+            babyIllustration = state.babyIllustration
         )
         Spacer(Modifier.height(20.dp))
         StatsGrid(state, onInputManually, onSyncWatch)
         Spacer(Modifier.height(24.dp))
         RecentHealthLogsSection(state.recentLogs, onViewAllLogs, onAddLog, onLogClick)
+        Spacer(Modifier.height(16.dp))
+        BabyDevelopmentSection(state.milestones, state.symptoms)
+        Spacer(Modifier.height(8.dp))
+        EducationalArticlesSection(state.articles)
         Spacer(Modifier.height(8.dp))
     }
 }
@@ -149,7 +166,8 @@ private fun DashboardScreenPreview() {
             onAddLog = {},
             onInputManually = {},
             onLogClick = {},
-            onSyncWatch = {}
+            onSyncWatch = {},
+            onProfileClick = {}
         )
     }
 }

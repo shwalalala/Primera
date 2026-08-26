@@ -246,9 +246,10 @@ private fun ConnectDeviceContent(
                 Spacer(Modifier.height(24.dp))
 
                 PrimeraGradientButton(
-                    text = "Connect and Sync",
+                    text = if (uiState.isOnline) "Connect and Sync" else "Offline",
                     onClick = onConnectAndSync,
                     isLoading = uiState.isLoading,
+                    enabled = uiState.isOnline && !uiState.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 )
                 
@@ -312,6 +313,21 @@ private fun HealthDataContent(
             .statusBarsPadding()
             .verticalScroll(scrollState)
     ) {
+        if (!uiState.isOnline) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.errorContainer
+            ) {
+                Text(
+                    text = "You're offline. Sync is unavailable.",
+                    modifier = Modifier.padding(8.dp),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -350,8 +366,8 @@ private fun HealthDataContent(
                         unit = "bpm",
                         icon = painterResource(R.drawable.heart),
                         iconBgColor = HeartRateBg,
-                        trendText = "▲ 2% vs last wk", // Hardcoded placeholder as in design
-                        trendColor = TrendGreen,
+                        trendText = uiState.hrTrendText,
+                        trendColor = Color(uiState.hrTrendColor),
                         modifier = Modifier.weight(1f)
                     )
                     HealthStatCard(
@@ -360,7 +376,7 @@ private fun HealthDataContent(
                         unit = "steps",
                         icon = painterResource(R.drawable.steps),
                         iconBgColor = StepsBg,
-                        trendText = "Goal: 8,000",
+                        trendText = uiState.stepsTrendText,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -372,8 +388,8 @@ private fun HealthDataContent(
                         unit = "",
                         icon = painterResource(R.drawable.sleep),
                         iconBgColor = SleepBg,
-                        trendText = "Good quality",
-                        trendColor = TrendGreen,
+                        trendText = uiState.sleepTrendText,
+                        trendColor = Color(uiState.sleepTrendColor),
                         modifier = Modifier.weight(1f)
                     )
                     HealthStatCard(
@@ -382,8 +398,8 @@ private fun HealthDataContent(
                         unit = "%",
                         icon = painterResource(R.drawable.sp02),
                         iconBgColor = Color(0xFFFFEBEE),
-                        trendText = "Good quality",
-                        trendColor = TrendGreen,
+                        trendText = uiState.spO2TrendText,
+                        trendColor = Color(uiState.spO2TrendColor),
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -441,9 +457,10 @@ private fun HealthDataContent(
             Spacer(Modifier.height(24.dp))
 
             PrimeraGradientButton(
-                text = "Sync Now",
+                text = if (uiState.isOnline) "Sync Now" else "Offline",
                 onClick = onSyncNow,
-                isLoading = uiState.isLoading
+                isLoading = uiState.isLoading,
+                enabled = uiState.isOnline && !uiState.isLoading
             )
             
             Spacer(Modifier.height(80.dp)) // Extra space for bottom nav

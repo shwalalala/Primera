@@ -26,6 +26,18 @@ class AuthDataSource {
         auth.signOut()
     }
 
+    suspend fun sendPasswordResetEmail(email: String) {
+        auth.sendPasswordResetEmail(email).await()
+    }
+
+    suspend fun updateEmail(newEmail: String) {
+        auth.currentUser?.updateEmail(newEmail)?.await()
+    }
+
+    suspend fun updatePassword(newPassword: String) {
+        auth.currentUser?.updatePassword(newPassword)?.await()
+    }
+
     suspend fun createUserDocument(
         userId: String,
         firstName: String,
@@ -39,6 +51,7 @@ class AuthDataSource {
             "middleName" to middleName,
             "fullName" to "$firstName $lastName",
             "email" to email,
+            "role" to "patient",
             "createdAt" to Date()
         )
         firestore.collection("users").document(userId).set(userData).await()

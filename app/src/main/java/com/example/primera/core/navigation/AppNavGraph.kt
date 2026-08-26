@@ -36,17 +36,21 @@ import com.example.primera.feature.auth.ui.AuthEffect
 import com.example.primera.feature.auth.ui.AuthTab
 import com.example.primera.feature.auth.ui.AuthUiState
 import com.example.primera.feature.auth.ui.AuthViewModel
+import com.example.primera.feature.auth.ui.ForgotPasswordScreen
 import com.example.primera.feature.auth.ui.LoginScreen
 import com.example.primera.feature.auth.ui.RegisterScreen
+import com.example.primera.feature.checkins.ui.CheckinPreviewScreen
 import com.example.primera.feature.checkins.ui.CheckinsOverviewScreen
 import com.example.primera.feature.checkins.ui.CheckinsViewModel
 import com.example.primera.feature.checkins.ui.DailyCheckinScreen
 import com.example.primera.feature.dashboard.ui.DashboardScreen
 import com.example.primera.feature.insights.ui.InsightsScreen
 import com.example.primera.feature.onboarding.ui.OnboardingHostScreen
+import com.example.primera.feature.profile.ui.ProfileScreen
+import com.example.primera.feature.profile.ui.SettingsScreen
+import com.example.primera.feature.profile.ui.SettingsViewModel
 import com.example.primera.feature.smartwatchconnection.ui.SmartwatchRoute
 import com.example.primera.feature.splash.ui.SplashScreen
-import com.example.primera.feature.transcription.domain.SymptomExtractor
 import com.example.primera.feature.transcription.ui.TranscriptionScreen
 import com.example.primera.feature.transcription.ui.TranscriptionViewModel
 import com.example.primera.feature.welcome.ui.WelcomeScreen
@@ -214,6 +218,9 @@ fun AppNavGraph(
                     onInputManually = {
                         checkinsViewModel.prepareNewCheckin()
                         navController.navigate(Routes.DAILY_CHECKIN)
+                    },
+                    onProfileClick = {
+                        navController.navigate(Routes.PROFILE)
                     }
                 )
             }
@@ -268,14 +275,43 @@ fun AppNavGraph(
                         navController.popBackStack()
                     },
                     onReview = {
-                        navController.navigate(Routes.CHECKIN)
+                        navController.navigate(Routes.CHECKIN_PREVIEW)
+                    },
+                    viewModel = checkinsViewModel
+                )
+            }
+
+            composable(Routes.CHECKIN_PREVIEW) {
+                val parentEntry = remember(it) {
+                    navController.getBackStackEntry(Routes.DASHBOARD)
+                }
+
+                val checkinsViewModel: CheckinsViewModel =
+                    viewModel(parentEntry, factory = ViewModelProvider.Factory)
+
+                CheckinPreviewScreen(
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onNavigateToOverview = {
+                        navController.navigate(Routes.CHECKIN) {
+                            popUpTo(Routes.CHECKIN) { inclusive = true }
+                        }
                     },
                     viewModel = checkinsViewModel
                 )
             }
 
             composable(Routes.FORGOT_PW) {
-                PlaceholderScreen("Forgot Password Screen")
+                val state by authViewModel.uiState.collectAsStateWithLifecycle()
+                ForgotPasswordScreen(
+                    state = state,
+                    onEmailChange = authViewModel::onEmailChange,
+                    onResetPasswordClicked = authViewModel::onResetPasswordClicked,
+                    onBackToLogin = {
+                        navController.popBackStack()
+                    }
+                )
             }
 
             composable(Routes.TRANSCRIPTION) {
@@ -295,15 +331,34 @@ fun AppNavGraph(
                         navController.popBackStack()
                     },
                     onUseInCheckin = { transcribedText ->
-                        val detectedSymptoms = SymptomExtractor.extract(transcribedText)
-
                         checkinsViewModel.prepareNewCheckin()
                         checkinsViewModel.applyVoiceInputToCheckin(
-                            transcribedText = transcribedText,
-                            detectedSymptoms = detectedSymptoms
+                            transcribedText = transcribedText
                         )
 
                         navController.navigate(Routes.DAILY_CHECKIN)
+                    }
+                )
+            }
+
+            composable(Routes.PROFILE) {
+                ProfileScreen(
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onNavigateToSettings = {
+                        navController.navigate(Routes.SETTINGS)
+                    }
+                )
+            }
+
+            composable(Routes.SETTINGS) {
+                SettingsScreen(
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onLogout = {
+                        authViewModel.logout()
                     }
                 )
             }

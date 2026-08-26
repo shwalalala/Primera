@@ -133,6 +133,7 @@ class OnboardingViewModel(
         }
 
         val next = when (currentState.currentStep) {
+            OnboardingStep.NAME -> OnboardingStep.BIRTHDAY
             OnboardingStep.BIRTHDAY -> OnboardingStep.WEIGHT
             OnboardingStep.WEIGHT -> OnboardingStep.HEIGHT
             OnboardingStep.HEIGHT -> OnboardingStep.LMP
@@ -156,7 +157,8 @@ class OnboardingViewModel(
     fun previousStep() {
         val currentState = _state.value
         val prev = when (currentState.currentStep) {
-            OnboardingStep.BIRTHDAY -> OnboardingStep.BIRTHDAY
+            OnboardingStep.NAME -> OnboardingStep.NAME
+            OnboardingStep.BIRTHDAY -> OnboardingStep.NAME
             OnboardingStep.WEIGHT -> OnboardingStep.BIRTHDAY
             OnboardingStep.HEIGHT -> OnboardingStep.WEIGHT
             OnboardingStep.LMP -> OnboardingStep.HEIGHT

@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 
 class TranscriptionViewModel(
     private val repository: TranscriptionRepository,
+    private val symptomExtractor: SymptomExtractor,
     private val speechManager: SpeechRecognitionManager
 ) : ViewModel(), SpeechRecognitionManager.SpeechRecognitionCallback {
 
@@ -44,7 +45,7 @@ class TranscriptionViewModel(
             viewModelScope.launch {
                 _uiState.value = TranscriptionUiState.Uploading
 
-                val detectedSymptoms = SymptomExtractor.extract(_transcribedText.value)
+                val detectedSymptoms = symptomExtractor.extract(_transcribedText.value)
 
                 val model = TranscriptionModel(
                     transcribedText = _transcribedText.value,

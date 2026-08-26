@@ -20,6 +20,12 @@ import com.example.primera.feature.transcription.data.TranscriptionRepositoryImp
 import com.example.primera.feature.goals.data.GoalsRepository
 import com.example.primera.feature.goals.data.GoalsRepositoryImpl
 import com.example.primera.feature.smartwatchconnection.data.HealthConnectManager
+import com.example.primera.core.util.NetworkMonitor
+import com.example.primera.core.util.ConnectivityManagerNetworkMonitor
+import com.example.primera.feature.transcription.domain.SymptomExtractor
+import com.example.primera.feature.transcription.domain.KeywordSymptomExtractor
+import com.example.primera.feature.transcription.domain.GeminiSymptomExtractor
+import com.google.ai.client.generativeai.GenerativeModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -32,10 +38,29 @@ interface AppContainer {
     val goalsRepository: GoalsRepository
     val preferenceRepository: PreferenceRepository
     val healthConnectManager: HealthConnectManager
+    val networkMonitor: NetworkMonitor
+    val symptomExtractor: SymptomExtractor
 }
 
 class AppContainerImpl(private val context: Context) : AppContainer {
     
+    override val networkMonitor: NetworkMonitor by lazy {
+        ConnectivityManagerNetworkMonitor(context)
+    }
+
+    override val symptomExtractor: SymptomExtractor by lazy {
+        val geminiApiKey = com.example.primera.BuildConfig.GEMINI_API_KEY
+        if (geminiApiKey.isNotBlank()) {
+            val model = GenerativeModel(
+                modelName = "gemini-1.5-flash",
+                apiKey = geminiApiKey,
+            )
+            GeminiSymptomExtractor(model)
+        } else {
+            KeywordSymptomExtractor()
+        }
+    }
+
     // Auth dependencies
     private val authDataSource: AuthDataSource by lazy {
         AuthDataSource()

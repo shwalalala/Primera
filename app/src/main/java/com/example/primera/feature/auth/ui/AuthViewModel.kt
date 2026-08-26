@@ -24,7 +24,7 @@ class AuthViewModel(
     }
 
     fun onTabSelected(tab: AuthTab) {
-        _state.update { it.copy(activeTab = tab, errorMessage = null) }
+        _state.update { it.copy(activeTab = tab, errorMessage = null, resetEmailSent = false) }
     }
 
     fun onFirstNameChange(value: String) {
@@ -118,8 +118,30 @@ class AuthViewModel(
     }
 
     fun onForgotPasswordClicked() {
+        _state.update { it.copy(errorMessage = null, resetEmailSent = false) }
         viewModelScope.launch {
             _effect.send(AuthEffect.NavigateToForgotPassword)
+        }
+    }
+
+    fun onResetPasswordClicked() {
+        val email = _state.value.email
+        if (email.isBlank()) {
+            _state.update { it.copy(emailError = "Email is required to reset password") }
+            return
+        }
+
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, errorMessage = null, resetEmailSent = false) }
+            val result = authRepository.sendPasswordResetEmail(email)
+            result.fold(
+                onSuccess = {
+                    _state.update { it.copy(isLoading = false, resetEmailSent = true) }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(isLoading = false, errorMessage = error.message) }
+                }
+            )
         }
     }
 

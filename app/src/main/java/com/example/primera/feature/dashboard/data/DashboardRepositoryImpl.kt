@@ -19,7 +19,11 @@ class DashboardRepositoryImpl(
             if (userDto == null) return@combine null
 
             DashboardData(
+                firstName = userDto.firstName,
+                lastName = userDto.lastName,
+                middleName = userDto.middleName,
                 userName = userDto.fullName ?: "Sarah",
+                birthday = userDto.birthday,
                 dueDate = userDto.dueDate,
                 steps = userDto.steps?.toInt() ?: 0,
                 stepsGoal = userDto.stepsGoal?.toInt() ?: 8000,

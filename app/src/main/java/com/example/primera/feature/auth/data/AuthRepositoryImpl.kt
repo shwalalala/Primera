@@ -54,4 +54,34 @@ class AuthRepositoryImpl(
             Result.failure(e)
         }
     }
+
+    override suspend fun sendPasswordResetEmail(email: String): Result<Unit> {
+        return try {
+            dataSource.sendPasswordResetEmail(email)
+            dataSource.logActivity("Password Reset", "Requested for: $email", dataSource.getCurrentUserId())
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateEmail(newEmail: String): Result<Unit> {
+        return try {
+            dataSource.updateEmail(newEmail)
+            dataSource.logActivity("Email Update", "Updated to: $newEmail", dataSource.getCurrentUserId())
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updatePassword(newPassword: String): Result<Unit> {
+        return try {
+            dataSource.updatePassword(newPassword)
+            dataSource.logActivity("Password Update", "User updated password", dataSource.getCurrentUserId())
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

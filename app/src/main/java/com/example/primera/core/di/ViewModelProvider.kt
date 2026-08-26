@@ -8,6 +8,8 @@ import com.example.primera.feature.auth.ui.AuthViewModel
 import com.example.primera.feature.checkins.ui.CheckinsViewModel
 import com.example.primera.feature.dashboard.ui.DashboardViewModel
 import com.example.primera.feature.insights.ui.InsightsViewModel
+import com.example.primera.feature.profile.ui.ProfileViewModel
+import com.example.primera.feature.profile.ui.SettingsViewModel
 import com.example.primera.feature.onboarding.ui.OnboardingViewModel
 import com.example.primera.feature.smartwatchconnection.ui.SmartwatchViewModel
 import com.example.primera.feature.splash.ui.SplashViewModel
@@ -31,7 +33,8 @@ object ViewModelProvider {
                     container.dashboardRepository,
                     container.goalsRepository,
                     container.healthConnectManager,
-                    container.preferenceRepository
+                    container.preferenceRepository,
+                    container.networkMonitor
                 )
                 OnboardingViewModel::class.java -> OnboardingViewModel(
                     container.onboardingRepository,
@@ -39,20 +42,34 @@ object ViewModelProvider {
                 )
                 SplashViewModel::class.java -> SplashViewModel(container.preferenceRepository)
                 WelcomeViewModel::class.java -> WelcomeViewModel()
-                CheckinsViewModel::class.java -> CheckinsViewModel(container.checkinsRepository)
+                CheckinsViewModel::class.java -> CheckinsViewModel(
+                    container.checkinsRepository,
+                    container.symptomExtractor
+                )
                 TranscriptionViewModel::class.java -> TranscriptionViewModel(
                     container.transcriptionRepository,
+                    container.symptomExtractor,
                     SpeechRecognitionManager(application)
                 )
                 InsightsViewModel::class.java -> InsightsViewModel(
                     container.dashboardRepository,
                     container.checkinsRepository,
-                    container.goalsRepository
+                    container.goalsRepository,
+                    container.networkMonitor
                 )
                 SmartwatchViewModel::class.java -> SmartwatchViewModel(
                     container.healthConnectManager,
                     container.preferenceRepository,
-                    container.dashboardRepository
+                    container.dashboardRepository,
+                    container.networkMonitor
+                )
+                ProfileViewModel::class.java -> ProfileViewModel(
+                    container.dashboardRepository,
+                    container.checkinsRepository,
+                    container.onboardingRepository
+                )
+                SettingsViewModel::class.java -> SettingsViewModel(
+                    container.authRepository
                 )
                 else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             } as T

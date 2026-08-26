@@ -40,18 +40,11 @@ fun DailyCheckinScreen(
 ) {
     val state by viewModel.dailyState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(state.success) {
-        if (state.success) {
-            viewModel.resetSuccess()
-            onReview()
-        }
-    }
-
     DailyCheckinContent(
         state = state,
         onBack = onBack,
         onClear = viewModel::prepareNewCheckin,
-        onSubmit = viewModel::onSaveCheckin,
+        onSubmit = onReview, // Navigate to review instead of saving directly
         onSymptomToggle = viewModel::onSymptomToggle,
         onMoodToggle = viewModel::onMoodToggle,
         onMedicineToggle = viewModel::onMedicineToggle,
@@ -152,9 +145,8 @@ fun DailyCheckinContent(
             Spacer(Modifier.height(32.dp))
             
             PrimeraGradientButton(
-                text = if (state.editingId != null) "Update Check-in" else "Submit Check-in",
+                text = "Review Check-in",
                 onClick = onSubmit,
-                isLoading = state.isSaving,
                 modifier = Modifier.padding(horizontal = 24.dp)
             )
 

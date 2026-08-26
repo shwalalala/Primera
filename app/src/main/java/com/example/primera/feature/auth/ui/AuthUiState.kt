@@ -10,6 +10,7 @@ data class AuthUiState(
     val rememberMe: Boolean = false,
     val agreedToTerms: Boolean = false,
     
+    val resetEmailSent: Boolean = false,
     val isLoading: Boolean = false,
     val isAuthenticated: Boolean = false,
     val errorMessage: String? = null,

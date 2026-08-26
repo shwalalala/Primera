@@ -4,11 +4,11 @@ import com.example.primera.feature.onboarding.domain.PregnancyHistory
 import java.util.Date
 
 enum class OnboardingStep {
-    BIRTHDAY, WEIGHT, HEIGHT, LMP, EDD, FIRST_PREGNANCY, PREGNANCY_HISTORY, PREPARING
+    NAME, BIRTHDAY, WEIGHT, HEIGHT, LMP, EDD, FIRST_PREGNANCY, PREGNANCY_HISTORY, PREPARING
 }
 
 data class OnboardingState(
-    val currentStep: OnboardingStep = OnboardingStep.BIRTHDAY,
+    val currentStep: OnboardingStep = OnboardingStep.NAME,
     val firstName: String = "",
     val lastName: String = "",
     val middleName: String = "",

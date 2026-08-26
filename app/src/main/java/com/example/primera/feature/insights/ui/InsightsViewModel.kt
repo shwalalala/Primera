@@ -4,6 +4,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.core.graphics.toColorInt
+import android.content.Context
+import com.example.primera.core.util.DataExportHelper
 import com.example.primera.feature.checkins.data.CheckinsRepository
 import com.example.primera.feature.dashboard.data.DashboardRepository
 import com.example.primera.feature.goals.data.GoalsRepository
@@ -15,11 +17,15 @@ import java.util.*
 class InsightsViewModel(
     private val dashboardRepository: DashboardRepository,
     private val checkinsRepository: CheckinsRepository,
-    private val goalsRepository: GoalsRepository
+    private val goalsRepository: GoalsRepository,
+    private val networkMonitor: com.example.primera.core.util.NetworkMonitor
 ) : ViewModel() {
 
     private val _activePeriod = MutableStateFlow("Weekly")
     val activePeriod: StateFlow<String> = _activePeriod.asStateFlow()
+
+    private val _isOnline = MutableStateFlow(true)
+    val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
 
     private val _weightPeriod = MutableStateFlow("Weekly")
     val weightPeriod: StateFlow<String> = _weightPeriod.asStateFlow()
@@ -58,6 +64,9 @@ class InsightsViewModel(
     init {
         viewModelScope.launch {
             goalsRepository.ensureMandatoryGoals()
+        }
+        viewModelScope.launch {
+            networkMonitor.isOnline.collect { _isOnline.value = it }
         }
     }
 
@@ -123,6 +132,8 @@ class InsightsViewModel(
         }
 
         val healthWarning = generateHealthWarning(filteredLogsForProgress, activePeriod)
+
+        val longitudinalInsights = calculateLongitudinalInsights(healthRecords, logs)
 
         val weightLogsForChart = filterLogsByPeriod(logs, weightPeriod, weightOffset)
         val weightValues = extractWeightValues(weightLogsForChart, weightData?.weightKg?.toFloat() ?: 0f)
@@ -224,7 +235,8 @@ class InsightsViewModel(
                     values = spO2Values,
                     labels = getChartLabels(activePeriod, spO2Offset),
                     highlightedIndex = _highlightedSpO2Index.value
-                )
+                ),
+                longitudinalInsights = longitudinalInsights
             )
         )
     }.stateIn(
@@ -454,16 +466,13 @@ class InsightsViewModel(
                 val record = records.find { it.date == dateStr }
                 val value = record?.let { extractor(it) } ?: 0f
                 
-                // For hourly data, if we only have the daily total, let's distribute it
-                // into a simulated curve for visualization purposes if no hourly data exists.
-                // Or just show it at the current hour if it's today.
                 val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
                 val isToday = isSameDay(calendar.time, Date())
                 
                 (0..23).map { hour ->
                     when {
-                        isToday && hour == currentHour -> value
-                        !isToday && hour == 12 -> value // Show at noon for past days
+                        isToday && hour <= currentHour -> value
+                        !isToday -> value 
                         else -> 0f
                     }
                 }
@@ -514,6 +523,7 @@ class InsightsViewModel(
         val weights = logs.mapNotNull { log ->
             val desc = log.description ?: ""
             if (desc.contains("Weight:")) {
+                // Parse "Weight: 65 kg" or similar
                 desc.substringAfter("Weight:").substringBefore("kg").trim().toFloatOrNull()
             } else null
         }
@@ -580,6 +590,59 @@ class InsightsViewModel(
     fun deleteGoal(goalId: String) {
         viewModelScope.launch {
             goalsRepository.deleteGoal(goalId)
+        }
+    }
+
+    private fun calculateLongitudinalInsights(
+        records: List<com.example.primera.feature.smartwatchconnection.domain.SmartwatchHealth>,
+        logs: List<com.example.primera.feature.checkins.data.CheckinLogDto>
+    ): List<String> {
+        val insights = mutableListOf<String>()
+        
+        // HR Trend
+        val allHr = records.mapNotNull { it.averageHeartRate }.filter { it > 0 }
+        if (allHr.size >= 14) {
+            val latestAvg = allHr.takeLast(7).average()
+            val baselineAvg = allHr.dropLast(7).average()
+            val diff = ((latestAvg - baselineAvg) / baselineAvg) * 100
+            if (diff > 5) {
+                insights.add("Your heart rate is trending %.1f%% higher than your baseline.".format(diff))
+            } else if (diff < -5) {
+                insights.add("Your heart rate is trending %.1f%% lower than your baseline.".format(Math.abs(diff)))
+            }
+        }
+        
+        // Steps Trend
+        if (records.size >= 14) {
+            val latestSteps = records.takeLast(7).map { it.steps }.average()
+            val previousSteps = records.dropLast(7).takeLast(7).map { it.steps }.average()
+            if (latestSteps > previousSteps * 1.2) {
+                insights.add("You're 20% more active this week compared to last week!")
+            }
+        }
+
+        // Mood Trend
+        val moodValues = extractMoodValues(logs)
+        if (moodValues.size >= 10) {
+            val latestMood = moodValues.takeLast(5).average()
+            val previousMood = moodValues.dropLast(5).takeLast(5).average()
+            if (latestMood < previousMood - 0.5) {
+                insights.add("Your mood has been slightly lower recently. Take some time for self-care.")
+            }
+        }
+
+        if (insights.isEmpty()) {
+            insights.add("Keep logging your health data to see advanced trends and analysis.")
+        }
+
+        return insights
+    }
+
+    fun onExportData(context: Context) {
+        viewModelScope.launch {
+            val logs = checkinsRepository.observeLogs().first()
+            val healthRecords = dashboardRepository.observeHealthRecords().first()
+            DataExportHelper.exportToCsv(context, logs, healthRecords)
         }
     }
 }
