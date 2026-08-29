@@ -10,7 +10,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
@@ -39,7 +38,7 @@ fun SmartwatchScreen(
     onRequestPermissions: () -> Unit,
     onReadAndSave: () -> Unit,
     onBackToSources: () -> Unit,
-    onOpenHealthConnect: () -> Unit
+    onOpenHealthConnect: () -> Unit,
 ) {
     Box(
         modifier = Modifier
@@ -246,9 +245,10 @@ private fun ConnectDeviceContent(
                 Spacer(Modifier.height(24.dp))
 
                 PrimeraGradientButton(
-                    text = "Connect and Sync",
+                    text = if (uiState.isOnline) "Connect and Sync" else "Offline",
                     onClick = onConnectAndSync,
                     isLoading = uiState.isLoading,
+                    enabled = uiState.isOnline && !uiState.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 )
                 
@@ -273,7 +273,7 @@ private fun SourceAppLauncher(modifier: Modifier = Modifier) {
         try {
             context.packageManager.getPackageInfo(pkg, 0)
             true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }
@@ -281,8 +281,7 @@ private fun SourceAppLauncher(modifier: Modifier = Modifier) {
     installedApp?.let { (name, pkg) ->
         OutlinedButton(
             onClick = {
-                val intent = context.packageManager.getLaunchIntentForPackage(pkg)
-                if (intent != null) {
+                context.packageManager.getLaunchIntentForPackage(pkg)?.let { intent ->
                     context.startActivity(intent)
                 }
             },
@@ -312,6 +311,21 @@ private fun HealthDataContent(
             .statusBarsPadding()
             .verticalScroll(scrollState)
     ) {
+        if (!uiState.isOnline) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.errorContainer
+            ) {
+                Text(
+                    text = "You're offline. Sync is unavailable.",
+                    modifier = Modifier.padding(8.dp),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -350,8 +364,8 @@ private fun HealthDataContent(
                         unit = "bpm",
                         icon = painterResource(R.drawable.heart),
                         iconBgColor = HeartRateBg,
-                        trendText = "▲ 2% vs last wk", // Hardcoded placeholder as in design
-                        trendColor = TrendGreen,
+                        trendText = uiState.hrTrendText,
+                        trendColor = Color(uiState.hrTrendColor),
                         modifier = Modifier.weight(1f)
                     )
                     HealthStatCard(
@@ -360,7 +374,7 @@ private fun HealthDataContent(
                         unit = "steps",
                         icon = painterResource(R.drawable.steps),
                         iconBgColor = StepsBg,
-                        trendText = "Goal: 8,000",
+                        trendText = uiState.stepsTrendText,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -372,8 +386,8 @@ private fun HealthDataContent(
                         unit = "",
                         icon = painterResource(R.drawable.sleep),
                         iconBgColor = SleepBg,
-                        trendText = "Good quality",
-                        trendColor = TrendGreen,
+                        trendText = uiState.sleepTrendText,
+                        trendColor = Color(uiState.sleepTrendColor),
                         modifier = Modifier.weight(1f)
                     )
                     HealthStatCard(
@@ -382,8 +396,8 @@ private fun HealthDataContent(
                         unit = "%",
                         icon = painterResource(R.drawable.sp02),
                         iconBgColor = Color(0xFFFFEBEE),
-                        trendText = "Good quality",
-                        trendColor = TrendGreen,
+                        trendText = uiState.spO2TrendText,
+                        trendColor = Color(uiState.spO2TrendColor),
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -441,9 +455,10 @@ private fun HealthDataContent(
             Spacer(Modifier.height(24.dp))
 
             PrimeraGradientButton(
-                text = "Sync Now",
+                text = if (uiState.isOnline) "Sync Now" else "Offline",
                 onClick = onSyncNow,
-                isLoading = uiState.isLoading
+                isLoading = uiState.isLoading,
+                enabled = uiState.isOnline && !uiState.isLoading
             )
             
             Spacer(Modifier.height(80.dp)) // Extra space for bottom nav
@@ -464,8 +479,7 @@ private fun SmartwatchScreenPreview() {
             onRequestPermissions = {},
             onReadAndSave = {},
             onBackToSources = {},
-            onOpenHealthConnect = {}
-        )
+        ) { }
     }
 }
 
@@ -482,8 +496,7 @@ private fun SmartwatchScreenPermissionsAcceptedPreview() {
             onRequestPermissions = {},
             onReadAndSave = {},
             onBackToSources = {},
-            onOpenHealthConnect = {}
-        )
+        ) { }
     }
 }
 
@@ -499,7 +512,6 @@ private fun SmartwatchScreenDataPreview() {
             onRequestPermissions = {},
             onReadAndSave = {},
             onBackToSources = {},
-            onOpenHealthConnect = {}
-        )
+        ) { }
     }
 }

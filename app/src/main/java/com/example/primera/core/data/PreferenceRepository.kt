@@ -2,6 +2,7 @@ package com.example.primera.core.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 
 interface PreferenceRepository {
     fun shouldShowOnboarding(userId: String): Boolean
@@ -27,7 +28,7 @@ class PreferenceRepositoryImpl(context: Context) : PreferenceRepository {
     }
 
     override fun setOnboardingCompleted(userId: String) {
-        sharedPreferences.edit().putBoolean(KEY_ONBOARDING_COMPLETED + userId, true).apply()
+        sharedPreferences.edit { putBoolean(KEY_ONBOARDING_COMPLETED + userId, true) }
     }
 
     override fun isWatchSyncEnabled(userId: String): Boolean {
@@ -35,7 +36,7 @@ class PreferenceRepositoryImpl(context: Context) : PreferenceRepository {
     }
 
     override fun setWatchSyncEnabled(userId: String, enabled: Boolean) {
-        sharedPreferences.edit().putBoolean(KEY_WATCH_SYNC_ENABLED + userId, enabled).apply()
+        sharedPreferences.edit { putBoolean(KEY_WATCH_SYNC_ENABLED + userId, enabled) }
     }
 
     override fun getCustomOptions(userId: String, category: String): Set<String> {
@@ -45,6 +46,6 @@ class PreferenceRepositoryImpl(context: Context) : PreferenceRepository {
     override fun addCustomOption(userId: String, category: String, label: String) {
         val current = getCustomOptions(userId, category).toMutableSet()
         current.add(label)
-        sharedPreferences.edit().putStringSet(KEY_CUSTOM_OPTIONS_PREFIX + category.lowercase() + "_" + userId, current).apply()
+        sharedPreferences.edit { putStringSet(KEY_CUSTOM_OPTIONS_PREFIX + category.lowercase() + "_" + userId, current) }
     }
 }

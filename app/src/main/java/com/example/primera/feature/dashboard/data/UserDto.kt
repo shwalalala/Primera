@@ -3,7 +3,11 @@ package com.example.primera.feature.dashboard.data
 import java.util.Date
 
 data class UserDto(
+    val firstName: String? = null,
+    val lastName: String? = null,
+    val middleName: String? = null,
     val fullName: String? = null,
+    val birthday: Date? = null,
     val dueDate: Date? = null,
     val steps: Long? = null,
     val stepsGoal: Long? = null,

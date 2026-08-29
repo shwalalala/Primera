@@ -26,6 +26,7 @@ import com.example.primera.core.theme.*
 import com.example.primera.feature.goals.data.GoalsRepository
 import com.example.primera.feature.goals.data.GoalDto
 import com.example.primera.feature.goals.ui.AddGoalDialog
+import androidx.compose.ui.platform.LocalContext
 import com.example.primera.ui.components.*
 import kotlinx.coroutines.launch
 
@@ -37,9 +38,11 @@ fun InsightsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val activePeriod by viewModel.activePeriod.collectAsStateWithLifecycle()
+    val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
     var showAddGoal by remember { mutableStateOf(value = false) }
     var editingGoal by remember { mutableStateOf<GoalDto?>(null) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     Box(
         modifier = Modifier
@@ -60,6 +63,14 @@ fun InsightsScreen(
                 selectedPeriod = activePeriod,
                 onPeriodSelected = viewModel::onPeriodSelected
             )
+
+            if (!isOnline) {
+                OfflineBanner()
+            }
+
+            if (!isOnline) {
+                OfflineBanner()
+            }
 
             when (val state = uiState) {
                 is InsightsUiState.Loading -> FullScreenLoadingOverlay()

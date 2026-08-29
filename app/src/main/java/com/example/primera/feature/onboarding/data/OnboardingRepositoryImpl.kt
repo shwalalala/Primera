@@ -18,6 +18,7 @@ class OnboardingRepositoryImpl : OnboardingRepository {
                 "firstName" to profile.firstName,
                 "lastName" to profile.lastName,
                 "middleName" to profile.middleName,
+                "fullName" to "${profile.firstName} ${profile.lastName}".trim(),
                 "birthday" to profile.birthday,
                 "weightKg" to profile.weightKg,
                 "heightCm" to profile.heightCm,

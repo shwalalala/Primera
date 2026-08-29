@@ -25,7 +25,8 @@ import java.util.Date
 import java.util.Locale
 
 class CheckinsViewModel(
-    private val repository: CheckinsRepository
+    private val repository: CheckinsRepository,
+    private val symptomExtractor: com.example.primera.feature.transcription.domain.SymptomExtractor
 ) : ViewModel() {
 
     private val _overviewState = MutableStateFlow(CheckinsOverviewUiState())
@@ -268,42 +269,45 @@ class CheckinsViewModel(
     }
 
     fun applyVoiceInputToCheckin(
-        transcribedText: String,
-        detectedSymptoms: List<String>
+        transcribedText: String
     ) {
-        val mappedSymptoms = detectedSymptoms
-            .mapNotNull { mapDetectedSymptomToCheckinOption(it) }
-            .distinct()
+        viewModelScope.launch {
+            val detectedSymptoms = symptomExtractor.extract(transcribedText)
+            
+            val mappedSymptoms = detectedSymptoms
+                .mapNotNull { mapDetectedSymptomToCheckinOption(it) }
+                .distinct()
 
-        mappedSymptoms.forEach { symptomLabel ->
-            val alreadyAvailable = _dailyState.value.availableSymptoms.any { option ->
-                option.label.equals(symptomLabel, ignoreCase = true)
-            }
-
-            if (!alreadyAvailable) {
-                repository.addCustomOption("Symptom", symptomLabel)
-            }
-        }
-
-        loadOptions()
-
-        _dailyState.update { state ->
-            val updatedNote = buildString {
-                if (state.note.isNotBlank()) {
-                    append(state.note.trim())
-                    append("\n\n")
+            mappedSymptoms.forEach { symptomLabel ->
+                val alreadyAvailable = _dailyState.value.availableSymptoms.any { option ->
+                    option.label.equals(symptomLabel, ignoreCase = true)
                 }
 
-                append("Voice input: ")
-                append(transcribedText.trim())
+                if (!alreadyAvailable) {
+                    repository.addCustomOption("Symptom", symptomLabel)
+                }
             }
 
-            state.copy(
-                selectedSymptoms = state.selectedSymptoms + mappedSymptoms,
-                note = updatedNote,
-                success = false,
-                errorMessage = null
-            )
+            loadOptions()
+
+            _dailyState.update { state ->
+                val updatedNote = buildString {
+                    if (state.note.isNotBlank()) {
+                        append(state.note.trim())
+                        append("\n\n")
+                    }
+
+                    append("Voice input: ")
+                    append(transcribedText.trim())
+                }
+
+                state.copy(
+                    selectedSymptoms = state.selectedSymptoms + mappedSymptoms,
+                    note = updatedNote,
+                    success = false,
+                    errorMessage = null
+                )
+            }
         }
     }
 
@@ -340,6 +344,10 @@ class CheckinsViewModel(
 
                 val state = _dailyState.value
                 val descriptionParts = mutableListOf<String>()
+
+                if (state.weightKg.isNotBlank()) {
+                    descriptionParts.add("Weight: ${state.weightKg} kg")
+                }
 
                 if (state.selectedSymptoms.isNotEmpty()) {
                     descriptionParts.add("Symptoms: ${state.selectedSymptoms.joinToString(", ")}")
@@ -412,10 +420,11 @@ class CheckinsViewModel(
         val symptoms = parseSection(description, "Symptoms:")
         val moods = parseSection(description, "Mood:")
         val medicines = parseSection(description, "Medicine:")
+        val weight = parseSection(description, "Weight:").firstOrNull()?.removeSuffix(" kg")
 
         var note = description
 
-        listOf("Symptoms:", "Mood:", "Medicine:").forEach { label ->
+        listOf("Symptoms:", "Mood:", "Medicine:", "Weight:").forEach { label ->
             val index = note.indexOf(label)
             if (index != -1) {
                 val end = note.indexOf(";", index).let {
@@ -434,6 +443,7 @@ class CheckinsViewModel(
                 selectedSymptoms = symptoms.toSet(),
                 selectedMoods = moods.toSet(),
                 selectedMedicines = medicines.toSet(),
+                weightKg = weight ?: it.weightKg,
                 note = note,
                 success = false,
                 errorMessage = null

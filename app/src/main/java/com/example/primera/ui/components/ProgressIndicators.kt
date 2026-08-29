@@ -44,13 +44,22 @@ fun CircularPregnancyRing(
     dayNumber: Int,
     daysLeft: Int,
     babyEmoji: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    babyIllustration: Int? = null,
 ) {
     InsightCircularProgress(
         progress = ((weekNumber - 1) + (dayNumber / 7f)) / 40f,
         centerContent = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(babyEmoji, fontSize = 72.sp)
+                if (babyIllustration != null) {
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(babyIllustration),
+                        contentDescription = null,
+                        modifier = Modifier.size(80.dp)
+                    )
+                } else {
+                    Text(babyEmoji, fontSize = 72.sp)
+                }
 
                 Spacer(Modifier.height(8.dp))
 
@@ -78,7 +87,7 @@ fun InsightCircularProgress(
     centerContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     progressColor: Color = RingProgressColor,
-    trackColor: Color = RingTrackColor
+    trackColor: Color = RingTrackColor,
 ) {
     val sweepAngle = (progress.coerceIn(0f, 1f)) * 300f
 

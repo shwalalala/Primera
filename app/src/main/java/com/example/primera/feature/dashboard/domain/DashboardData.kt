@@ -3,7 +3,11 @@ package com.example.primera.feature.dashboard.domain
 import java.util.Date
 
 data class DashboardData(
+    val firstName: String? = null,
+    val lastName: String? = null,
+    val middleName: String? = null,
     val userName: String,
+    val birthday: Date? = null,
     val dueDate: Date?,
     val steps: Int,
     val stepsGoal: Int,

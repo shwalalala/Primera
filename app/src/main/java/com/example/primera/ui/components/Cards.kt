@@ -24,7 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import com.example.primera.R
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,9 +43,16 @@ fun GoalIcon(
     tint: Color = PrimeraViolet
 ) {
     if (icon.startsWith("R.drawable.")) {
-        val context = LocalContext.current
         val resName = icon.substringAfter("R.drawable.")
-        val resId = context.resources.getIdentifier(resName, "drawable", context.packageName)
+        val resId = when(resName) {
+            "water" -> R.drawable.water
+            "steps" -> R.drawable.steps
+            "heart" -> R.drawable.heart
+            "sleep" -> R.drawable.sleep
+            "sp02" -> R.drawable.sp02
+            else -> 0
+        }
+        
         if (resId != 0) {
             Icon(
                 painter = painterResource(id = resId),

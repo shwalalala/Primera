@@ -34,7 +34,7 @@
         android:roundIcon="@drawable/img_logo"
         android:supportsRtl="true"
         android:theme="@style/Theme.Primera"
-        tools:targetApi="31">
+        tools:targetApi="33">
 
         <!-- Health Connect Permission Rationale -->
         <activity
@@ -66,7 +66,6 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="@string/app_name"
             android:theme="@style/Theme.Primera">
 
             <intent-filter>
@@ -76,6 +75,20 @@
             </intent-filter>
 
         </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <receiver
+            android:name=".core.notification.ReminderReceiver"
+            android:exported="false" />
 
     </application>
 

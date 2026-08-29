@@ -5,23 +5,34 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.primera.core.data.PreferenceRepository
 import com.example.primera.feature.smartwatchconnection.data.HealthConnectManager
-import com.example.primera.feature.smartwatchconnection.data.HealthRepository
 import androidx.health.connect.client.HealthConnectClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.google.firebase.auth.FirebaseAuth
 import java.util.*
+import kotlin.math.abs
+import kotlin.time.Duration.Companion.milliseconds
 
 class SmartwatchViewModel(
     private val healthConnectManager: HealthConnectManager,
     private val preferenceRepository: PreferenceRepository,
-    private val dashboardRepository: com.example.primera.feature.dashboard.data.DashboardRepository
+    private val dashboardRepository: com.example.primera.feature.dashboard.data.DashboardRepository,
+    private val networkMonitor: com.example.primera.core.util.NetworkMonitor,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SmartwatchUiState())
     val uiState: StateFlow<SmartwatchUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            networkMonitor.isOnline.collect { isOnline ->
+                _uiState.update { it.copy(isOnline = isOnline) }
+            }
+        }
+    }
 
     val permissions = healthConnectManager.permissions
 
@@ -92,7 +103,7 @@ class SmartwatchViewModel(
         if (granted) {
             viewModelScope.launch {
                 val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
-                preferenceRepository.setWatchSyncEnabled(userId, true)
+                preferenceRepository.setWatchSyncEnabled(userId, enabled = true)
             }
         }
     }
@@ -114,7 +125,7 @@ class SmartwatchViewModel(
                 )
 
                 // Small delay to allow the system/sandbox to warm up
-                kotlinx.coroutines.delay(500)
+                kotlinx.coroutines.delay(500.milliseconds)
 
                 // Attempt read
                 _uiState.value = _uiState.value.copy(message = "Syncing with Health Connect...")
@@ -130,6 +141,31 @@ class SmartwatchViewModel(
                 // Save to repository (Firestore)
                 dashboardRepository.saveHistoricalRecord(smartwatchHealth)
 
+                // Calculate trends
+                val hrTrend = calculateTrend(bpmHistory)
+                val sleepTrend = calculateTrend(sleepHistory)
+                val spO2Trend = calculateTrend(historicalData.values.map { it.spO2?.toFloat() ?: 0f })
+
+                _uiState.update { state ->
+                    state.copy(
+                        isLoading = false,
+                        smartwatchHealth = smartwatchHealth,
+                        hasPermissions = true,
+                        bpmHistory = bpmHistory,
+                        sleepHistory = sleepHistory,
+                        historyLabels = labels,
+                        isDataVisible = true,
+                        message = "Success! Data synced for current user.",
+                        hrTrendText = hrTrend.first,
+                        hrTrendColor = hrTrend.second,
+                        sleepTrendText = sleepTrend.first,
+                        sleepTrendColor = sleepTrend.second,
+                        spO2TrendText = spO2Trend.first,
+                        spO2TrendColor = spO2Trend.second,
+                        stepsTrendText = "Goal: 8,000"
+                    )
+                }
+
                 // Update main dashboard data fields as well
                 dashboardRepository.updateHealthData(
                     steps = smartwatchHealth.steps,
@@ -140,18 +176,7 @@ class SmartwatchViewModel(
                 )
 
                 val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
-                preferenceRepository.setWatchSyncEnabled(userId, true)
-
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    smartwatchHealth = smartwatchHealth,
-                    hasPermissions = true,
-                    bpmHistory = bpmHistory,
-                    sleepHistory = sleepHistory,
-                    historyLabels = labels,
-                    isDataVisible = true,
-                    message = "Success! Data synced for current user."
-                )
+                preferenceRepository.setWatchSyncEnabled(userId, enabled = true)
 
             } catch (e: Exception) {
                 Log.e("SmartwatchViewModel", "Sync failed", e)
@@ -162,7 +187,7 @@ class SmartwatchViewModel(
                         "Health Connect service didn't respond in time. This is common on Huawei devices. Please open the Health Connect app, then try syncing again."
                     rawMessage.contains("permission", ignoreCase = true) -> 
                         "Sync failed: Permissions not granted. Please ensure Primera is allowed in the Health Connect app."
-                    e is java.net.SocketTimeoutException || rawMessage.contains("timeout") ->
+                    (e is java.net.SocketTimeoutException || rawMessage.contains("timeout")) ->
                         "Connection timed out. Please try one more time."
                     else -> "Sync failed: ${e.localizedMessage ?: "Unknown error"}. Try opening Health Connect first."
                 }
@@ -173,6 +198,23 @@ class SmartwatchViewModel(
                 )
             }
         }
+    }
+
+    private fun calculateTrend(history: List<Float>): Pair<String, Long> {
+        if (history.size < 2) return Pair("No baseline", 0xFF757575)
+        
+        val current = history.last()
+        val previous = history.dropLast(1).average().toFloat()
+        
+        if (previous == 0f) return Pair("New data", 0xFF757575)
+        
+        val diff = ((current - previous) / previous) * 100
+        val color = if (diff >= 0) 0xFFA1D386 else 0xFFF28B82 // Green if up, Red if down (can be context specific)
+        
+        val arrow = if (diff >= 0) "▲" else "▼"
+        val text = "$arrow ${abs(diff).toInt()}% vs baseline"
+        
+        return Pair(text, color)
     }
 
     fun onBackToSources() {

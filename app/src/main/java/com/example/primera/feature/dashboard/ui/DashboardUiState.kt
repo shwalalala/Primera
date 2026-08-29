@@ -1,8 +1,7 @@
 package com.example.primera.feature.dashboard.ui
 
 import androidx.compose.ui.graphics.Color
-import com.example.primera.feature.dashboard.domain.DashboardData
-import java.util.*
+import com.example.primera.feature.dashboard.domain.ArticleInfo
 
 sealed class DashboardUiState {
     object Loading : DashboardUiState()
@@ -19,6 +18,7 @@ data class DashboardUiModel(
     val daysLeft: Int,
     val babySize: String,
     val babyEmoji: String,
+    val babyIllustration: Int? = null,
     val heartRateBpm: Int,
     val heartRateTrendingUp: Boolean,
     val heartRateVsLastWeek: Int,
@@ -30,7 +30,10 @@ data class DashboardUiModel(
     val spO2: Int?,
     val isWatchSynced: Boolean,
     val recentLogs: List<DashboardLogUiItem>,
-    val weekDays: List<DashboardWeekDayItem>
+    val weekDays: List<DashboardWeekDayItem>,
+    val milestones: List<String> = emptyList(),
+    val symptoms: List<String> = emptyList(),
+    val articles: List<ArticleInfo> = emptyList()
 )
 
 data class DashboardLogUiItem(

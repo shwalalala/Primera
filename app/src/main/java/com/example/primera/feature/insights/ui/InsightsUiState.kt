@@ -28,7 +28,8 @@ data class InsightsUiModel(
     val moodTrend: ChartData = ChartData(),
     val heartRateTrend: ChartData = ChartData(),
     val sleepTrend: ChartData = ChartData(),
-    val spO2Trend: ChartData = ChartData()
+    val spO2Trend: ChartData = ChartData(),
+    val longitudinalInsights: List<String> = emptyList()
 )
 
 data class InsightGoalUiItem(

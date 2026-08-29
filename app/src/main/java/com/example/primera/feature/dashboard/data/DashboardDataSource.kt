@@ -32,7 +32,11 @@ class DashboardDataSource {
                 val userDto = if (snapshot != null && snapshot.exists()) {
                     try {
                         UserDto(
+                            firstName = snapshot.getString("firstName"),
+                            lastName = snapshot.getString("lastName"),
+                            middleName = snapshot.getString("middleName"),
                             fullName = snapshot.getString("fullName"),
+                            birthday = snapshot.getTimestamp("birthday")?.toDate(),
                             dueDate = (snapshot.getTimestamp("eddDate") ?: snapshot.getTimestamp("dueDate"))?.toDate(),
                             steps = snapshot.getLong("steps") ?: 0L,
                             stepsGoal = snapshot.getLong("stepsGoal") ?: 8000L,

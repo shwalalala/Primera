@@ -88,7 +88,6 @@ object DashboardBusinessLogic {
     }
 
     fun getBabyEmoji(week: Int): String {
-        // TODO: Replace these emojis with actual 3D fruit/baby illustrations in the future
         return when (week) {
             1, 2, 3 -> "✨"
             4 -> "🌱" // Poppy seed
@@ -98,13 +97,13 @@ object DashboardBusinessLogic {
             8 -> "🍓" // Raspberry
             9 -> "🍇" // Grape
             10 -> "🍓" // Strawberry
-            11 -> "🫒" // Fig (using olive as fig emoji is rare)
+            11 -> "🫒" // Fig
             12 -> "🍋" // Lime
-            13 -> "🍑" // Plum (using peach)
+            13 -> "🍑" // Plum
             14 -> "🍋" // Lemon
             15 -> "🍎" // Apple
             16 -> "🥑" // Avocado
-            17 -> "🧅" // Pomegranate (using onion as placeholder)
+            17 -> "🧅" // Pomegranate
             18 -> "🥦" // Artichoke
             19 -> "🥭" // Mango
             20 -> "🍌" // Banana
@@ -132,6 +131,13 @@ object DashboardBusinessLogic {
         }
     }
 
+    fun getBabyIllustration(week: Int): Int? {
+        return when (week) {
+            15 -> com.example.primera.R.drawable.apple
+            else -> null
+        }
+    }
+
     fun getSleepQuality(hours: Int, minutes: Int): String {
         val total = hours * 60 + minutes
         return when {
@@ -140,5 +146,17 @@ object DashboardBusinessLogic {
             total >= 360 -> "Fair quality"
             else -> "Poor quality"
         }
+    }
+
+    fun getWeeklyMilestones(week: Int): List<String> {
+        return BabyDevelopmentData.getInfoForWeek(week).milestones
+    }
+
+    fun getWeeklySymptoms(week: Int): List<String> {
+        return BabyDevelopmentData.getInfoForWeek(week).symptoms
+    }
+
+    fun getWeeklyArticles(week: Int): List<ArticleInfo> {
+        return BabyDevelopmentData.getInfoForWeek(week).articles
     }
 }

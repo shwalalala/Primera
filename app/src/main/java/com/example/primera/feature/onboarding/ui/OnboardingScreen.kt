@@ -101,6 +101,7 @@ fun OnboardingHostScreen(
         ) {
             Crossfade(targetState = state.currentStep, label = "OnboardingStep") { step ->
                 when (step) {
+                    OnboardingStep.NAME -> NameStep(state, viewModel)
                     OnboardingStep.BIRTHDAY -> BirthdayStep(state, viewModel)
                     OnboardingStep.WEIGHT -> WeightStep(state, viewModel)
                     OnboardingStep.HEIGHT -> HeightStep(state, viewModel)

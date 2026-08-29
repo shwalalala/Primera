@@ -20,7 +20,8 @@ class DashboardViewModel(
     private val repository: DashboardRepository,
     private val goalsRepository: com.example.primera.feature.goals.data.GoalsRepository,
     private val healthConnectManager: HealthConnectManager,
-    private val preferenceRepository: com.example.primera.core.data.PreferenceRepository
+    private val preferenceRepository: com.example.primera.core.data.PreferenceRepository,
+    private val networkMonitor: com.example.primera.core.util.NetworkMonitor,
 ) : ViewModel() {
 
     init {
@@ -29,14 +30,23 @@ class DashboardViewModel(
         }
     }
 
-    val uiState: StateFlow<DashboardUiState> = repository.observeDashboardData()
-        .map { data ->
-            if (data == null) {
-                DashboardUiState.Success(createDefaultUiModel())
-            } else {
-                DashboardUiState.Success(mapToUiModel(data))
-            } as DashboardUiState
-        }
+    val isOnline: StateFlow<Boolean> = networkMonitor.isOnline
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
+        )
+
+    val uiState: StateFlow<DashboardUiState> = combine(
+        repository.observeDashboardData(),
+        repository.observeHealthRecords()
+    ) { data, healthRecords ->
+        if (data == null) {
+            DashboardUiState.Success(createDefaultUiModel())
+        } else {
+            DashboardUiState.Success(mapToUiModel(data, healthRecords))
+        } as DashboardUiState
+    }
         .onStart { 
             // Optional: emit Loading explicitly if needed
         }
@@ -65,6 +75,7 @@ class DashboardViewModel(
             daysLeft = 0,
             babySize = "Unknown",
             babyEmoji = "👶",
+            babyIllustration = null,
             heartRateBpm = 0,
             heartRateTrendingUp = false,
             heartRateVsLastWeek = 0,
@@ -76,16 +87,31 @@ class DashboardViewModel(
             spO2 = null,
             isWatchSynced = false,
             recentLogs = emptyList(),
-            weekDays = getCurrentWeekDays()
+            weekDays = getCurrentWeekDays(),
+            milestones = DashboardBusinessLogic.getWeeklyMilestones(1),
+            symptoms = DashboardBusinessLogic.getWeeklySymptoms(1),
+            articles = DashboardBusinessLogic.getWeeklyArticles(1)
         )
     }
 
-    private fun mapToUiModel(data: DashboardData): DashboardUiModel {
+    private fun mapToUiModel(data: DashboardData, healthRecords: List<com.example.primera.feature.smartwatchconnection.domain.SmartwatchHealth>): DashboardUiModel {
         val week = DashboardBusinessLogic.getWeekNumber(data.dueDate)
         val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
         
         // Watch sync is active if the user has performed at least one sync session
         val isWatchSynced = preferenceRepository.isWatchSyncEnabled(userId)
+
+        // Calculate heart rate trends
+        val avgHrLastWeek = healthRecords
+            .take(7)
+            .mapNotNull { it.averageHeartRate }
+            .average()
+
+        val hrVsLastWeek = if (!avgHrLastWeek.isNaN() && (data.heartRateBpm > 0)) {
+            (data.heartRateBpm - avgHrLastWeek).toInt()
+        } else {
+            0
+        }
         
         return DashboardUiModel(
             userName = data.userName,
@@ -96,9 +122,10 @@ class DashboardViewModel(
             daysLeft = DashboardBusinessLogic.getDaysLeft(data.dueDate),
             babySize = DashboardBusinessLogic.getBabySize(week),
             babyEmoji = DashboardBusinessLogic.getBabyEmoji(week),
+            babyIllustration = DashboardBusinessLogic.getBabyIllustration(week),
             heartRateBpm = data.heartRateBpm,
-            heartRateTrendingUp = false, // Set to false by default until we have trend logic
-            heartRateVsLastWeek = 0,    // Set to 0 until we have historical data
+            heartRateTrendingUp = hrVsLastWeek > 0,
+            heartRateVsLastWeek = hrVsLastWeek,
             steps = data.steps,
             stepsGoal = data.stepsGoal,
             sleepHours = data.sleepHours,
@@ -125,23 +152,26 @@ class DashboardViewModel(
                         accentColor = getCategoryColor(log.category)
                     )
                 },
-            weekDays = getCurrentWeekDays()
+            weekDays = getCurrentWeekDays(),
+            milestones = DashboardBusinessLogic.getWeeklyMilestones(week),
+            symptoms = DashboardBusinessLogic.getWeeklySymptoms(week),
+            articles = DashboardBusinessLogic.getWeeklyArticles(week)
         )
     }
 
     private fun isToday(date: Date): Boolean {
         val cal1 = Calendar.getInstance()
         val cal2 = Calendar.getInstance().apply { time = date }
-        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
-                cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
+        return cal1[Calendar.YEAR] == cal2[Calendar.YEAR] &&
+                cal1[Calendar.DAY_OF_YEAR] == cal2[Calendar.DAY_OF_YEAR]
     }
 
     private fun isYesterday(date: Date): Boolean {
         val cal1 = Calendar.getInstance()
         cal1.add(Calendar.DAY_OF_YEAR, -1)
         val cal2 = Calendar.getInstance().apply { time = date }
-        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
-                cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
+        return cal1[Calendar.YEAR] == cal2[Calendar.YEAR] &&
+                cal1[Calendar.DAY_OF_YEAR] == cal2[Calendar.DAY_OF_YEAR]
     }
 
     private fun getCategoryColor(category: String): Color {
@@ -155,10 +185,10 @@ class DashboardViewModel(
 
     private fun getCurrentWeekDays(): List<DashboardWeekDayItem> {
         val calendar = Calendar.getInstance()
-        val today = calendar.get(Calendar.DAY_OF_YEAR)
+        val today = calendar[Calendar.DAY_OF_YEAR]
         
         // Set to the first day of the week (Sunday)
-        calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek)
+        calendar[Calendar.DAY_OF_WEEK] = calendar.firstDayOfWeek
         
         val days = mutableListOf<DashboardWeekDayItem>()
         val dayInitials = listOf("S", "M", "T", "W", "T", "F", "S")
@@ -167,8 +197,8 @@ class DashboardViewModel(
             days.add(
                 DashboardWeekDayItem(
                     initial = dayInitials[i],
-                    date = calendar.get(Calendar.DAY_OF_MONTH),
-                    isSelected = calendar.get(Calendar.DAY_OF_YEAR) == today
+                    date = calendar[Calendar.DAY_OF_MONTH],
+                    isSelected = calendar[Calendar.DAY_OF_YEAR] == today
                 )
             )
             calendar.add(Calendar.DAY_OF_MONTH, 1)
@@ -202,7 +232,7 @@ class DashboardViewModel(
                     
                     // Mark as synced locally for this user session
                     val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
-                    preferenceRepository.setWatchSyncEnabled(userId, true)
+                    preferenceRepository.setWatchSyncEnabled(userId, enabled = true)
                 }
             } catch (e: Exception) {
                 android.util.Log.e("DashboardViewModel", "Sync failed during dashboard 'Sync Now' click", e)

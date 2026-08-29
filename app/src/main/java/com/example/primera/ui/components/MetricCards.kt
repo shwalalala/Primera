@@ -42,7 +42,6 @@ import com.example.primera.core.theme.DashboardLogBorder
 import com.example.primera.core.theme.HeartRateBg
 import com.example.primera.core.theme.PrimeraTheme
 import com.example.primera.core.theme.PrimeraViolet
-import com.example.primera.core.theme.StepsBg
 import com.example.primera.core.theme.SurfaceWhite
 import com.example.primera.core.theme.TextPrimary
 import com.example.primera.core.theme.TextSecondary
@@ -52,7 +51,7 @@ import com.example.primera.core.theme.TrendRed
 @Composable
 fun StatCard(
     modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     Card(
         modifier = modifier.heightIn(min = 110.dp),

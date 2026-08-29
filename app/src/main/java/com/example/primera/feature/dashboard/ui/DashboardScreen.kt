@@ -1,11 +1,17 @@
 package com.example.primera.feature.dashboard.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -15,8 +21,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.primera.core.di.ViewModelProvider
-import com.example.primera.ui.components.*
-import com.example.primera.core.theme.*
+import com.example.primera.core.theme.BackgroundCream
+import com.example.primera.core.theme.ErrorRed
+import com.example.primera.core.theme.PrimeraLilac
+import com.example.primera.core.theme.PrimeraTheme
+import com.example.primera.ui.components.FullScreenLoadingOverlay
+import com.example.primera.ui.components.OfflineBanner
 
 @Composable
 fun DashboardScreen(
@@ -26,9 +36,11 @@ fun DashboardScreen(
     onViewAllLogs: () -> Unit,
     onAddLog: () -> Unit,
     onInputManually: () -> Unit,
+    onProfileClick: () -> Unit,
     viewModel: DashboardViewModel = viewModel(factory = ViewModelProvider.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
 
     Box(
         modifier = modifier
@@ -47,14 +59,20 @@ fun DashboardScreen(
             is DashboardUiState.Error -> ErrorContent(state.message)
             is DashboardUiState.Success -> {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    DashboardTopBar(state.data.userName, onLogout)
+                    DashboardTopBar(state.data.userName, onLogout, onProfileClick)
+                    
+                    if (!isOnline) {
+                        OfflineBanner()
+                    }
+
                     DashboardContent(
                         state = state.data,
                         onViewAllLogs = onViewAllLogs,
                         onAddLog = onAddLog,
                         onInputManually = onInputManually,
                         onLogClick = onLogClick,
-                        onSyncWatch = { viewModel.onSyncWatch() }
+                        onSyncWatch = { viewModel.onSyncWatch() },
+                        onProfileClick = onProfileClick
                     )
                 }
             }
@@ -70,6 +88,7 @@ fun DashboardContent(
     onInputManually: () -> Unit,
     onLogClick: (DashboardLogUiItem) -> Unit,
     onSyncWatch: () -> Unit,
+    onProfileClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -91,12 +110,21 @@ fun DashboardContent(
             dayNumber = state.dayNumber,
             daysLeft = state.daysLeft,
             babySize = state.babySize,
-            babyEmoji = state.babyEmoji
+            babyEmoji = state.babyEmoji,
+            babyIllustration = state.babyIllustration
         )
         Spacer(Modifier.height(20.dp))
-        StatsGrid(state, onInputManually, onSyncWatch)
+        StatsGrid(
+            state = state,
+            onInputManually = onInputManually,
+            onSyncWatch = onSyncWatch
+        )
         Spacer(Modifier.height(24.dp))
         RecentHealthLogsSection(state.recentLogs, onViewAllLogs, onAddLog, onLogClick)
+        Spacer(Modifier.height(16.dp))
+        BabyDevelopmentSection(state.milestones, state.symptoms)
+        Spacer(Modifier.height(8.dp))
+        EducationalArticlesSection(state.articles)
         Spacer(Modifier.height(8.dp))
     }
 }
@@ -149,7 +177,8 @@ private fun DashboardScreenPreview() {
             onAddLog = {},
             onInputManually = {},
             onLogClick = {},
-            onSyncWatch = {}
+            onSyncWatch = {},
+            onProfileClick = {}
         )
     }
 }

@@ -5,7 +5,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +17,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -49,7 +50,9 @@ fun FeatureTopBar(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     selectedPeriod: String? = null,
-    onPeriodSelected: ((String) -> Unit)? = null
+    onPeriodSelected: ((String) -> Unit)? = null,
+    onExport: (() -> Unit)? = null,
+    onSettings: (() -> Unit)? = null
 ) {
     var showPeriodMenu by remember { mutableStateOf(false) }
 
@@ -136,6 +139,42 @@ fun FeatureTopBar(
                         )
                     }
                 }
+            }
+        } else if (onExport != null) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MenuButtonBg)
+                    .border(1.dp, MenuButtonBorder, CircleShape)
+                    .minimumInteractiveComponentSize()
+                    .clickable { onExport() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = "Export",
+                    tint = TextSecondary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        } else if (onSettings != null) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MenuButtonBg)
+                    .border(1.dp, MenuButtonBorder, CircleShape)
+                    .minimumInteractiveComponentSize()
+                    .clickable { onSettings() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Settings",
+                    tint = TextSecondary,
+                    modifier = Modifier.size(20.dp)
+                )
             }
         } else {
             Box(modifier = Modifier.size(40.dp))

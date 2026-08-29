@@ -13,4 +13,6 @@ object Routes {
     const val DAILY_CHECKIN = "daily_checkin"
     const val CHECKIN_PREVIEW = "checkin_preview"
     const val TRANSCRIPTION = "transcription"
+    const val PROFILE       = "profile"
+    const val SETTINGS      = "settings"
 }
