@@ -8,7 +8,7 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="com.example.primera" />
+                  <option name="appId" value="cit.edu.primera" />
                   <option name="mobileSdkAppId" value="1:520407937883:android:4edda193e05245d94f607e" />
                   <option name="projectId" value="primera-eafe6" />
                   <option name="projectNumber" value="520407937883" />

@@ -24,7 +24,7 @@
     </queries>
 
     <application
-        android:name=".PrimeraApplication"
+        android:name="cit.edu.primera.PrimeraApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
@@ -38,7 +38,7 @@
 
         <!-- Health Connect Permission Rationale -->
         <activity
-            android:name=".PermissionsRationaleActivity"
+            android:name="cit.edu.primera.PermissionsRationaleActivity"
             android:exported="true">
 
             <intent-filter>
@@ -52,7 +52,7 @@
             android:name=".ViewPermissionUsageActivity"
             android:exported="true"
             android:permission="android.permission.START_VIEW_PERMISSION_USAGE"
-            android:targetActivity=".PermissionsRationaleActivity">
+            android:targetActivity="cit.edu.primera.PermissionsRationaleActivity">
 
             <intent-filter>
                 <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
@@ -64,7 +64,7 @@
 
         <!-- Main Activity -->
         <activity
-            android:name=".MainActivity"
+            android:name="cit.edu.primera.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.Primera">
 
@@ -87,7 +87,7 @@
         </provider>
 
         <receiver
-            android:name=".core.notification.ReminderReceiver"
+            android:name="cit.edu.primera.core.notification.ReminderReceiver"
             android:exported="false" />
 
     </application>
