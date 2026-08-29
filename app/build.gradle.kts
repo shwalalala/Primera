@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.primera"
+    namespace = "cit.edu.primera"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.example.primera"
+        applicationId = "com.example.cit.edu.primera"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
