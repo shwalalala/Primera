@@ -31,6 +31,7 @@ class DashboardDataSource {
                 val userDto = if (snapshot != null && snapshot.exists()) {
                     try {
                         UserDto(
+                            username = snapshot.getString("username"),
                             firstName = snapshot.getString("firstName"),
                             lastName = snapshot.getString("lastName"),
                             middleName = snapshot.getString("middleName"),

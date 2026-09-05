@@ -19,16 +19,14 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun signUp(
-        firstName: String,
-        lastName: String,
-        middleName: String,
+        username: String,
         email: String,
         password: String
     ): Result<Unit> {
         return try {
             val userId = dataSource.signUp(email, password)
-            dataSource.createUserDocument(userId, firstName, lastName, middleName, email)
-            dataSource.logActivity("Sign Up", "New user registered: $email with name $firstName $lastName", userId)
+            dataSource.createUserDocument(userId, username, email)
+            dataSource.logActivity("Sign Up", "New user registered: $email with username $username", userId)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

@@ -27,16 +27,8 @@ class AuthViewModel(
         _state.update { it.copy(activeTab = tab, errorMessage = null, resetEmailSent = false) }
     }
 
-    fun onFirstNameChange(value: String) {
-        _state.update { it.copy(firstName = value, firstNameError = null) }
-    }
-
-    fun onLastNameChange(value: String) {
-        _state.update { it.copy(lastName = value, lastNameError = null) }
-    }
-
-    fun onMiddleNameChange(value: String) {
-        _state.update { it.copy(middleName = value) }
+    fun onUsernameChange(value: String) {
+        _state.update { it.copy(username = value, usernameError = null) }
     }
 
     fun onEmailChange(value: String) {
@@ -68,9 +60,7 @@ class AuthViewModel(
                     _state.update { it.copy(
                         isLoading = false,
                         isAuthenticated = true,
-                        firstName = "",
-                        lastName = "",
-                        middleName = "",
+                        username = "",
                         email = "",
                         password = ""
                     ) }
@@ -90,9 +80,7 @@ class AuthViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
             val result = authRepository.signUp(
-                currentState.firstName,
-                currentState.lastName,
-                currentState.middleName,
+                currentState.username,
                 currentState.email,
                 currentState.password
             )
@@ -102,9 +90,7 @@ class AuthViewModel(
                     _state.update { it.copy(
                         isLoading = false,
                         isAuthenticated = true,
-                        firstName = "",
-                        lastName = "",
-                        middleName = "",
+                        username = "",
                         email = "",
                         password = ""
                     ) }
@@ -150,9 +136,7 @@ class AuthViewModel(
             authRepository.logout()
             _state.update { it.copy(
                 isAuthenticated = false,
-                firstName = "",
-                lastName = "",
-                middleName = "",
+                username = "",
                 email = "",
                 password = ""
             ) }
@@ -186,19 +170,14 @@ class AuthViewModel(
     }
 
     private fun validateRegisterForm(): Boolean {
-        val firstName = _state.value.firstName
-        val lastName = _state.value.lastName
+        val username = _state.value.username
         val email = _state.value.email
         val password = _state.value.password
         val agreed = _state.value.agreedToTerms
         var isValid = true
 
-        if (firstName.isBlank()) {
-            _state.update { it.copy(firstNameError = "First name is required") }
-            isValid = false
-        }
-        if (lastName.isBlank()) {
-            _state.update { it.copy(lastNameError = "Last name is required") }
+        if (username.isBlank()) {
+            _state.update { it.copy(usernameError = "Username is required") }
             isValid = false
         }
         if (email.isBlank()) {

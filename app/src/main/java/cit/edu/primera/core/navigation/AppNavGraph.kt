@@ -417,9 +417,7 @@ fun AuthScreenHost(
 
         AuthTab.SIGNUP -> RegisterScreen(
             state = state,
-            onFirstNameChange = authViewModel::onFirstNameChange,
-            onLastNameChange = authViewModel::onLastNameChange,
-            onMiddleNameChange = authViewModel::onMiddleNameChange,
+            onUsernameChange = authViewModel::onUsernameChange,
             onEmailChange = authViewModel::onEmailChange,
             onPasswordChange = authViewModel::onPasswordChange,
             onAgreedToTermsToggle = authViewModel::onAgreedToTermsToggle,

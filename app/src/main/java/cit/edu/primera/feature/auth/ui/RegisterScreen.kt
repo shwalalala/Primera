@@ -37,9 +37,7 @@ import cit.edu.primera.ui.components.PrimeraTextField
 @Composable
 fun RegisterScreen(
     state: AuthUiState,
-    onFirstNameChange: (String) -> Unit,
-    onLastNameChange: (String) -> Unit,
-    onMiddleNameChange: (String) -> Unit,
+    onUsernameChange: (String) -> Unit,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onAgreedToTermsToggle: (Boolean) -> Unit,
@@ -98,29 +96,11 @@ fun RegisterScreen(
             Spacer(Modifier.height(32.dp))
             
             PrimeraTextField(
-                value = state.firstName,
-                onValueChange = onFirstNameChange,
-                placeholder = "First Name",
-                isError = state.firstNameError != null,
-                errorMessage = state.firstNameError
-            )
-            
-            Spacer(Modifier.height(16.dp))
-
-            PrimeraTextField(
-                value = state.lastName,
-                onValueChange = onLastNameChange,
-                placeholder = "Last Name",
-                isError = state.lastNameError != null,
-                errorMessage = state.lastNameError
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            PrimeraTextField(
-                value = state.middleName,
-                onValueChange = onMiddleNameChange,
-                placeholder = "Middle Name (Optional)"
+                value = state.username,
+                onValueChange = onUsernameChange,
+                placeholder = "Username",
+                isError = state.usernameError != null,
+                errorMessage = state.usernameError
             )
             
             Spacer(Modifier.height(16.dp))
@@ -195,9 +175,7 @@ private fun RegisterScreenPreview() {
     PrimeraTheme {
         RegisterScreen(
             state = AuthUiState(activeTab = AuthTab.SIGNUP),
-            onFirstNameChange = {},
-            onLastNameChange = {},
-            onMiddleNameChange = {},
+            onUsernameChange = {},
             onEmailChange = {},
             onPasswordChange = {},
             onAgreedToTermsToggle = {},
