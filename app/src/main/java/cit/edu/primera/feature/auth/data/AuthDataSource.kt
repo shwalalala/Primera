@@ -40,16 +40,11 @@ class AuthDataSource {
 
     suspend fun createUserDocument(
         userId: String,
-        firstName: String,
-        lastName: String,
-        middleName: String,
+        username: String,
         email: String
     ) {
         val userData = hashMapOf(
-            "firstName" to firstName,
-            "lastName" to lastName,
-            "middleName" to middleName,
-            "fullName" to "$firstName $lastName",
+            "username" to username,
             "email" to email,
             "role" to "patient",
             "createdAt" to Date()
