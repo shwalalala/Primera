@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Calendar
 import java.util.Date
 
 class ProfileViewModel(
@@ -78,10 +79,34 @@ class ProfileViewModel(
     fun onShortestCycleChange(days: Int) = _uiState.update { it.copy(shortestCycleDays = days) }
     fun onLongestCycleChange(days: Int) = _uiState.update { it.copy(longestCycleDays = days) }
     fun onHasHadUltrasoundChange(hasHad: Boolean) = _uiState.update { it.copy(hasHadUltrasound = hasHad) }
-    fun onScanDateChange(date: Date) = _uiState.update { it.copy(scanDate = date) }
-    fun onScanWeeksChange(weeks: Int) = _uiState.update { it.copy(scanWeeks = weeks) }
-    fun onScanDaysChange(days: Int) = _uiState.update { it.copy(scanDays = days) }
+    fun onScanDateChange(date: Date) {
+        _uiState.update { it.copy(scanDate = date) }
+        calculateEddFromUltrasound()
+    }
+    fun onScanWeeksChange(weeks: Int) {
+        _uiState.update { it.copy(scanWeeks = weeks) }
+        calculateEddFromUltrasound()
+    }
+    fun onScanDaysChange(days: Int) {
+        _uiState.update { it.copy(scanDays = days) }
+        calculateEddFromUltrasound()
+    }
     fun onPositiveTestDateChange(date: Date) = _uiState.update { it.copy(positiveTestDate = date) }
+
+    private fun calculateEddFromUltrasound() {
+        val s = _uiState.value
+        val scanDate = s.scanDate ?: return
+        
+        // EDD = Scan Date + (280 days - (weeks * 7 + days))
+        val gestationalDaysAtScan = ((s.scanWeeks ?: 0) * 7) + (s.scanDays ?: 0)
+        val daysToRemaining = 280 - gestationalDaysAtScan
+        
+        val calendar = Calendar.getInstance().apply {
+            time = scanDate
+            add(Calendar.DAY_OF_YEAR, daysToRemaining)
+        }
+        _uiState.update { it.copy(eddDate = calendar.time) }
+    }
 
     fun onHistoryDeliveryDateChange(index: Int, date: Date) {
         _uiState.update { state ->

@@ -178,16 +178,15 @@ fun ProfileContent(
             ProfileField(
                 label = "Email Address",
                 value = state.email,
-                isEditing = state.isEditing,
-                onValueChange = viewModel::onEmailChange
+                isEditing = false, // Email is not editable
+                onValueChange = {}
             )
             
             val birthdayStr = state.birthday?.let { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(it) } ?: "Not set"
             ProfileField(
                 label = "Birthday",
                 value = birthdayStr,
-                isEditing = false,
-                modifier = Modifier.clickable(enabled = state.isEditing) { datePickerType = "birthday" },
+                isEditing = false, // Birthday is not editable
                 onValueChange = {}
             )
             
@@ -225,13 +224,16 @@ fun ProfileContent(
                 onValueChange = {}
             )
             
+            /* Nina - Hiding this because doubtful this might change 9/7/2026
             ProfileField(
                 label = "First Pregnancy",
                 value = if (state.isFirstPregnancy) "Yes" else "No",
                 isEditing = false,
                 onValueChange = {}
             )
+            */
 
+            /* Nina - Hiding this because doubtful this might change 9/7/2026
             if (state.isEditing) {
                 Text("Cycle Regularity", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -250,7 +252,9 @@ fun ProfileContent(
                     onValueChange = {}
                 )
             }
+            */
 
+            /* Nina - Hiding this because doubtful this might change 9/7/2026
             if (state.isCycleRegular == false) {
                 ProfileField(
                     label = "Shortest Cycle (days)",
@@ -267,7 +271,9 @@ fun ProfileContent(
                     keyboardType = KeyboardType.Number
                 )
             }
+            */
 
+            /* Nina - Hiding this because doubtful this might change 9/7/2026
             if (state.isCycleRegular == true) {
                 val lmpStr = state.lmpDate?.let { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(it) } ?: "Not set"
                 ProfileField(
@@ -278,6 +284,7 @@ fun ProfileContent(
                     onValueChange = {}
                 )
             }
+            */
 
             if (state.isEditing) {
                 Text("Dating Ultrasound", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
@@ -286,11 +293,13 @@ fun ProfileContent(
                     PrimeraOptionChip("Not yet", state.hasHadUltrasound == false) { viewModel.onHasHadUltrasoundChange(false) }
                 }
             } else {
+                val hasNoUltrasound = state.hasHadUltrasound == false
                 ProfileField(
                     label = "Dating Ultrasound",
                     value = if (state.hasHadUltrasound == true) "Completed" else "Not yet",
                     isEditing = false,
-                    onValueChange = {}
+                    onValueChange = {},
+                    valueColor = if (hasNoUltrasound) ErrorRed else TextPrimary
                 )
             }
 
@@ -550,6 +559,7 @@ fun ProfileField(
     onValueChange: (String) -> Unit,
     placeholder: String = "",
     keyboardType: KeyboardType = KeyboardType.Text,
+    valueColor: Color = TextPrimary,
     trailingIcon: @Composable (() -> Unit)? = null
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -585,7 +595,7 @@ fun ProfileField(
                 Text(
                     text = value.ifBlank { "Not set" },
                     fontSize = 16.sp,
-                    color = if (value.isBlank()) TextHint else TextPrimary,
+                    color = if (value.isBlank()) TextHint else valueColor,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f)
                 )
