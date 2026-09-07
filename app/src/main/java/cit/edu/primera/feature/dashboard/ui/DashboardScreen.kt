@@ -102,7 +102,8 @@ fun DashboardContent(
         DashboardGreeting(
             userName = state.userName,
             timeOfDay = state.timeOfDay,
-            trimesterText = "You're in your ${state.trimester}"
+            trimesterText = "You're in your ${state.trimester}",
+            inaccuracyWarning = state.inaccuracyWarning
         )
         Spacer(Modifier.height(4.dp))
         BabyRingCard(
@@ -162,6 +163,8 @@ private fun DashboardScreenPreview() {
                 sleepQuality = "Good quality",
                 spO2 = 98,
                 isWatchSynced = true,
+                isGestationalAgeTentative = false,
+                inaccuracyWarning = null,
                 recentLogs = emptyList(),
                 weekDays = listOf(
                     DashboardWeekDayItem("S", 22, false),

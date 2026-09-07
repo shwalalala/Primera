@@ -57,6 +57,7 @@ class AuthViewModel(
             
             result.fold(
                 onSuccess = {
+                    val userId = authRepository.getCurrentUserId() ?: ""
                     _state.update { it.copy(
                         isLoading = false,
                         isAuthenticated = true,
@@ -64,11 +65,13 @@ class AuthViewModel(
                         email = "",
                         password = ""
                     ) }
-                    _effect.send(AuthEffect.NavigateToDashboard)
+                    if (preferenceRepository.shouldShowOnboarding(userId)) {
+                        _effect.send(AuthEffect.NavigateToOnboarding)
+                    } else {
+                        _effect.send(AuthEffect.NavigateToDashboard)
+                    }
                 },
-                onFailure = { error ->
-                    _state.update { it.copy(isLoading = false, errorMessage = error.message) }
-                }
+                onFailure = { _state.update { it.copy(isLoading = false, errorMessage = "Invalid email or password") } }
             )
         }
     }
@@ -96,9 +99,7 @@ class AuthViewModel(
                     ) }
                     _effect.send(AuthEffect.NavigateToOnboarding)
                 },
-                onFailure = { error ->
-                    _state.update { it.copy(isLoading = false, errorMessage = error.message) }
-                }
+                onFailure = { _state.update { it.copy(isLoading = false, errorMessage = "Registration failed. Please check your details.") } }
             )
         }
     }
@@ -124,9 +125,7 @@ class AuthViewModel(
                 onSuccess = {
                     _state.update { it.copy(isLoading = false, resetEmailSent = true) }
                 },
-                onFailure = { error ->
-                    _state.update { it.copy(isLoading = false, errorMessage = error.message) }
-                }
+                onFailure = { _state.update { it.copy(isLoading = false, errorMessage = "Failed to send reset email. Please verify your email address.") } }
             )
         }
     }
@@ -146,9 +145,14 @@ class AuthViewModel(
 
     private fun checkSession() {
         if (authRepository.isUserAuthenticated()) {
+            val userId = authRepository.getCurrentUserId() ?: ""
             _state.update { it.copy(isAuthenticated = true) }
             viewModelScope.launch {
-                _effect.send(AuthEffect.NavigateToDashboard)
+                if (preferenceRepository.shouldShowOnboarding(userId)) {
+                    _effect.send(AuthEffect.NavigateToOnboarding)
+                } else {
+                    _effect.send(AuthEffect.NavigateToDashboard)
+                }
             }
         }
     }

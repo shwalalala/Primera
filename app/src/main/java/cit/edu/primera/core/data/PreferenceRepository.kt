@@ -7,6 +7,8 @@ import androidx.core.content.edit
 interface PreferenceRepository {
     fun shouldShowOnboarding(userId: String): Boolean
     fun setOnboardingCompleted(userId: String)
+    fun getOnboardingLastStep(userId: String): String?
+    fun setOnboardingLastStep(userId: String, step: String)
     fun isWatchSyncEnabled(userId: String): Boolean
     fun setWatchSyncEnabled(userId: String, enabled: Boolean)
     fun getCustomOptions(userId: String, category: String): Set<String>
@@ -19,6 +21,7 @@ class PreferenceRepositoryImpl(context: Context) : PreferenceRepository {
 
     companion object {
         private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed_"
+        private const val KEY_ONBOARDING_STEP = "onboarding_step_"
         private const val KEY_WATCH_SYNC_ENABLED = "watch_sync_enabled_"
         private const val KEY_CUSTOM_OPTIONS_PREFIX = "custom_options_"
     }
@@ -28,7 +31,18 @@ class PreferenceRepositoryImpl(context: Context) : PreferenceRepository {
     }
 
     override fun setOnboardingCompleted(userId: String) {
-        sharedPreferences.edit { putBoolean(KEY_ONBOARDING_COMPLETED + userId, true) }
+        sharedPreferences.edit { 
+            putBoolean(KEY_ONBOARDING_COMPLETED + userId, true)
+            remove(KEY_ONBOARDING_STEP + userId)
+        }
+    }
+
+    override fun getOnboardingLastStep(userId: String): String? {
+        return sharedPreferences.getString(KEY_ONBOARDING_STEP + userId, null)
+    }
+
+    override fun setOnboardingLastStep(userId: String, step: String) {
+        sharedPreferences.edit { putString(KEY_ONBOARDING_STEP + userId, step) }
     }
 
     override fun isWatchSyncEnabled(userId: String): Boolean {

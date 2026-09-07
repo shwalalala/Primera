@@ -386,7 +386,10 @@ fun PrimeraCheckbox(
         )
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Normal
+            ),
             color = TextSecondary
         )
     }

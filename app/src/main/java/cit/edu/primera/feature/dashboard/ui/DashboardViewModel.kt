@@ -86,6 +86,8 @@ class DashboardViewModel(
             sleepQuality = "Unknown",
             spO2 = null,
             isWatchSynced = false,
+            isGestationalAgeTentative = false,
+            inaccuracyWarning = null,
             recentLogs = emptyList(),
             weekDays = getCurrentWeekDays(),
             milestones = DashboardBusinessLogic.getWeeklyMilestones(1),
@@ -100,6 +102,11 @@ class DashboardViewModel(
         
         // Watch sync is active if the user has performed at least one sync session
         val isWatchSynced = preferenceRepository.isWatchSyncEnabled(userId)
+
+        val isTentative = data.isCycleRegular == false && data.hasHadUltrasound == false
+        val warning = if (isTentative) {
+            "Gestational age may not be accurate. Please have an ultrasound as soon as possible for a confirmed due date."
+        } else null
 
         // Calculate heart rate trends
         val avgHrLastWeek = healthRecords
@@ -133,6 +140,8 @@ class DashboardViewModel(
             sleepQuality = DashboardBusinessLogic.getSleepQuality(data.sleepHours, data.sleepMinutes),
             spO2 = data.spO2,
             isWatchSynced = isWatchSynced,
+            isGestationalAgeTentative = isTentative,
+            inaccuracyWarning = warning,
             recentLogs = data.recentLogs
                 .map { log ->
                     val sdf = SimpleDateFormat("h:mm a", Locale.getDefault())

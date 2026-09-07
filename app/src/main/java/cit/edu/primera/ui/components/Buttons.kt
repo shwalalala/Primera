@@ -1,6 +1,7 @@
 package cit.edu.primera.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +20,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import cit.edu.primera.core.theme.PrimeraLogoStart
@@ -65,9 +67,41 @@ fun PrimeraGradientButton(
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelLarge,
-                color = SurfaceWhite
+                color = SurfaceWhite,
+                fontWeight = FontWeight.Bold
             )
         }
+    }
+}
+
+@Composable
+fun PrimeraOutlinedButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    color: Color = PrimeraLogoStart,
+    shape: RoundedCornerShape = RoundedCornerShape(32.dp)
+) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .heightIn(min = 54.dp)
+            .fillMaxWidth()
+            .clip(shape)
+            .border(
+                width = 1.dp,
+                color = if (enabled) color else Color.Gray,
+                shape = shape
+            )
+            .clickable(enabled = enabled, onClick = onClick)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            color = if (enabled) color else Color.Gray,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 

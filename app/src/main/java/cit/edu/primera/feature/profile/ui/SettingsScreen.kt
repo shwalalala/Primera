@@ -129,17 +129,14 @@ fun SettingsScreen(
                 Spacer(Modifier.height(32.dp))
 
                 // Logout Button
-                OutlinedButton(
+                cit.edu.primera.ui.components.PrimeraOutlinedButton(
+                    text = "Logout",
                     onClick = {
                         viewModel.logout()
                         onLogout()
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorRed),
-                    border = BorderStroke(1.dp, ErrorRed)
-                ) {
-                    Text("Logout", fontWeight = FontWeight.Bold)
-                }
+                    color = ErrorRed
+                )
             }
         }
 

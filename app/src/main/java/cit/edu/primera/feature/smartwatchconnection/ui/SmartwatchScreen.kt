@@ -279,19 +279,16 @@ private fun SourceAppLauncher(modifier: Modifier = Modifier) {
     }
 
     installedApp?.let { (name, pkg) ->
-        OutlinedButton(
+        PrimeraOutlinedButton(
+            text = "Open $name to Refresh Data",
             onClick = {
                 context.packageManager.getLaunchIntentForPackage(pkg)?.let { intent ->
                     context.startActivity(intent)
                 }
             },
             modifier = modifier,
-            shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, PrimeraViolet),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimeraViolet)
-        ) {
-            Text("Open $name to Refresh Data", fontSize = 14.sp)
-        }
+            shape = RoundedCornerShape(12.dp)
+        )
     }
 }
 

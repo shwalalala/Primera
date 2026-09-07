@@ -155,6 +155,13 @@ fun AppNavGraph(
                                 inclusive = true
                             }
                         }
+                    },
+                    onNavigateToOnboarding = {
+                        navController.navigate(Routes.ONBOARDING) {
+                            popUpTo(Routes.SPLASH) {
+                                inclusive = true
+                            }
+                        }
                     }
                 )
             }

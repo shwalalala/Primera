@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Calendar
 import java.util.Date
 
 class ProfileViewModel(
@@ -38,13 +39,28 @@ class ProfileViewModel(
                 if (data != null) {
                     _uiState.update { 
                         it.copy(
-                            firstName = data.firstName ?: "",
-                            lastName = data.lastName ?: "",
-                            middleName = data.middleName ?: "",
+                            email = data.email ?: "",
                             birthday = data.birthday,
-                            weightKg = weightData?.weightKg ?: 0,
+                            weightKg = data.weightKg ?: weightData?.weightKg ?: 0,
                             heightCm = data.heightCm ?: 0,
+                            lmpDate = data.lmpDate,
                             eddDate = data.dueDate,
+                            isFirstPregnancy = data.isFirstPregnancy ?: true,
+                            isCycleRegular = data.isCycleRegular,
+                            shortestCycleDays = data.shortestCycleDays,
+                            longestCycleDays = data.longestCycleDays,
+                            hasHadUltrasound = data.hasHadUltrasound,
+                            positiveTestDate = data.positiveTestDate,
+                            scanDate = data.scanDate,
+                            scanWeeks = data.scanWeeks,
+                            scanDays = data.scanDays,
+                            pregnancyHistories = data.pregnancyHistories,
+                            emergencyContact = cit.edu.primera.feature.profile.domain.EmergencyContact(
+                                name = data.iceName ?: "",
+                                relationship = data.iceRelationship ?: "",
+                                primaryPhone = data.icePrimaryPhone ?: "",
+                                secondaryPhone = data.iceSecondaryPhone ?: ""
+                            ),
                             isLoading = false
                         )
                     }
@@ -53,12 +69,116 @@ class ProfileViewModel(
         }
     }
 
-    fun onFirstNameChange(name: String) = _uiState.update { it.copy(firstName = name) }
-    fun onMiddleNameChange(name: String) = _uiState.update { it.copy(middleName = name) }
-    fun onLastNameChange(name: String) = _uiState.update { it.copy(lastName = name) }
     fun onWeightChange(weight: Int) = _uiState.update { it.copy(weightKg = weight) }
     fun onHeightChange(height: Int) = _uiState.update { it.copy(heightCm = height) }
     fun onEddDateChange(date: Date) = _uiState.update { it.copy(eddDate = date) }
+    fun onEmailChange(email: String) = _uiState.update { it.copy(email = email) }
+    fun onBirthdayChange(date: Date) = _uiState.update { it.copy(birthday = date) }
+    fun onLmpDateChange(date: Date) = _uiState.update { it.copy(lmpDate = date) }
+    fun onIsCycleRegularChange(isRegular: Boolean) = _uiState.update { it.copy(isCycleRegular = isRegular) }
+    fun onShortestCycleChange(days: Int) = _uiState.update { it.copy(shortestCycleDays = days) }
+    fun onLongestCycleChange(days: Int) = _uiState.update { it.copy(longestCycleDays = days) }
+    fun onHasHadUltrasoundChange(hasHad: Boolean) = _uiState.update { it.copy(hasHadUltrasound = hasHad) }
+    fun onScanDateChange(date: Date) {
+        _uiState.update { it.copy(scanDate = date) }
+        calculateEddFromUltrasound()
+    }
+    fun onScanWeeksChange(weeks: Int) {
+        _uiState.update { it.copy(scanWeeks = weeks) }
+        calculateEddFromUltrasound()
+    }
+    fun onScanDaysChange(days: Int) {
+        _uiState.update { it.copy(scanDays = days) }
+        calculateEddFromUltrasound()
+    }
+    fun onPositiveTestDateChange(date: Date) = _uiState.update { it.copy(positiveTestDate = date) }
+
+    private fun calculateEddFromUltrasound() {
+        val s = _uiState.value
+        val scanDate = s.scanDate ?: return
+        
+        // EDD = Scan Date + (280 days - (weeks * 7 + days))
+        val gestationalDaysAtScan = ((s.scanWeeks ?: 0) * 7) + (s.scanDays ?: 0)
+        val daysToRemaining = 280 - gestationalDaysAtScan
+        
+        val calendar = Calendar.getInstance().apply {
+            time = scanDate
+            add(Calendar.DAY_OF_YEAR, daysToRemaining)
+        }
+        _uiState.update { it.copy(eddDate = calendar.time) }
+    }
+
+    fun onHistoryDeliveryDateChange(index: Int, date: Date) {
+        _uiState.update { state ->
+            val newList = state.pregnancyHistories.toMutableList()
+            if (index in newList.indices) {
+                newList[index] = newList[index].copy(deliveryDate = date)
+            }
+            state.copy(pregnancyHistories = newList)
+        }
+    }
+
+    fun onHistoryDeliveryTypeChange(index: Int, type: String) {
+        _uiState.update { state ->
+            val newList = state.pregnancyHistories.toMutableList()
+            if (index in newList.indices) {
+                newList[index] = newList[index].copy(deliveryType = type)
+            }
+            state.copy(pregnancyHistories = newList)
+        }
+    }
+
+    fun onHistoryChildrenChange(index: Int, count: String) {
+        _uiState.update { state ->
+            val newList = state.pregnancyHistories.toMutableList()
+            if (index in newList.indices) {
+                newList[index] = newList[index].copy(childrenDelivered = count)
+            }
+            state.copy(pregnancyHistories = newList)
+        }
+    }
+
+    fun onHistoryComplicationsChange(index: Int, complication: String) {
+        _uiState.update { state ->
+            val newList = state.pregnancyHistories.toMutableList()
+            if (index in newList.indices) {
+                val current = newList[index]
+                val newComps = if (current.complications.contains(complication)) {
+                    current.complications - complication
+                } else {
+                    current.complications + complication
+                }
+                newList[index] = current.copy(complications = newComps)
+            }
+            state.copy(pregnancyHistories = newList)
+        }
+    }
+
+    // ICE Contact
+    fun onIceNameChange(name: String) = _uiState.update { 
+        it.copy(emergencyContact = it.emergencyContact.copy(name = name)) 
+    }
+    fun onIceRelationshipChange(rel: String) = _uiState.update { 
+        it.copy(emergencyContact = it.emergencyContact.copy(relationship = rel)) 
+    }
+    fun onIcePrimaryPhoneChange(phone: String) = _uiState.update { 
+        it.copy(emergencyContact = it.emergencyContact.copy(primaryPhone = phone)) 
+    }
+    fun onIceSecondaryPhoneChange(phone: String) = _uiState.update { 
+        it.copy(emergencyContact = it.emergencyContact.copy(secondaryPhone = phone)) 
+    }
+
+    // UI State
+    fun toggleSection(section: ProfileSection) {
+        _uiState.update { state ->
+            val newSections = if (state.expandedSections.contains(section)) {
+                state.expandedSections - section
+            } else {
+                state.expandedSections + section
+            }
+            state.copy(expandedSections = newSections)
+        }
+    }
 
     fun toggleEdit() = _uiState.update { it.copy(isEditing = !it.isEditing) }
 
@@ -67,16 +187,26 @@ class ProfileViewModel(
             _uiState.update { it.copy(isSaving = true) }
             
             val profile = OnboardingProfile(
-                firstName = _uiState.value.firstName,
-                lastName = _uiState.value.lastName,
-                middleName = _uiState.value.middleName,
+                email = _uiState.value.email,
                 birthday = _uiState.value.birthday ?: Date(),
                 weightKg = _uiState.value.weightKg,
                 heightCm = _uiState.value.heightCm,
+                isCycleRegular = _uiState.value.isCycleRegular,
+                shortestCycleDays = _uiState.value.shortestCycleDays,
+                longestCycleDays = _uiState.value.longestCycleDays,
+                hasHadUltrasound = _uiState.value.hasHadUltrasound,
+                positiveTestDate = _uiState.value.positiveTestDate,
                 lmpDate = _uiState.value.lmpDate,
                 eddDate = _uiState.value.eddDate,
                 isFirstPregnancy = _uiState.value.isFirstPregnancy,
-                pregnancyHistories = emptyList() // We don't want to overwrite history here
+                scanDate = _uiState.value.scanDate,
+                scanWeeks = _uiState.value.scanWeeks,
+                scanDays = _uiState.value.scanDays,
+                iceName = _uiState.value.emergencyContact.name,
+                iceRelationship = _uiState.value.emergencyContact.relationship,
+                icePrimaryPhone = _uiState.value.emergencyContact.primaryPhone,
+                iceSecondaryPhone = _uiState.value.emergencyContact.secondaryPhone,
+                pregnancyHistories = _uiState.value.pregnancyHistories
             )
 
             onboardingRepository.saveProfile(profile).fold(

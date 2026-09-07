@@ -79,20 +79,6 @@ fun WelcomeScreen(
                 )
             )
     ) {
-        // Skip Button
-        TextButton(
-            onClick = { viewModel.onSkip() },
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 16.dp, end = 16.dp)
-        ) {
-            Text(
-                text = "Skip",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
-            )
-        }
-
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -146,6 +132,22 @@ fun WelcomeScreen(
                     .fillMaxWidth(0.8f)
                     .padding(bottom = 64.dp)
             )
+        }
+
+        // Skip Button - Placed after Column to be on top of the Pager
+        if (pagerState.currentPage < 2) {
+            TextButton(
+                onClick = { viewModel.onSkip() },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 16.dp, end = 16.dp)
+            ) {
+                Text(
+                    text = "Skip",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+            }
         }
     }
 }
