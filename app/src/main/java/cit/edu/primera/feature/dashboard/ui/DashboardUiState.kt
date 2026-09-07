@@ -29,6 +29,8 @@ data class DashboardUiModel(
     val sleepQuality: String,
     val spO2: Int?,
     val isWatchSynced: Boolean,
+    val isGestationalAgeTentative: Boolean = false,
+    val inaccuracyWarning: String? = null,
     val recentLogs: List<DashboardLogUiItem>,
     val weekDays: List<DashboardWeekDayItem>,
     val milestones: List<String> = emptyList(),

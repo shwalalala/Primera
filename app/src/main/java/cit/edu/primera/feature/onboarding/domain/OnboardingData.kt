@@ -28,5 +28,11 @@ data class OnboardingProfile(
     // Ultrasound Data
     val scanDate: Date? = null,
     val scanWeeks: Int? = null,
-    val scanDays: Int? = null
+    val scanDays: Int? = null,
+    
+    // Emergency Contact
+    val iceName: String? = null,
+    val iceRelationship: String? = null,
+    val icePrimaryPhone: String? = null,
+    val iceSecondaryPhone: String? = null
 )

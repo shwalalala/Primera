@@ -16,5 +16,22 @@ data class UserDto(
     val sleepHours: Long? = null,
     val sleepMinutes: Long? = null,
     val spO2: Long? = null,
-    val heightCm: Long? = null
+    val heightCm: Long? = null,
+    val isCycleRegular: Boolean? = null,
+    val hasHadUltrasound: Boolean? = null,
+    val shortestCycleDays: Long? = null,
+    val longestCycleDays: Long? = null,
+    val positiveTestDate: Date? = null,
+    val isFirstPregnancy: Boolean? = null,
+    val scanDate: Date? = null,
+    val scanWeeks: Long? = null,
+    val scanDays: Long? = null,
+    val lmpDate: Date? = null,
+    val pregnancyHistories: List<Map<String, Any>>? = null,
+    
+    // Emergency Contact
+    val iceName: String? = null,
+    val iceRelationship: String? = null,
+    val icePrimaryPhone: String? = null,
+    val iceSecondaryPhone: String? = null
 )

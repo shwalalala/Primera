@@ -44,7 +44,22 @@ class DashboardDataSource {
                             sleepHours = snapshot.getLong("sleepHours") ?: 0L,
                             sleepMinutes = snapshot.getLong("sleepMinutes") ?: 0L,
                             spO2 = snapshot.getLong("spO2"),
-                            heightCm = snapshot.getLong("heightCm")
+                            heightCm = snapshot.getLong("heightCm"),
+                            isCycleRegular = snapshot.getBoolean("isCycleRegular"),
+                            hasHadUltrasound = snapshot.getBoolean("hasHadUltrasound"),
+                            shortestCycleDays = snapshot.getLong("shortestCycleDays"),
+                            longestCycleDays = snapshot.getLong("longestCycleDays"),
+                            positiveTestDate = snapshot.getTimestamp("positiveTestDate")?.toDate(),
+                            isFirstPregnancy = snapshot.getBoolean("isFirstPregnancy"),
+                            scanDate = snapshot.getTimestamp("scanDate")?.toDate(),
+                            scanWeeks = snapshot.getLong("scanWeeks"),
+                            scanDays = snapshot.getLong("scanDays"),
+                            lmpDate = snapshot.getTimestamp("lmpDate")?.toDate(),
+                            pregnancyHistories = snapshot.get("pregnancyHistories") as? List<Map<String, Any>>,
+                            iceName = snapshot.getString("iceName"),
+                            iceRelationship = snapshot.getString("iceRelationship"),
+                            icePrimaryPhone = snapshot.getString("icePrimaryPhone"),
+                            iceSecondaryPhone = snapshot.getString("iceSecondaryPhone")
                         )
                     } catch (_: Exception) {
                         null

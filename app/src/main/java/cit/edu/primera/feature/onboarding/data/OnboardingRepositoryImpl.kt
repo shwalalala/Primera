@@ -29,6 +29,10 @@ class OnboardingRepositoryImpl : OnboardingRepository {
                 "scanDate" to profile.scanDate,
                 "scanWeeks" to profile.scanWeeks,
                 "scanDays" to profile.scanDays,
+                "iceName" to profile.iceName,
+                "iceRelationship" to profile.iceRelationship,
+                "icePrimaryPhone" to profile.icePrimaryPhone,
+                "iceSecondaryPhone" to profile.iceSecondaryPhone,
                 "pregnancyHistories" to profile.pregnancyHistories.map { history ->
                     mapOf(
                         "pregnancyNumber" to history.pregnancyNumber,
