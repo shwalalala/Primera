@@ -129,7 +129,12 @@ fun LoginScreen(
             
             if (state.errorMessage != null) {
                 Spacer(Modifier.height(16.dp))
-                Text(text = state.errorMessage, color = ErrorRed, style = MaterialTheme.typography.bodySmall)
+                Text(
+                    text = state.errorMessage,
+                    color = ErrorRed,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium),
+                    textAlign = TextAlign.Center
+                )
             }
             
             Spacer(Modifier.height(24.dp))
