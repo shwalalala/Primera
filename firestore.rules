@@ -2,22 +2,135 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() { return request.auth != null; }
+    function role() { return request.auth.token.role; }
+    function isAdmin() { return isSignedIn() && role() == 'admin'; }
+    function isDoctor() { return isSignedIn() && role() == 'doctor'; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function hasDeterministicAssignment(patientId) {
+      return exists(/databases/$(database)/documents/assignments/$(request.auth.uid + '_' + patientId));
+    }
+    function hasDoctorPatientLink(patientId) {
+      return exists(/databases/$(database)/documents/doctors/$(request.auth.uid)/assignedPatients/$(patientId));
+    }
+    function isAssignedDoctor(patientId) {
+      return isDoctor()
+        && (
+          get(/databases/$(database)/documents/users/$(patientId)).data.assignedDoctorId == request.auth.uid
+          || hasDoctorPatientLink(patientId)
+          || hasDeterministicAssignment(patientId)
+        );
+    }
+    function isAssignedDoctorForResource() {
+      return isDoctor()
+        && resource.data.userId is string
+        && isAssignedDoctor(resource.data.userId);
+    }
+    function canDoctorUpdateAssignedPatient(userId) {
+      return isAssignedDoctor(userId)
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.assignedDoctorId == resource.data.assignedDoctorId
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'riskLevel',
+          'riskScore',
+          'status',
+          'symptoms',
+          'vitals',
+          'updatedAt',
+          'lastCheckIn'
+        ]);
+    }
+    function canAdminManagePatientAccount() {
+      return isAdmin()
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'name',
+          'assignedDoctorId',
+          'active',
+          'updatedAt'
+        ]);
+    }
+
     match /users/{userId} {
-      allow create: if request.auth != null;
-      allow read, update: if request.auth != null && request.auth.uid == userId;
-      allow delete: if false;
+      allow create: if isOwner(userId) || (isAdmin()
+        && request.resource.data.role == 'patient'
+        && request.resource.data.keys().hasOnly([
+          'name',
+          'assignedDoctorId',
+          'active',
+          'role',
+          'createdAt'
+        ]));
+      allow read: if isOwner(userId) || isAssignedDoctor(userId);
+      allow update: if isOwner(userId) || canAdminManagePatientAccount() || canDoctorUpdateAssignedPatient(userId);
+      allow delete: if isAdmin();
+    }
+
+    match /doctors/{doctorId} {
+      allow read: if isAdmin() || isOwner(doctorId);
+      allow write: if isAdmin();
+    }
+
+    match /doctors/{doctorId}/assignedPatients/{patientId} {
+      allow read: if isAdmin() || isOwner(doctorId);
+      allow write: if isAdmin();
+    }
+
+    match /assignments/{assignmentId} {
+      allow read: if isAdmin() || (isDoctor() && resource.data.doctorId == request.auth.uid) || isOwner(resource.data.patientId);
+      allow write: if isAdmin();
+    }
+
+    match /admins/{adminId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /alerts/{alertId} {
+      allow create: if isDoctor()
+          && request.resource.data.doctorId == request.auth.uid
+          && isAssignedDoctor(request.resource.data.patientId);
+      allow read: if (isDoctor() && resource.data.doctorId == request.auth.uid) || isOwner(resource.data.patientId);
+      allow update, delete: if isDoctor() && resource.data.doctorId == request.auth.uid;
     }
 
     match /activity_logs/{logId} {
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if isOwner(request.resource.data.userId);
+      allow read: if isOwner(resource.data.userId) || isAssignedDoctorForResource();
       allow update, delete: if false;
     }
 
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /reports/{reportId} {
+      allow read: if isDoctor() && resource.data.doctorId == request.auth.uid;
+      allow write: if false;
+    }
+
     match /transcriptions/{transcriptionId} {
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if isOwner(request.resource.data.userId);
+      allow read: if isOwner(resource.data.userId) || isAssignedDoctorForResource();
       allow update, delete: if false;
+    }
+
+    match /checkins/{checkinId} {
+      allow create: if isOwner(request.resource.data.userId);
+      allow read: if isOwner(resource.data.userId) || isAssignedDoctorForResource();
+      allow update, delete: if isOwner(resource.data.userId);
+    }
+
+    match /goals/{goalId} {
+      allow create: if isOwner(request.resource.data.userId);
+      allow read: if isOwner(resource.data.userId) || isAssignedDoctorForResource();
+      allow update, delete: if isOwner(resource.data.userId);
+    }
+
+    match /users/{userId}/smartwatchHealthRecords/{recordId} {
+      allow create: if isOwner(userId);
+      allow read: if isOwner(userId) || isAssignedDoctor(userId);
+      allow update, delete: if isOwner(userId);
     }
 
     match /{document=**} {
