@@ -3,6 +3,7 @@ package cit.edu.primera.feature.dashboard.domain
 import java.util.Date
 
 data class DashboardData(
+    val email: String? = null,
     val firstName: String? = null,
     val lastName: String? = null,
     val middleName: String? = null,
@@ -16,6 +17,7 @@ data class DashboardData(
     val sleepHours: Int,
     val sleepMinutes: Int,
     val spO2: Int? = null,
+    val weightKg: Int? = null,
     val heightCm: Int? = null,
     val isCycleRegular: Boolean? = null,
     val shortestCycleDays: Int? = null,

@@ -19,6 +19,7 @@ class DashboardRepositoryImpl(
             if (userDto == null) return@combine null
 
             DashboardData(
+                email = userDto.email,
                 firstName = userDto.firstName,
                 lastName = userDto.lastName,
                 middleName = userDto.middleName,
@@ -32,6 +33,7 @@ class DashboardRepositoryImpl(
                 sleepHours = userDto.sleepHours?.toInt() ?: 0,
                 sleepMinutes = userDto.sleepMinutes?.toInt() ?: 0,
                 spO2 = userDto.spO2?.toInt(),
+                weightKg = userDto.weightKg?.toInt(),
                 heightCm = userDto.heightCm?.toInt(),
                 isCycleRegular = userDto.isCycleRegular,
                 shortestCycleDays = userDto.shortestCycleDays?.toInt(),
@@ -41,6 +43,16 @@ class DashboardRepositoryImpl(
                 scanDate = userDto.scanDate,
                 scanWeeks = userDto.scanWeeks?.toInt(),
                 scanDays = userDto.scanDays?.toInt(),
+                pregnancyHistories = userDto.pregnancyHistories?.map { map ->
+                    cit.edu.primera.feature.onboarding.domain.PregnancyHistory(
+                        pregnancyNumber = (map["pregnancyNumber"] as? Long)?.toInt() ?: 1,
+                        deliveryDate = (map["deliveryDate"] as? com.google.firebase.Timestamp)?.toDate(),
+                        deliveryType = map["deliveryType"] as? String ?: "",
+                        birthOutcome = map["birthOutcome"] as? String ?: "",
+                        childrenDelivered = map["childrenDelivered"] as? String ?: "",
+                        complications = map["complications"] as? List<String> ?: emptyList()
+                    )
+                } ?: emptyList(),
                 isFirstPregnancy = userDto.isFirstPregnancy,
                 iceName = userDto.iceName,
                 iceRelationship = userDto.iceRelationship,

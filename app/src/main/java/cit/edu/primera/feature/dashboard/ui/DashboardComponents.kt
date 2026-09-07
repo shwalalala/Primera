@@ -154,7 +154,8 @@ fun DashboardTopBar(userName: String, onLogout: () -> Unit, onProfileClick: () -
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(PrimeraViolet),
+                .background(PrimeraViolet)
+                .clickable { onProfileClick() },
             contentAlignment = Alignment.Center
         ) {
             Text(

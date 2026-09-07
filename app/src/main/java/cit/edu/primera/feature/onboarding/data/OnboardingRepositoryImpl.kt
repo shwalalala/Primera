@@ -14,7 +14,8 @@ class OnboardingRepositoryImpl : OnboardingRepository {
         return try {
             val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
 
-            val profileData = hashMapOf(
+            val profileData = hashMapOf<String, Any?>(
+                "email" to profile.email,
                 "birthday" to profile.birthday,
                 "weightKg" to profile.weightKg,
                 "heightCm" to profile.heightCm,

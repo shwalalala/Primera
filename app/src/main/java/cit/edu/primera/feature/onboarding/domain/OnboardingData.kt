@@ -12,6 +12,7 @@ data class PregnancyHistory(
 )
 
 data class OnboardingProfile(
+    val email: String? = null,
     val birthday: Date? = null,
     val weightKg: Int = 50,
     val heightCm: Int = 160,

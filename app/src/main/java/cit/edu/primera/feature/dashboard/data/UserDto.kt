@@ -3,6 +3,7 @@ package cit.edu.primera.feature.dashboard.data
 import java.util.Date
 
 data class UserDto(
+    val email: String? = null,
     val username: String? = null,
     val firstName: String? = null,
     val lastName: String? = null,
@@ -16,6 +17,7 @@ data class UserDto(
     val sleepHours: Long? = null,
     val sleepMinutes: Long? = null,
     val spO2: Long? = null,
+    val weightKg: Long? = null,
     val heightCm: Long? = null,
     val isCycleRegular: Boolean? = null,
     val hasHadUltrasound: Boolean? = null,

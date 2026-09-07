@@ -31,6 +31,7 @@ class DashboardDataSource {
                 val userDto = if (snapshot != null && snapshot.exists()) {
                     try {
                         UserDto(
+                            email = snapshot.getString("email"),
                             username = snapshot.getString("username"),
                             firstName = snapshot.getString("firstName"),
                             lastName = snapshot.getString("lastName"),
@@ -44,6 +45,7 @@ class DashboardDataSource {
                             sleepHours = snapshot.getLong("sleepHours") ?: 0L,
                             sleepMinutes = snapshot.getLong("sleepMinutes") ?: 0L,
                             spO2 = snapshot.getLong("spO2"),
+                            weightKg = snapshot.getLong("weightKg"),
                             heightCm = snapshot.getLong("heightCm"),
                             isCycleRegular = snapshot.getBoolean("isCycleRegular"),
                             hasHadUltrasound = snapshot.getBoolean("hasHadUltrasound"),
