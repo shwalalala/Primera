@@ -57,6 +57,7 @@ class AuthViewModel(
             
             result.fold(
                 onSuccess = {
+                    val userId = authRepository.getCurrentUserId() ?: ""
                     _state.update { it.copy(
                         isLoading = false,
                         isAuthenticated = true,
@@ -64,7 +65,11 @@ class AuthViewModel(
                         email = "",
                         password = ""
                     ) }
-                    _effect.send(AuthEffect.NavigateToDashboard)
+                    if (preferenceRepository.shouldShowOnboarding(userId)) {
+                        _effect.send(AuthEffect.NavigateToOnboarding)
+                    } else {
+                        _effect.send(AuthEffect.NavigateToDashboard)
+                    }
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isLoading = false, errorMessage = error.message) }
@@ -146,9 +151,14 @@ class AuthViewModel(
 
     private fun checkSession() {
         if (authRepository.isUserAuthenticated()) {
+            val userId = authRepository.getCurrentUserId() ?: ""
             _state.update { it.copy(isAuthenticated = true) }
             viewModelScope.launch {
-                _effect.send(AuthEffect.NavigateToDashboard)
+                if (preferenceRepository.shouldShowOnboarding(userId)) {
+                    _effect.send(AuthEffect.NavigateToOnboarding)
+                } else {
+                    _effect.send(AuthEffect.NavigateToDashboard)
+                }
             }
         }
     }

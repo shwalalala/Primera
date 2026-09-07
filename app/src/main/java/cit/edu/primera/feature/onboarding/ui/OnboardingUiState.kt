@@ -4,20 +4,29 @@ import cit.edu.primera.feature.onboarding.domain.PregnancyHistory
 import java.util.Date
 
 enum class OnboardingStep {
-    NAME, BIRTHDAY, WEIGHT, HEIGHT, LMP, EDD, FIRST_PREGNANCY, PREGNANCY_HISTORY, PREPARING
+    BIRTHDAY, WEIGHT, HEIGHT, CYCLE_REGULARITY, CYCLE_VARIANCE, HAD_ULTRASOUND, LMP, ULTRASOUND, EDD, FIRST_PREGNANCY, PREGNANCY_HISTORY, PREPARING
 }
 
 data class OnboardingState(
-    val currentStep: OnboardingStep = OnboardingStep.NAME,
-    val firstName: String = "",
-    val lastName: String = "",
-    val middleName: String = "",
+    val currentStep: OnboardingStep = OnboardingStep.BIRTHDAY,
     val birthday: Date? = null,
     val weightKg: Int = 0,
     val heightCm: Int = 0,
+    val isCycleRegular: Boolean? = null,
+    val shortestCycleDays: Int = 28,
+    val longestCycleDays: Int = 28,
+    val hasHadUltrasound: Boolean? = null,
+    val positiveTestDate: Date? = null,
     val lmpDate: Date? = null,
     val eddDate: Date? = null,
     val isFirstPregnancy: Boolean? = null,
+    
+    // Ultrasound Data
+    val isUsingUltrasound: Boolean = false,
+    val scanDate: Date? = null,
+    val scanWeeks: Int = 0,
+    val scanDays: Int = 0,
+    val isRevisedEdd: Boolean = false,
     
     // Pregnancy History (if not first)
     val selectedPregnancyIndex: Int = 0,

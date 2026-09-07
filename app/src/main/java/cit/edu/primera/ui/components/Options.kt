@@ -54,7 +54,7 @@ fun PrimeraOptionButton(
             color = if (isSelected) SurfaceWhite else TextPrimary,
             fontSize = 18.sp,
             fontFamily = NunitoSans,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Bold
         )
     }
 }
@@ -86,7 +86,7 @@ fun PrimeraOptionCard(
             fontSize = 18.sp,
             fontFamily = NunitoSans,
             textAlign = TextAlign.Start,
-            fontWeight = FontWeight.Normal
+            fontWeight = FontWeight.SemiBold
         )
     }
 }
@@ -117,7 +117,7 @@ fun PrimeraOptionChip(
             color = if (isSelected) SurfaceWhite else TextPrimary,
             fontSize = 18.sp,
             fontFamily = NunitoSans,
-            fontWeight = FontWeight.Normal
+            fontWeight = FontWeight.SemiBold
         )
     }
 }

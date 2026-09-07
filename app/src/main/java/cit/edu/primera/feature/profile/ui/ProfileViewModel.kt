@@ -67,9 +67,6 @@ class ProfileViewModel(
             _uiState.update { it.copy(isSaving = true) }
             
             val profile = OnboardingProfile(
-                firstName = _uiState.value.firstName,
-                lastName = _uiState.value.lastName,
-                middleName = _uiState.value.middleName,
                 birthday = _uiState.value.birthday ?: Date(),
                 weightKg = _uiState.value.weightKg,
                 heightCm = _uiState.value.heightCm,

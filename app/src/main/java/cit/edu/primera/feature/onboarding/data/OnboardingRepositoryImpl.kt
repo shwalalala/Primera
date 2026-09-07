@@ -15,16 +15,20 @@ class OnboardingRepositoryImpl : OnboardingRepository {
             val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
 
             val profileData = hashMapOf(
-                "firstName" to profile.firstName,
-                "lastName" to profile.lastName,
-                "middleName" to profile.middleName,
-                "fullName" to "${profile.firstName} ${profile.lastName}".trim(),
                 "birthday" to profile.birthday,
                 "weightKg" to profile.weightKg,
                 "heightCm" to profile.heightCm,
+                "isCycleRegular" to profile.isCycleRegular,
+                "shortestCycleDays" to profile.shortestCycleDays,
+                "longestCycleDays" to profile.longestCycleDays,
+                "hasHadUltrasound" to profile.hasHadUltrasound,
+                "positiveTestDate" to profile.positiveTestDate,
                 "lmpDate" to profile.lmpDate,
                 "eddDate" to profile.eddDate,
                 "isFirstPregnancy" to profile.isFirstPregnancy,
+                "scanDate" to profile.scanDate,
+                "scanWeeks" to profile.scanWeeks,
+                "scanDays" to profile.scanDays,
                 "pregnancyHistories" to profile.pregnancyHistories.map { history ->
                     mapOf(
                         "pregnancyNumber" to history.pregnancyNumber,

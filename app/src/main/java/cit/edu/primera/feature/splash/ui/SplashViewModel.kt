@@ -33,8 +33,12 @@ class SplashViewModel(
             
             val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
             if (currentUser != null) {
-                // If already logged in, go straight to Dashboard (bypassing Welcome)
-                _effect.send(SplashEffect.NavigateToDashboard)
+                // If already logged in, check if onboarding is completed
+                if (preferenceRepository.shouldShowOnboarding(currentUser.uid)) {
+                    _effect.send(SplashEffect.NavigateToOnboarding)
+                } else {
+                    _effect.send(SplashEffect.NavigateToDashboard)
+                }
             } else {
                 // Not logged in, check if we should show Welcome walkthrough
                 // (using any valid ID for the general check, or just default to true if never seen)
