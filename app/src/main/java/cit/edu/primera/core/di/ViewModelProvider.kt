@@ -41,7 +41,7 @@ object ViewModelProvider {
                     container.preferenceRepository
                 )
                 SplashViewModel::class.java -> SplashViewModel(container.preferenceRepository)
-                WelcomeViewModel::class.java -> WelcomeViewModel()
+                WelcomeViewModel::class.java -> WelcomeViewModel(container.preferenceRepository)
                 CheckinsViewModel::class.java -> CheckinsViewModel(
                     container.checkinsRepository,
                     container.symptomExtractor
