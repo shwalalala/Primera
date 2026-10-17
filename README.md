@@ -261,7 +261,7 @@ Firebase data in issues, commits, screenshots, or pull requests.
 This project was developed for academic purposes as a college capstone project. No open-source license has been applied.
 
 ## Acknowledgments
-- [Readme Template ](https://github.com/othneildrew/Best-README-Template/edit/main/README.md)
+- [ReadME Template](https://github.com/othneildrew/Best-README-Template)
 - [Android, Jetpack Compose, and AndroidX documentation](https://developer.android.com/develop/ui/compose/documentation)
 - [Firebase documentation](https://firebase.google.com/docs/guides?utm_source=google&utm_medium=cpc&utm_campaign=Cloud-SS-DR-Firebase-FY26-global-gsem-1713590&utm_content=text-ad&utm_term=KW_firebase%20documentation&gad_source=1&gad_campaignid=23417478209&gbraid=0AAAAADpUDOjWlFc8P8s8g7_m85WpLVcIv&gclid=CjwKCAjwuczWBhA9EiwAYGgEoSWNE9_ETL61R1GgzLLXVs_jsBzombE1HCrrF0tKKqVo2ouGjVPhJhoCX1MQAvD_BwE)
 - [Health Connect documentation](https://developer.android.com/health-and-fitness/health-connect/get-started)
