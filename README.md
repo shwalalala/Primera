@@ -30,7 +30,7 @@
   <ol>
     <li><a href="#about-the-project">About the Project</a></li>
     <li><a href="#features">Features</a></li>
-    <li><a href="color-palette">Color Palette</a></li>
+    <li><a href="#color-palette">Color Palette</a></li>
     <li><a href="#built-with">Built With</a></li>
     <li><a href="#getting-started">Getting Started</a></li>
     <li><a href="#usage">Usage</a></li>
