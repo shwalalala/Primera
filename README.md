@@ -258,10 +258,7 @@ Firebase data in issues, commits, screenshots, or pull requests.
 
 ## License
 
-No license file is currently present in this repository. Until a license is
-added, do not assume that the project is available for reuse, modification, or
-redistribution. Repository owners should add a license that reflects the
-project's intended terms.
+This project was developed for academic purposes as a college capstone project. No open-source license has been applied.
 
 ## Acknowledgments
 - [Readme Template ](https://github.com/othneildrew/Best-README-Template/edit/main/README.md)
