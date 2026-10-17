@@ -30,6 +30,7 @@
   <ol>
     <li><a href="#about-the-project">About the Project</a></li>
     <li><a href="#features">Features</a></li>
+    <li><a href="color-palette">Color Palette</a></li>
     <li><a href="#built-with">Built With</a></li>
     <li><a href="#getting-started">Getting Started</a></li>
     <li><a href="#usage">Usage</a></li>
@@ -77,6 +78,18 @@ The project objectives are to:
 
 Availability of wearable measurements depends on the connected device,
 Health Connect, granted permissions, and the data recorded by the device.
+
+### Color Palette
+
+<div align="center">
+  <a href="#F5F1FB"><img src="https://via.placeholder.com/120x60/F5F1FB/F5F1FB?text=+" width="120" height="60" style="border-radius: 24px;" alt="#F5F1FB" /></a>
+  <a href="#8C62C0"><img src="https://via.placeholder.com/120x60/8C62C0/8C62C0?text=+" width="120" height="60" style="border-radius: 24px;" alt="#8C62C0" /></a>
+  <a href="#B8A8D9"><img src="https://via.placeholder.com/120x60/B8A8D9/B8A8D9?text=+" width="120" height="60" style="border-radius: 24px;" alt="#B8A8D9" /></a>
+  <a href="#1C1C2E"><img src="https://via.placeholder.com/120x60/1C1C2E/1C1C2E?text=+" width="120" height="60" style="border-radius: 24px;" alt="#1C1C2E" /></a>
+  <a href="#8B8FA8"><img src="https://via.placeholder.com/120x60/8B8FA8/8B8FA8?text=+" width="120" height="60" style="border-radius: 24px;" alt="#8B8FA8" /></a>
+  <br />
+  <code>#F5F1FB</code> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <code>#8C62C0</code> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <code>#B8A8D9</code> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <code>#1C1C2E</code> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <code>#8B8FA8</code>
+</div>
 
 ## Built With
 
