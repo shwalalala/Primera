@@ -45,7 +45,7 @@ class GoalsRepositoryImpl : GoalsRepository {
                             category = doc.getString("category"),
                             period = doc.getString("period") ?: "Weekly",
                             accentColorHex = doc.getString("accentColorHex"),
-                            timestamp = doc.getTimestamp("timestamp")?.toDate()
+                            timestamp = doc.getTimestamp("timestamp")?.toDate(),
                         )
                     } catch (_: Exception) {
                         null
@@ -92,7 +92,7 @@ class GoalsRepositoryImpl : GoalsRepository {
     override suspend fun updateGoal(goal: GoalDto): Result<Unit> {
         return try {
             val goalId = goal.id ?: throw Exception("Goal ID is required for update")
-            val goalData = hashMapOf(
+            val goalData: Map<String, Any?> = mapOf(
                 "title" to goal.title,
                 "icon" to goal.icon,
                 "targetValue" to goal.targetValue,
@@ -100,7 +100,7 @@ class GoalsRepositoryImpl : GoalsRepository {
                 "unit" to goal.unit,
                 "accentColorHex" to goal.accentColorHex
             )
-            firestore.collection("goals").document(goalId).update(goalData as Map<String, Any>).await()
+            firestore.collection("goals").document(goalId).update(goalData).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -132,15 +132,15 @@ class GoalsRepositoryImpl : GoalsRepository {
             val endOfToday = calendar.time
 
             val hasHydration = goals.any { 
-                it.title == "Hydration" && 
-                it.timestamp != null && 
+                (it.title == "Hydration") && 
+                (it.timestamp != null) && 
                 it.timestamp.after(startOfToday) && 
                 it.timestamp.before(endOfToday)
             }
             
             val hasMovement = goals.any { 
-                it.title == "Movement" && 
-                it.timestamp != null && 
+                (it.title == "Movement") && 
+                (it.timestamp != null) && 
                 it.timestamp.after(startOfToday) && 
                 it.timestamp.before(endOfToday)
             }

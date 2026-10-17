@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.abs
 
 class InsightsViewModel(
     private val dashboardRepository: DashboardRepository,
@@ -609,7 +610,9 @@ class InsightsViewModel(
             if (diff > 5) {
                 insights.add("Your heart rate is trending %.1f%% higher than your baseline.".format(diff))
             } else if (diff < -5) {
-                insights.add("Your heart rate is trending %.1f%% lower than your baseline.".format(Math.abs(diff)))
+                insights.add("Your heart rate is trending %.1f%% lower than your baseline.".format(
+                    abs(diff)
+                ))
             }
         }
         
@@ -644,6 +647,14 @@ class InsightsViewModel(
             val logs = checkinsRepository.observeLogs().first()
             val healthRecords = dashboardRepository.observeHealthRecords().first()
             DataExportHelper.exportToCsv(context, logs, healthRecords)
+        }
+    }
+
+    fun onExportSummaryPdf(context: Context) {
+        viewModelScope.launch {
+            val healthRecords = dashboardRepository.observeHealthRecords().first()
+            val dashboardData = dashboardRepository.observeDashboardData().first()
+            DataExportHelper.exportSummaryToPdf(context, healthRecords, dashboardData)
         }
     }
 }

@@ -89,95 +89,104 @@ fun FeatureTopBar(
             color = TextPrimary
         )
 
-        if (selectedPeriod != null && onPeriodSelected != null) {
-            Box {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (selectedPeriod != null && onPeriodSelected != null) {
+                Box {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(SurfaceWhite)
+                            .clickable { showPeriodMenu = true }
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = selectedPeriod,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = PrimeraViolet
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Select Period",
+                                tint = TextSecondary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = showPeriodMenu,
+                        onDismissRequest = { showPeriodMenu = false },
+                        modifier = Modifier
+                            .background(SurfaceWhite)
+                            .border(1.dp, MenuButtonBorder, RoundedCornerShape(12.dp))
+                    ) {
+                        listOf("Daily", "Weekly", "Monthly", "Yearly").forEach { period ->
+                            DropdownMenuItem(
+                                text = { 
+                                    Text(
+                                        text = period, 
+                                        fontSize = 14.sp,
+                                        color = TextPrimary
+                                    ) 
+                                },
+                                onClick = {
+                                    onPeriodSelected(period)
+                                    showPeriodMenu = false
+                                }
+                            )
+                        }
+                    }
+                }
+            } 
+            
+            if (onExport != null) {
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(SurfaceWhite)
-                        .clickable { showPeriodMenu = true }
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MenuButtonBg)
+                        .border(1.dp, MenuButtonBorder, CircleShape)
+                        .minimumInteractiveComponentSize()
+                        .clickable { onExport() },
                     contentAlignment = Alignment.Center
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = selectedPeriod,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = PrimeraViolet
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = "Select Period",
-                            tint = TextSecondary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Export",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
-
-                DropdownMenu(
-                    expanded = showPeriodMenu,
-                    onDismissRequest = { showPeriodMenu = false },
+            }
+            if (onSettings != null) {
+                Box(
                     modifier = Modifier
-                        .background(SurfaceWhite)
-                        .border(1.dp, MenuButtonBorder, RoundedCornerShape(12.dp))
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MenuButtonBg)
+                        .border(1.dp, MenuButtonBorder, CircleShape)
+                        .minimumInteractiveComponentSize()
+                        .clickable { onSettings() },
+                    contentAlignment = Alignment.Center
                 ) {
-                    listOf("Daily", "Weekly", "Monthly", "Yearly").forEach { period ->
-                        DropdownMenuItem(
-                            text = { 
-                                Text(
-                                    text = period, 
-                                    fontSize = 14.sp,
-                                    color = TextPrimary
-                                ) 
-                            },
-                            onClick = {
-                                onPeriodSelected(period)
-                                showPeriodMenu = false
-                            }
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
-        } else if (onExport != null) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(MenuButtonBg)
-                    .border(1.dp, MenuButtonBorder, CircleShape)
-                    .minimumInteractiveComponentSize()
-                    .clickable { onExport() },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Share,
-                    contentDescription = "Export",
-                    tint = TextSecondary,
-                    modifier = Modifier.size(18.dp)
-                )
+            if (onExport == null && onSettings == null && selectedPeriod == null) {
+                Box(modifier = Modifier.size(40.dp))
             }
-        } else if (onSettings != null) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(MenuButtonBg)
-                    .border(1.dp, MenuButtonBorder, CircleShape)
-                    .minimumInteractiveComponentSize()
-                    .clickable { onSettings() },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Settings",
-                    tint = TextSecondary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        } else {
-            Box(modifier = Modifier.size(40.dp))
         }
     }
 }

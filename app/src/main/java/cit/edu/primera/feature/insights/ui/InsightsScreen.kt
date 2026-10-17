@@ -61,7 +61,8 @@ fun InsightsScreen(
                 title = "Insights", 
                 onBack = onBack,
                 selectedPeriod = activePeriod,
-                onPeriodSelected = viewModel::onPeriodSelected
+                onPeriodSelected = viewModel::onPeriodSelected,
+                onExport = { viewModel.onExportSummaryPdf(context) }
             )
 
             if (!isOnline) {
