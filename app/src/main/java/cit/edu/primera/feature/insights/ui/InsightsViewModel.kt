@@ -152,14 +152,15 @@ class InsightsViewModel(
         val currentWeight = weightData?.weightKg?.toFloat() ?: 0f
         var bmiValue: Float? = null
         var bmiStatus: String? = null
-        
-        if (heightCm > 0 && currentWeight > 0) {
+
+        if (heightCm > 0f && currentWeight > 0f) {
             val heightMeters = heightCm / 100f
             bmiValue = currentWeight / (heightMeters * heightMeters)
+
             bmiStatus = when {
                 bmiValue < 18.5f -> "Underweight"
-                bmiValue < 25f -> "Healthy"
-                bmiValue < 30f -> "Overweight"
+                bmiValue in 18.5f..22.9f -> "Healthy"
+                bmiValue in 23.0f..27.4f -> "Overweight"
                 else -> "Obese"
             }
         }
