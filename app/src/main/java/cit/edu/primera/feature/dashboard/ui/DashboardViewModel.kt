@@ -215,9 +215,7 @@ class DashboardViewModel(
         return days
     }
 
-    fun onViewAllLogs() {}
-    fun onAddLog() {}
-    fun onInputManually() {}
+
 
     // FEAT-002: Watch Sync with Actual Data
     fun onSyncWatch() {
