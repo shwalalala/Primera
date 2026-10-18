@@ -198,6 +198,13 @@ fun AppNavGraph(
                                 inclusive = true
                             }
                         }
+                    },
+                    onBack = {
+                        navController.navigate(Routes.AUTH_SCREEN) {
+                            popUpTo(Routes.ONBOARDING) {
+                                inclusive = true
+                            }
+                        }
                     }
                 )
             }

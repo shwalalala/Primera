@@ -179,6 +179,25 @@ fun GoalItemCard(
     }
 }
 
+@Composable
+fun MonitoringDisclaimerFooter(
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "Primera supports monitoring and does not replace prenatal consultations with your healthcare provider.",
+            fontSize = 11.sp,
+            color = TextSecondary,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun CardsPreview() {
