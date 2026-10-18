@@ -54,7 +54,7 @@ fun StatCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Card(
-        modifier = modifier.heightIn(min = 110.dp),
+        modifier = modifier.height(130.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -62,8 +62,9 @@ fun StatCard(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp)
+                .fillMaxSize()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) { content() }
     }
 }
@@ -176,6 +177,7 @@ fun LogCard(
     time: String,
     description: String,
     accentColor: Color,
+    isClinicianRecorded: Boolean = false,
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {}
 ) {
@@ -208,6 +210,20 @@ fun LogCard(
                         color = TextSecondary,
                         letterSpacing = 0.5.sp
                     )
+                    Spacer(Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(if (isClinicianRecorded) Color(0xFFE8F5E9) else Color(0xFFEDE7F6))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = if (isClinicianRecorded) "Clinician-Recorded" else "Self-Reported",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (isClinicianRecorded) Color(0xFF2E7D32) else PrimeraViolet
+                        )
+                    }
                 }
                 Text(
                     text = time.ifBlank { "—" },

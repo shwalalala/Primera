@@ -74,28 +74,39 @@ class ProfileViewModel(
     fun onEddDateChange(date: Date) = _uiState.update { it.copy(eddDate = date) }
     fun onEmailChange(email: String) = _uiState.update { it.copy(email = email) }
     fun onBirthdayChange(date: Date) = _uiState.update { it.copy(birthday = date) }
-    fun onLmpDateChange(date: Date) = _uiState.update { it.copy(lmpDate = date) }
     fun onIsCycleRegularChange(isRegular: Boolean) = _uiState.update { it.copy(isCycleRegular = isRegular) }
     fun onShortestCycleChange(days: Int) = _uiState.update { it.copy(shortestCycleDays = days) }
     fun onLongestCycleChange(days: Int) = _uiState.update { it.copy(longestCycleDays = days) }
     fun onHasHadUltrasoundChange(hasHad: Boolean) = _uiState.update { it.copy(hasHadUltrasound = hasHad) }
     fun onScanDateChange(date: Date) {
-        _uiState.update { it.copy(scanDate = date) }
+        _uiState.update { it.copy(scanDate = date, error = null) }
         calculateEddFromUltrasound()
     }
     fun onScanWeeksChange(weeks: Int) {
         _uiState.update { it.copy(scanWeeks = weeks) }
-        calculateEddFromUltrasound()
+        if (_uiState.value.scanDate == null) {
+            _uiState.update { it.copy(error = "Please select an Ultrasound Scan Date") }
+        } else {
+            calculateEddFromUltrasound()
+        }
     }
     fun onScanDaysChange(days: Int) {
         _uiState.update { it.copy(scanDays = days) }
-        calculateEddFromUltrasound()
+        if (_uiState.value.scanDate == null) {
+            _uiState.update { it.copy(error = "Please select an Ultrasound Scan Date") }
+        } else {
+            calculateEddFromUltrasound()
+        }
     }
     fun onPositiveTestDateChange(date: Date) = _uiState.update { it.copy(positiveTestDate = date) }
 
     private fun calculateEddFromUltrasound() {
         val s = _uiState.value
-        val scanDate = s.scanDate ?: return
+        val scanDate = s.scanDate 
+        if (scanDate == null) {
+            _uiState.update { it.copy(error = "Please select an Ultrasound Scan Date") }
+            return
+        }
         
         // EDD = Scan Date + (280 days - (weeks * 7 + days))
         val gestationalDaysAtScan = ((s.scanWeeks ?: 0) * 7) + (s.scanDays ?: 0)
@@ -105,7 +116,7 @@ class ProfileViewModel(
             time = scanDate
             add(Calendar.DAY_OF_YEAR, daysToRemaining)
         }
-        _uiState.update { it.copy(eddDate = calendar.time) }
+        _uiState.update { it.copy(eddDate = calendar.time, error = null) }
     }
 
     fun onHistoryDeliveryDateChange(index: Int, date: Date) {
@@ -133,6 +144,61 @@ class ProfileViewModel(
             val newList = state.pregnancyHistories.toMutableList()
             if (index in newList.indices) {
                 newList[index] = newList[index].copy(childrenDelivered = count)
+            }
+            state.copy(pregnancyHistories = newList)
+        }
+    }
+
+    fun onLmpDateChange(date: Date) {
+        _uiState.update { it.copy(lmpDate = date) }
+        calculateEddFromLmp()
+    }
+
+    private fun calculateEddFromLmp() {
+        val s = _uiState.value
+        // If scanDate is available, ultrasound EDD has priority
+        if (s.hasHadUltrasound == true && s.scanDate != null) return
+        val lmp = s.lmpDate ?: return
+        val cal = Calendar.getInstance().apply {
+            time = lmp
+            add(Calendar.DAY_OF_YEAR, 280)
+        }
+        _uiState.update { it.copy(eddDate = cal.time) }
+    }
+
+    fun onHistoryLivingChildrenChange(index: Int, isLiving: Boolean) {
+        _uiState.update { state ->
+            val newList = state.pregnancyHistories.toMutableList()
+            if (index in newList.indices) {
+                newList[index] = newList[index].copy(areChildrenLiving = isLiving)
+            }
+            state.copy(pregnancyHistories = newList)
+        }
+    }
+
+    fun onHistoryStructuredComplicationToggle(index: Int, type: String) {
+        _uiState.update { state ->
+            val newList = state.pregnancyHistories.toMutableList()
+            if (index in newList.indices) {
+                val current = newList[index]
+                val updated = when (type) {
+                    "GDM" -> current.copy(hasGdm = !current.hasGdm)
+                    "Diabetes" -> current.copy(hasDiabetes = !current.hasDiabetes)
+                    "Pre-eclampsia" -> current.copy(hasPreeclampsia = !current.hasPreeclampsia)
+                    "Preterm delivery" -> current.copy(hasPretermDelivery = !current.hasPretermDelivery)
+                    else -> current
+                }
+                newList[index] = updated
+            }
+            state.copy(pregnancyHistories = newList)
+        }
+    }
+
+    fun onHistoryAdditionalComplicationsChange(index: Int, text: String) {
+        _uiState.update { state ->
+            val newList = state.pregnancyHistories.toMutableList()
+            if (index in newList.indices) {
+                newList[index] = newList[index].copy(additionalComplications = text)
             }
             state.copy(pregnancyHistories = newList)
         }

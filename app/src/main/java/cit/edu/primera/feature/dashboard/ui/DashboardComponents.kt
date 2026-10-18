@@ -17,11 +17,15 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -452,6 +456,112 @@ fun ArticleCard(article: ArticleInfo) {
                 color = TextSecondary,
                 maxLines = 2
             )
+        }
+    }
+}
+
+@Composable
+fun UrgentWarningBanner(
+    message: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFFFFF3E0),
+        border = BorderStroke(1.dp, Color(0xFFFFB74D))
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = "Urgent Notice",
+                tint = Color(0xFFE65100),
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = message,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = TextPrimary
+            )
+        }
+    }
+}
+
+@Composable
+fun PrenatalRemindersSection(
+    reminders: List<PrenatalReminderUiItem>,
+    modifier: Modifier = Modifier
+) {
+    if (reminders.isEmpty()) return
+    Column(modifier = modifier.fillMaxWidth()) {
+        DashboardSectionHeader(title = "Upcoming Prenatal Reminders")
+        Spacer(Modifier.height(12.dp))
+        Column(
+            modifier = Modifier.padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            reminders.forEach { reminder ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (reminder.isUrgent) Color(0xFFFFF8E1) else SurfaceWhite
+                    ),
+                    border = BorderStroke(
+                        1.dp,
+                        if (reminder.isUrgent) Color(0xFFFFD54F) else MenuButtonBorder
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(if (reminder.isUrgent) Color(0xFFFFECB3) else PrimeraLilac.copy(alpha = 0.3f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(if (reminder.isUrgent) "⚠️" else "🩺", fontSize = 18.sp)
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = reminder.title,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimary
+                                )
+                                Text(
+                                    text = reminder.dueDateText,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = PrimeraViolet
+                                )
+                            }
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = reminder.description,
+                                fontSize = 12.sp,
+                                color = TextSecondary
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

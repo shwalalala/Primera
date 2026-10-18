@@ -44,8 +44,99 @@ fun InsightsScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
+    InsightsScreenContent(
+        uiState = uiState,
+        activePeriod = activePeriod,
+        isOnline = isOnline,
+        showAddGoal = showAddGoal,
+        editingGoal = editingGoal,
+        onBack = onBack,
+        onPeriodSelected = viewModel::onPeriodSelected,
+        onExport = { viewModel.onExportSummaryPdf(context) },
+        onAddGoalClick = { showAddGoal = true },
+        onGoalClick = { goalId ->
+            if (uiState is InsightsUiState.Success) {
+                editingGoal = (uiState as InsightsUiState.Success).data.rawGoals.find { it.id == goalId }
+            }
+        },
+        onDeleteGoal = viewModel::deleteGoal,
+        onDismissGoalDialog = {
+            showAddGoal = false
+            editingGoal = null
+        },
+        onSaveGoal = { goal ->
+            scope.launch {
+                if (goal.id != null) {
+                    goalsRepository?.updateGoal(goal)
+                } else {
+                    goalsRepository?.addGoal(goal)
+                }
+                showAddGoal = false
+                editingGoal = null
+            }
+        },
+        onWeightPrevious = viewModel::onWeightPrevious,
+        onWeightNext = viewModel::onWeightNext,
+        onWeightBarClick = viewModel::onWeightBarClick,
+        onMoodPrevious = viewModel::onMoodPrevious,
+        onMoodNext = viewModel::onMoodNext,
+        onActivityPrevious = viewModel::onActivityPrevious,
+        onActivityNext = viewModel::onActivityNext,
+        onActivityBarClick = viewModel::onActivityBarClick,
+        onHrPeriodSelected = viewModel::onHrPeriodSelected,
+        onHrPrevious = viewModel::onHrPrevious,
+        onHrNext = viewModel::onHrNext,
+        onHrBarClick = viewModel::onHrBarClick,
+        onSleepPeriodSelected = viewModel::onSleepPeriodSelected,
+        onSleepPrevious = viewModel::onSleepPrevious,
+        onSleepNext = viewModel::onSleepNext,
+        onSleepBarClick = viewModel::onSleepBarClick,
+        onSpO2PeriodSelected = viewModel::onSpO2PeriodSelected,
+        onSpO2Previous = viewModel::onSpO2Previous,
+        onSpO2Next = viewModel::onSpO2Next,
+        onSpO2BarClick = viewModel::onSpO2BarClick
+    )
+}
+
+@Composable
+fun InsightsScreenContent(
+    uiState: InsightsUiState,
+    activePeriod: String,
+    isOnline: Boolean,
+    showAddGoal: Boolean,
+    editingGoal: GoalDto?,
+    onBack: () -> Unit,
+    onPeriodSelected: (String) -> Unit,
+    onExport: () -> Unit,
+    onAddGoalClick: () -> Unit,
+    onGoalClick: (String) -> Unit,
+    onDeleteGoal: (String) -> Unit,
+    onDismissGoalDialog: () -> Unit,
+    onSaveGoal: (GoalDto) -> Unit,
+    modifier: Modifier = Modifier,
+    onWeightPrevious: () -> Unit = {},
+    onWeightNext: () -> Unit = {},
+    onWeightBarClick: (Int) -> Unit = {},
+    onMoodPrevious: () -> Unit = {},
+    onMoodNext: () -> Unit = {},
+    onActivityPrevious: () -> Unit = {},
+    onActivityNext: () -> Unit = {},
+    onActivityBarClick: (Int) -> Unit = {},
+    onHrPeriodSelected: (String) -> Unit = {},
+    onHrPrevious: () -> Unit = {},
+    onHrNext: () -> Unit = {},
+    onHrBarClick: (Int) -> Unit = {},
+    onSleepPeriodSelected: (String) -> Unit = {},
+    onSleepPrevious: () -> Unit = {},
+    onSleepNext: () -> Unit = {},
+    onSleepBarClick: (Int) -> Unit = {},
+    onSpO2PeriodSelected: (String) -> Unit = {},
+    onSpO2Previous: () -> Unit = {},
+    onSpO2Next: () -> Unit = {},
+    onSpO2BarClick: (Int) -> Unit = {}
+) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(
                 brush = Brush.verticalGradient(
@@ -61,13 +152,9 @@ fun InsightsScreen(
                 title = "Insights", 
                 onBack = onBack,
                 selectedPeriod = activePeriod,
-                onPeriodSelected = viewModel::onPeriodSelected,
-                onExport = { viewModel.onExportSummaryPdf(context) }
+                onPeriodSelected = onPeriodSelected,
+                onExport = onExport
             )
-
-            if (!isOnline) {
-                OfflineBanner()
-            }
 
             if (!isOnline) {
                 OfflineBanner()
@@ -82,13 +169,30 @@ fun InsightsScreen(
                     InsightsContent(
                         data = state.data,
                         activePeriod = activePeriod,
-                        onPeriodSelected = viewModel::onPeriodSelected,
-                        onAddGoal = { showAddGoal = true },
-                        onGoalClick = { goalId ->
-                            editingGoal = state.data.rawGoals.find { it.id == goalId }
-                        },
-                        onDeleteGoal = viewModel::deleteGoal,
-                        viewModel = viewModel
+                        onPeriodSelected = onPeriodSelected,
+                        onAddGoal = onAddGoalClick,
+                        onGoalClick = onGoalClick,
+                        onDeleteGoal = onDeleteGoal,
+                        onWeightPrevious = onWeightPrevious,
+                        onWeightNext = onWeightNext,
+                        onWeightBarClick = onWeightBarClick,
+                        onMoodPrevious = onMoodPrevious,
+                        onMoodNext = onMoodNext,
+                        onActivityPrevious = onActivityPrevious,
+                        onActivityNext = onActivityNext,
+                        onActivityBarClick = onActivityBarClick,
+                        onHrPeriodSelected = onHrPeriodSelected,
+                        onHrPrevious = onHrPrevious,
+                        onHrNext = onHrNext,
+                        onHrBarClick = onHrBarClick,
+                        onSleepPeriodSelected = onSleepPeriodSelected,
+                        onSleepPrevious = onSleepPrevious,
+                        onSleepNext = onSleepNext,
+                        onSleepBarClick = onSleepBarClick,
+                        onSpO2PeriodSelected = onSpO2PeriodSelected,
+                        onSpO2Previous = onSpO2Previous,
+                        onSpO2Next = onSpO2Next,
+                        onSpO2BarClick = onSpO2BarClick
                     )
                 }
             }
@@ -96,22 +200,10 @@ fun InsightsScreen(
 
         if (showAddGoal || editingGoal != null) {
             AddGoalDialog(
-                onDismiss = { 
-                    showAddGoal = false
-                    editingGoal = null
-                },
-                editingGoal = editingGoal
-            ) { goal ->
-                scope.launch {
-                    if (goal.id != null) {
-                        goalsRepository?.updateGoal(goal)
-                    } else {
-                        goalsRepository?.addGoal(goal)
-                    }
-                    showAddGoal = false
-                    editingGoal = null
-                }
-            }
+                onDismiss = onDismissGoalDialog,
+                editingGoal = editingGoal,
+                onConfirm = onSaveGoal
+            )
         }
     }
 }
@@ -169,86 +261,159 @@ fun InsightsContent(
     onAddGoal: () -> Unit,
     onGoalClick: (String) -> Unit,
     onDeleteGoal: (String) -> Unit,
-    viewModel: InsightsViewModel, // Pass viewModel to handle individual chart actions
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onWeightPrevious: () -> Unit = {},
+    onWeightNext: () -> Unit = {},
+    onWeightBarClick: (Int) -> Unit = {},
+    onMoodPrevious: () -> Unit = {},
+    onMoodNext: () -> Unit = {},
+    onActivityPrevious: () -> Unit = {},
+    onActivityNext: () -> Unit = {},
+    onActivityBarClick: (Int) -> Unit = {},
+    onHrPeriodSelected: (String) -> Unit = {},
+    onHrPrevious: () -> Unit = {},
+    onHrNext: () -> Unit = {},
+    onHrBarClick: (Int) -> Unit = {},
+    onSleepPeriodSelected: (String) -> Unit = {},
+    onSleepPrevious: () -> Unit = {},
+    onSleepNext: () -> Unit = {},
+    onSleepBarClick: (Int) -> Unit = {},
+    onSpO2PeriodSelected: (String) -> Unit = {},
+    onSpO2Previous: () -> Unit = {},
+    onSpO2Next: () -> Unit = {},
+    onSpO2BarClick: (Int) -> Unit = {}
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(bottom = 24.dp)
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Spacer(Modifier.height(16.dp))
-
-        // Purple Background Section
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .clip(RoundedCornerShape(24.dp))
-                .background(BackgroundSection)
+        // 1. Pregnancy & Goal Progress Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Column(
                 modifier = Modifier.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    "Your Physique Today",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    "Pregnancy & Goal Progress",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
                     color = TextPrimary
                 )
                 
                 Spacer(Modifier.height(16.dp))
 
-                InsightCircularProgress(
-                    progress = data.physiqueProgress,
-                    progressColor = data.progressColor,
-                    centerContent = {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    "CURRENT GESTATIONAL AGE",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextSecondary,
+                    letterSpacing = 1.sp
+                )
+                Spacer(Modifier.height(4.dp))
+                
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "${data.gestationalAgeWeeks} weeks, ${data.gestationalAgeDays} days",
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimeraViolet
+                    )
+                    if (data.gestationalAgeWeeks >= 40) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = ErrorRed.copy(alpha = 0.15f)
+                        ) {
                             Text(
-                                data.physiqueSubtitle,
-                                fontSize = 48.sp,
+                                text = "Post-term",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = data.progressColor
-                            )
-                            Text(
-                                data.physiqueStatus,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = TextSecondary
+                                color = ErrorRed
                             )
                         }
                     }
-                )
-
-                Spacer(Modifier.height(24.dp))
-
-                // Tips
-                InsightTipCard(
-                    text = data.completedGoalsText + " " + data.goalsCompletionTip,
-                    backgroundColor = data.goalsCompletionTipColor,
-                    contentColor = TextPrimary.copy(alpha = 0.8f)
-                )
-
-                Spacer(Modifier.height(12.dp))
-
-                data.healthWarningTip?.let {
-                    InsightTipCard(
-                        text = it,
-                        backgroundColor = data.healthWarningTipColor,
-                        contentColor = SurfaceWhite
-                    )
-                    Spacer(Modifier.height(12.dp))
                 }
+                
+                Spacer(Modifier.height(16.dp))
+                
+                // Pregnancy Timeline Progress
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Pregnancy Progress", fontSize = 12.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
+                    Text("${(data.pregnancyProgress * 100).toInt()}%", fontSize = 12.sp, color = PrimeraViolet, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.height(6.dp))
+                LinearProgressIndicator(
+                    progress = { data.pregnancyProgress },
+                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                    color = PrimeraViolet,
+                    trackColor = PrimeraLilac.copy(alpha = 0.3f)
+                )
 
-                // Goals Section
+                Spacer(Modifier.height(16.dp))
+
+                // Goal Completion Progress
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Active Goals (${data.completedGoalsCount}/${data.totalGoalsCount})", fontSize = 12.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
+                    Text("${(data.goalCompletionRatio * 100).toInt()}%", fontSize = 12.sp, color = Good, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.height(6.dp))
+                LinearProgressIndicator(
+                    progress = { data.goalCompletionRatio },
+                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                    color = Good,
+                    trackColor = Good.copy(alpha = 0.15f)
+                )
+            }
+        }
+
+        // 2. Summary Tips & Warnings
+        InsightTipCard(
+            text = data.completedGoalsText + " " + data.goalsCompletionTip,
+            backgroundColor = data.goalsCompletionTipColor,
+            contentColor = TextPrimary.copy(alpha = 0.8f)
+        )
+
+        data.healthWarningTip?.let {
+            InsightTipCard(
+                text = it,
+                backgroundColor = data.healthWarningTipColor,
+                contentColor = SurfaceWhite
+            )
+        }
+
+        // 3. Wellness Goals Section
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
                 DashboardSectionHeader(
                     title = "$activePeriod Wellness Goals",
                     onAdd = onAddGoal
                 )
                 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(12.dp))
 
                 data.wellnessGoals.forEach { goal ->
                     GoalItemCard(
@@ -261,212 +426,152 @@ fun InsightsContent(
                         onClick = { onGoalClick(goal.id) },
                         onDelete = if (goal.isDeletable) { { onDeleteGoal(goal.id) } } else null
                     )
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(8.dp))
                 }
+            }
+        }
 
-                // Health Insights (Charts)
-                DashboardSectionHeader(title = "Health Insights")
-                Spacer(Modifier.height(8.dp))
+        // 4. Health Insights (Charts) Section
+        DashboardSectionHeader(title = "Health Insights")
 
-                // BMI Insight Card
-                if (data.bmiValue != null) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(SurfaceWhite)
-                            .padding(16.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column {
-                                Text(
-                                    "Your BMI",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = TextPrimary
-                                )
-                                Text(
-                                    "Based on latest check-in",
-                                    fontSize = 12.sp,
-                                    color = TextSecondary
-                                )
-                            }
-                            
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "%.1f".format(data.bmiValue),
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = PrimeraViolet
-                                )
-                                Spacer(Modifier.width(12.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(
-                                            when(data.bmiStatus) {
-                                                "Healthy" -> Color(0xFFA1D386).copy(alpha = 0.2f)
-                                                "Underweight" -> Color(0xFF64B5F6).copy(alpha = 0.2f)
-                                                else -> Color(0xFFF28B82).copy(alpha = 0.2f)
-                                            }
-                                        )
-                                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                                ) {
-                                    Text(
-                                        text = data.bmiStatus ?: "",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = when(data.bmiStatus) {
-                                            "Healthy" -> Color(0xFF689F38)
-                                            "Underweight" -> Color(0xFF1976D2)
-                                            else -> Color(0xFFD32F2F)
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(16.dp))
-                }
+        // Weight Chart
+        ChartContainer(
+            title = {
+                FeatureChartHeader(
+                    title = "Weight (kg)",
+                    selectedPeriod = activePeriod,
+                    onPeriodSelected = onPeriodSelected
+                )
+            },
+            dateRange = data.weightTrend.dateRange,
+            onPrevious = onWeightPrevious,
+            onNext = onWeightNext
+        ) {
+            SimpleBarChart(
+                data = data.weightTrend.values,
+                labels = data.weightTrend.labels,
+                highlightedIndex = data.weightTrend.highlightedIndex,
+                onBarClick = onWeightBarClick
+            )
+        }
 
-                // Weight Chart
-                ChartContainer(
-                    title = {
-                        FeatureChartHeader(
-                            title = "Weight(kg)",
-                            selectedPeriod = data.weightTrend.title.substringAfter("(").substringBefore(")"),
-                            onPeriodSelected = viewModel::onWeightPeriodSelected
-                        )
-                    },
-                    dateRange = data.weightTrend.dateRange,
-                    onPrevious = viewModel::onWeightPrevious,
-                    onNext = viewModel::onWeightNext
-                ) {
-                    SimpleBarChart(
-                        data = data.weightTrend.values,
-                        labels = data.weightTrend.labels,
-                        highlightedIndex = data.weightTrend.highlightedIndex,
-                        onBarClick = viewModel::onWeightBarClick
-                    )
-                }
-                Spacer(Modifier.height(16.dp))
+        // Mood Chart
+        ChartContainer(
+            title = {
+                FeatureChartHeader(
+                    title = "Mood Trend",
+                    selectedPeriod = activePeriod,
+                    onPeriodSelected = onPeriodSelected
+                )
+            },
+            dateRange = data.moodTrend.dateRange,
+            onPrevious = onMoodPrevious,
+            onNext = onMoodNext
+        ) {
+            MoodLineChart(
+                data = data.moodTrend.values,
+                labels = data.moodTrend.labels
+            )
+        }
 
-                // Mood Chart
-                ChartContainer(
-                    title = {
-                        FeatureChartHeader(
-                            title = "Mood Trend",
-                            selectedPeriod = data.moodTrend.title.substringAfter("(").substringBefore(")"),
-                            onPeriodSelected = viewModel::onMoodPeriodSelected
-                        )
-                    },
-                    dateRange = data.moodTrend.dateRange,
-                    onPrevious = viewModel::onMoodPrevious,
-                    onNext = viewModel::onMoodNext
-                ) {
-                    MoodLineChart(
-                        data = data.moodTrend.values,
-                        labels = data.moodTrend.labels
-                    )
-                }
-                Spacer(Modifier.height(16.dp))
+        // Activity Chart
+        ChartContainer(
+            title = {
+                FeatureChartHeader(
+                    title = "Movement (Steps)",
+                    selectedPeriod = activePeriod,
+                    onPeriodSelected = onPeriodSelected
+                )
+            },
+            dateRange = data.activityTrend.dateRange,
+            onPrevious = onActivityPrevious,
+            onNext = onActivityNext
+        ) {
+            SimpleBarChart(
+                data = data.activityTrend.values,
+                labels = data.activityTrend.labels,
+                highlightedIndex = data.activityTrend.highlightedIndex,
+                onBarClick = onActivityBarClick
+            )
+        }
 
-                // Activity Chart
-                ChartContainer(
-                    title = {
-                        FeatureChartHeader(
-                            title = "Movement (Steps)",
-                            selectedPeriod = data.activityTrend.title.substringAfter("(").substringBefore(")"),
-                            onPeriodSelected = viewModel::onActivityPeriodSelected
-                        )
-                    },
-                    dateRange = data.activityTrend.dateRange,
-                    onPrevious = viewModel::onActivityPrevious,
-                    onNext = viewModel::onActivityNext
-                ) {
-                    SimpleBarChart(
-                        data = data.activityTrend.values,
-                        labels = data.activityTrend.labels,
-                        highlightedIndex = data.activityTrend.highlightedIndex,
-                        onBarClick = viewModel::onActivityBarClick
-                    )
-                }
-                Spacer(Modifier.height(16.dp))
+        // Heart Rate Chart
+        ChartContainer(
+            title = {
+                FeatureChartHeader(
+                    title = "Heart Rate (BPM)",
+                    selectedPeriod = activePeriod,
+                    onPeriodSelected = onHrPeriodSelected
+                )
+            },
+            dateRange = data.heartRateTrend.dateRange,
+            onPrevious = onHrPrevious,
+            onNext = onHrNext
+        ) {
+            SimpleBarChart(
+                data = data.heartRateTrend.values,
+                labels = data.heartRateTrend.labels,
+                highlightedIndex = data.heartRateTrend.highlightedIndex,
+                onBarClick = onHrBarClick,
+                barColor = HeartRateBg
+            )
+        }
 
-                // Heart Rate Chart
-                ChartContainer(
-                    title = {
-                        Text(
-                            text = "Heart Rate (BPM)",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary
-                        )
-                    },
-                    dateRange = data.heartRateTrend.dateRange,
-                    onPrevious = viewModel::onHrPrevious,
-                    onNext = viewModel::onHrNext
-                ) {
-                    SimpleBarChart(
-                        data = data.heartRateTrend.values,
-                        labels = data.heartRateTrend.labels,
-                        highlightedIndex = data.heartRateTrend.highlightedIndex,
-                        onBarClick = viewModel::onHrBarClick,
-                        barColor = HeartRateBg
-                    )
-                }
-                Spacer(Modifier.height(16.dp))
+        // Sleep Chart
+        ChartContainer(
+            title = {
+                FeatureChartHeader(
+                    title = "Sleep (Hours)",
+                    selectedPeriod = activePeriod,
+                    onPeriodSelected = onSleepPeriodSelected
+                )
+            },
+            dateRange = data.sleepTrend.dateRange,
+            onPrevious = onSleepPrevious,
+            onNext = onSleepNext
+        ) {
+            SimpleBarChart(
+                data = data.sleepTrend.values,
+                labels = data.sleepTrend.labels,
+                highlightedIndex = data.sleepTrend.highlightedIndex,
+                onBarClick = onSleepBarClick,
+                barColor = SleepBg
+            )
+        }
 
-                // Sleep Chart
-                ChartContainer(
-                    title = {
-                        Text(
-                            text = "Sleep (Hours)",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary
-                        )
-                    },
-                    dateRange = data.sleepTrend.dateRange,
-                    onPrevious = viewModel::onSleepPrevious,
-                    onNext = viewModel::onSleepNext
-                ) {
-                    SimpleBarChart(
-                        data = data.sleepTrend.values,
-                        labels = data.sleepTrend.labels,
-                        highlightedIndex = data.sleepTrend.highlightedIndex,
-                        onBarClick = viewModel::onSleepBarClick,
-                        barColor = SleepBg
-                    )
-                }
-                Spacer(Modifier.height(16.dp))
+        // SpO2 Chart
+        ChartContainer(
+            title = {
+                FeatureChartHeader(
+                    title = "SpO2 (%)",
+                    selectedPeriod = activePeriod,
+                    onPeriodSelected = onSpO2PeriodSelected
+                )
+            },
+            dateRange = data.spO2Trend.dateRange,
+            onPrevious = onSpO2Previous,
+            onNext = onSpO2Next
+        ) {
+            SimpleBarChart(
+                data = data.spO2Trend.values,
+                labels = data.spO2Trend.labels,
+                highlightedIndex = data.spO2Trend.highlightedIndex,
+                onBarClick = onSpO2BarClick,
+                barColor = Color(0xFFFFEBEE)
+            )
+        }
 
-                // SpO2 Chart
-                ChartContainer(
-                    title = {
-                        Text(
-                            text = "SpO2 (%)",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary
-                        )
-                    },
-                    dateRange = data.spO2Trend.dateRange,
-                    onPrevious = viewModel::onSpO2Previous,
-                    onNext = viewModel::onSpO2Next
-                ) {
-                    SimpleBarChart(
-                        data = data.spO2Trend.values,
-                        labels = data.spO2Trend.labels,
-                        highlightedIndex = data.spO2Trend.highlightedIndex,
-                        onBarClick = viewModel::onSpO2BarClick,
-                        barColor = Color(0xFFFFEBEE)
-                    )
-                }
+        Spacer(Modifier.height(8.dp))
+
+        // 5. Highlighted Footer with Legal Disclaimer
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Box(modifier = Modifier.padding(12.dp)) {
+                MonitoringDisclaimerFooter()
             }
         }
     }
@@ -475,5 +580,83 @@ fun InsightsContent(
 @Preview(showBackground = true)
 @Composable
 private fun InsightsPreview() {
-
+    PrimeraTheme {
+        InsightsScreenContent(
+            uiState = InsightsUiState.Success(
+                InsightsUiModel(
+                    gestationalAgeWeeks = 28,
+                    gestationalAgeDays = 3,
+                    gestationalAgeText = "28 weeks, 3 days",
+                    pregnancyProgress = 0.7f,
+                    goalCompletionRatio = 0.8f,
+                    completedGoalsCount = 4,
+                    totalGoalsCount = 5,
+                    activePeriod = "Weekly",
+                    completedGoalsText = "You've completed 4 of 5 weekly goals!",
+                    goalsCompletionTip = "Keep up the great work!",
+                    wellnessGoals = listOf(
+                        InsightGoalUiItem(
+                            id = "1",
+                            icon = "water",
+                            title = "Hydration",
+                            current = "2.0 L",
+                            target = "2.5 L",
+                            progress = 0.8f,
+                            color = Color(0xFF93C5FD)
+                        )
+                    ),
+                    weightTrend = ChartData(
+                        title = "Weight (kg)",
+                        dateRange = "Oct 12 - Oct 18",
+                        values = listOf(65.0f, 65.2f, 65.5f, 65.4f, 65.6f, 65.8f, 66.0f),
+                        labels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
+                        highlightedIndex = 6
+                    ),
+                    moodTrend = ChartData(
+                        title = "Mood Trend",
+                        dateRange = "Oct 12 - Oct 18",
+                        values = listOf(3f, 4f, 5f, 4f, 5f, 5f, 4f),
+                        labels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+                    ),
+                    activityTrend = ChartData(
+                        title = "Movement (Steps)",
+                        dateRange = "Oct 12 - Oct 18",
+                        values = listOf(5000f, 7000f, 6500f, 8000f, 7200f, 9000f, 8500f),
+                        labels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
+                        highlightedIndex = 5
+                    ),
+                    heartRateTrend = ChartData(
+                        title = "Heart Rate (BPM)",
+                        dateRange = "Oct 12 - Oct 18",
+                        values = listOf(72f, 75f, 74f, 78f, 76f, 80f, 75f),
+                        labels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+                    ),
+                    sleepTrend = ChartData(
+                        title = "Sleep (Hours)",
+                        dateRange = "Oct 12 - Oct 18",
+                        values = listOf(7.5f, 8.0f, 7.0f, 6.5f, 8.5f, 8.0f, 7.5f),
+                        labels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+                    ),
+                    spO2Trend = ChartData(
+                        title = "SpO2 (%)",
+                        dateRange = "Oct 12 - Oct 18",
+                        values = listOf(98f, 99f, 98f, 97f, 99f, 98f, 98f),
+                        labels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+                    )
+                )
+            ),
+            activePeriod = "Weekly",
+            isOnline = true,
+            showAddGoal = false,
+            editingGoal = null,
+            onBack = {},
+            onPeriodSelected = {},
+            onExport = {},
+            onAddGoalClick = {},
+            onGoalClick = {},
+            onDeleteGoal = {},
+            onDismissGoalDialog = {},
+            onSaveGoal = {}
+        )
+    }
 }

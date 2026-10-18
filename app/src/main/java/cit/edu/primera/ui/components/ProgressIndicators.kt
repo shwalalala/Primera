@@ -47,6 +47,12 @@ fun CircularPregnancyRing(
     modifier: Modifier = Modifier,
     babyIllustration: Int? = null,
 ) {
+    val daysLeftText = when {
+        daysLeft < 0 -> "Overdue (${kotlin.math.abs(daysLeft)}d)"
+        daysLeft == 0 -> "Due Today"
+        else -> "$daysLeft Days Left"
+    }
+
     InsightCircularProgress(
         progress = ((weekNumber - 1) + (dayNumber / 7f)) / 40f,
         centerContent = {
@@ -68,7 +74,7 @@ fun CircularPregnancyRing(
                     color = DaysLeftBg
                 ) {
                     Text(
-                        text = "$daysLeft Days Left",
+                        text = daysLeftText,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,

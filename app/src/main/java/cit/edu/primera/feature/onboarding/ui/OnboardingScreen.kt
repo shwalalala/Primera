@@ -43,6 +43,7 @@ import java.util.*
 @Composable
 fun OnboardingHostScreen(
     onOnboardingComplete: () -> Unit,
+    onBack: () -> Unit = {},
     viewModel: OnboardingViewModel = viewModel(factory = ViewModelProvider.Factory)
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -77,7 +78,13 @@ fun OnboardingHostScreen(
         topBar = {
             if (state.currentStep != OnboardingStep.PREPARING) {
                 OnboardingTopBar(
-                    onBackClick = { viewModel.previousStep() },
+                    onBackClick = { 
+                        if (state.currentStep == OnboardingStep.BIRTHDAY) {
+                            onBack()
+                        } else {
+                            viewModel.previousStep()
+                        }
+                    },
                     currentStep = state.currentStep.ordinal + 1,
                     totalSteps = OnboardingStep.entries.size - 1
                 )
@@ -113,6 +120,7 @@ fun OnboardingHostScreen(
                     OnboardingStep.EDD -> EddStep(state, viewModel)
                     OnboardingStep.FIRST_PREGNANCY -> FirstPregnancyStep(state, viewModel)
                     OnboardingStep.PREGNANCY_HISTORY -> PregnancyHistoryStep(state, viewModel)
+                    OnboardingStep.REVIEW_SUMMARY -> ReviewSummaryStep(state, viewModel)
                     OnboardingStep.PREPARING -> PreparingStep(state)
                 }
             }
@@ -244,12 +252,12 @@ fun BirthdayStep(state: OnboardingState, viewModel: OnboardingViewModel) {
 @Composable
 fun WeightStep(state: OnboardingState, viewModel: OnboardingViewModel) {
     OnboardingLayout(
-        title = "Tell Us Your Weight",
+        title = "Pre-pregnancy Weight",
         onContinue = { viewModel.nextStep() },
         isContinueEnabled = state.weightKg in 30..250 // Added reasonable range validation
     ) {
         LabeledField(
-            label = "Weight (kg) *",
+            label = "Weight before pregnancy (kg) *",
             value = if (state.weightKg == 0) "" else state.weightKg.toString(),
             onValueChange = { value -> 
                 val weight = value.filter { it.isDigit() }.toIntOrNull() ?: 0
@@ -264,7 +272,7 @@ fun WeightStep(state: OnboardingState, viewModel: OnboardingViewModel) {
 @Composable
 fun HeightStep(state: OnboardingState, viewModel: OnboardingViewModel) {
     OnboardingLayout(
-        title = "Tell Us Your Height",
+        title = "Your Height",
         onContinue = { viewModel.nextStep() },
         isContinueEnabled = state.heightCm in 50..250 // Added reasonable range validation
     ) {
@@ -613,34 +621,33 @@ fun PregnancyHistoryStep(state: OnboardingState, viewModel: OnboardingViewModel)
     var showDatePicker by remember { mutableStateOf(false) }
     val currentPregnancy = state.currentPregnancy
     
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = currentPregnancy.deliveryDate?.time ?: System.currentTimeMillis()
-    )
-
     if (showDatePicker) {
-        DatePickerDialog(
+        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+        AlertDialog(
             onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let {
-                        viewModel.onHistoryDeliveryDateChange(Date(it))
+            confirmButton = {},
+            title = { Text("Select Delivery Date") },
+            text = {
+                PrimeraDatePicker(
+                    selectedDate = currentPregnancy.deliveryDate,
+                    onDateSelected = { date ->
+                        viewModel.onHistoryDeliveryDateChange(date)
+                        showDatePicker = false
+                    },
+                    yearRange = (currentYear - 20)..currentYear,
+                    selectableDates = object : SelectableDates {
+                        override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                            return utcTimeMillis <= System.currentTimeMillis()
+                        }
+                        override fun isSelectableYear(year: Int): Boolean {
+                            return year in (currentYear - 20)..currentYear
+                        }
                     }
-                    showDatePicker = false
-                }) { Text("OK", color = PrimeraViolet) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
-            }
-        ) {
-            DatePicker(
-                state = datePickerState,
-                colors = DatePickerDefaults.colors(
-                    selectedDayContainerColor = PrimeraViolet,
-                    todayContentColor = PrimeraViolet,
-                    todayDateBorderColor = PrimeraViolet
                 )
-            )
-        }
+            },
+            containerColor = SurfaceWhite,
+            shape = RoundedCornerShape(24.dp)
+        )
     }
 
     OnboardingLayout(
@@ -759,14 +766,43 @@ fun PregnancyHistoryStep(state: OnboardingState, viewModel: OnboardingViewModel)
         }
 
         Spacer(Modifier.height(24.dp))
+        // TODO: Support conditional questions based on pregnancy history
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.align(Alignment.Start)) {
+            PrimeraLabel("Are previous children living?")
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            PrimeraOptionChip("Yes", currentPregnancy.areChildrenLiving == true) { viewModel.onAreChildrenLivingChange(true) }
+            PrimeraOptionChip("No / Deceased", currentPregnancy.areChildrenLiving == false) { viewModel.onAreChildrenLivingChange(false) }
+        }
+
+        Spacer(Modifier.height(24.dp))
         PrimeraLabel("Pregnancy-related Complications/Conditions:", modifier = Modifier.align(Alignment.Start))
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            val complications = listOf(
+            PrimeraOptionCard(
+                text = "Gestational Diabetes (GDM)",
+                isSelected = currentPregnancy.hasGdm,
+                onClick = { viewModel.toggleStructuredComplication("GDM") }
+            )
+            PrimeraOptionCard(
+                text = "Pre-existing Diabetes",
+                isSelected = currentPregnancy.hasDiabetes,
+                onClick = { viewModel.toggleStructuredComplication("Diabetes") }
+            )
+            PrimeraOptionCard(
+                text = "Pre-eclampsia / Eclampsia",
+                isSelected = currentPregnancy.hasPreeclampsia,
+                onClick = { viewModel.toggleStructuredComplication("Pre-eclampsia") }
+            )
+            PrimeraOptionCard(
+                text = "Preterm Delivery",
+                isSelected = currentPregnancy.hasPretermDelivery,
+                onClick = { viewModel.toggleStructuredComplication("Preterm delivery") }
+            )
+            val legacyComplications = listOf(
                 "Pregnancy induced hypertension",
-                "Preeclampsia / Eclampsia",
                 "Bleeding during pregnancy or after delivery"
             )
-            complications.forEach { comp ->
+            legacyComplications.forEach { comp ->
                 PrimeraOptionCard(
                     text = comp,
                     isSelected = currentPregnancy.complications.contains(comp),
@@ -775,6 +811,79 @@ fun PregnancyHistoryStep(state: OnboardingState, viewModel: OnboardingViewModel)
             }
         }
 
+        Spacer(Modifier.height(16.dp))
+        LabeledField(
+            label = "Additional Delivery Complications (Open-ended)",
+            value = currentPregnancy.additionalComplications,
+            onValueChange = { viewModel.onAdditionalComplicationsChange(it) },
+            placeholder = "Specify any other complications or details..."
+        )
+    }
+}
+
+@Composable
+fun ReviewSummaryStep(state: OnboardingState, viewModel: OnboardingViewModel) {
+    val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.US)
+    
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp)
+            .navigationBarsPadding()
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Spacer(Modifier.height(16.dp))
+        PrimeraTitle(
+            text = "Review Your Details",
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(8.dp))
+        PrimeraLabel(
+            text = "Please review your information before submitting.",
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(24.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+            border = BorderStroke(1.dp, InputBorder)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                SummaryRow("Birthday", state.birthday?.let { dateFormat.format(it) } ?: "Not set")
+                SummaryRow("Pre-pregnancy Weight", if (state.weightKg > 0) "${state.weightKg} kg" else "Not set")
+                SummaryRow("Height", if (state.heightCm > 0) "${state.heightCm} cm" else "Not set")
+                SummaryRow("Cycle Regularity", when(state.isCycleRegular) { true -> "Regular"; false -> "Irregular"; else -> "Unknown" })
+                SummaryRow("Expected Due Date", state.eddDate?.let { dateFormat.format(it) } ?: "Not set")
+                SummaryRow("Pregnancy Type", if (state.isFirstPregnancy == true) "First Pregnancy" else "Previous Pregnancies Recorded (${state.pregnancyHistories.size})")
+            }
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        PrimeraGradientButton(
+            text = "Submit & Start",
+            onClick = { viewModel.submitOnboarding() }
+        )
+        Spacer(Modifier.height(16.dp))
+    }
+}
+
+@Composable
+fun SummaryRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = label, fontSize = 13.sp, color = TextSecondary, fontWeight = FontWeight.Medium)
+        Text(text = value, fontSize = 13.sp, color = TextPrimary, fontWeight = FontWeight.Bold)
     }
 }
 
