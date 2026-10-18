@@ -99,11 +99,18 @@ fun DashboardContent(
     ) {
         WeekCalendarRow(state.weekDays)
         Spacer(Modifier.height(8.dp))
+        
+        // Safety warning banner at the very top of Dashboard
+        state.inaccuracyWarning?.let { warning ->
+            UrgentWarningBanner(message = warning)
+            Spacer(Modifier.height(8.dp))
+        }
+
         DashboardGreeting(
             userName = state.userName,
             timeOfDay = state.timeOfDay,
             trimesterText = "You're in your ${state.trimester}",
-            inaccuracyWarning = state.inaccuracyWarning
+            inaccuracyWarning = null // Handled above at top level
         )
         Spacer(Modifier.height(4.dp))
         BabyRingCard(
@@ -120,12 +127,16 @@ fun DashboardContent(
             onInputManually = onInputManually,
             onSyncWatch = onSyncWatch
         )
+        Spacer(Modifier.height(20.dp))
+        PrenatalRemindersSection(state.upcomingReminders)
         Spacer(Modifier.height(24.dp))
         RecentHealthLogsSection(state.recentLogs, onViewAllLogs, onAddLog, onLogClick)
         Spacer(Modifier.height(16.dp))
         BabyDevelopmentSection(state.milestones, state.symptoms)
         Spacer(Modifier.height(8.dp))
         EducationalArticlesSection(state.articles)
+        Spacer(Modifier.height(12.dp))
+        cit.edu.primera.ui.components.MonitoringDisclaimerFooter()
         Spacer(Modifier.height(8.dp))
     }
 }

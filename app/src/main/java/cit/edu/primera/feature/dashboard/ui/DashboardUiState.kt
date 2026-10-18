@@ -9,6 +9,13 @@ sealed class DashboardUiState {
     data class Error(val message: String) : DashboardUiState()
 }
 
+data class PrenatalReminderUiItem(
+    val title: String,
+    val description: String,
+    val dueDateText: String,
+    val isUrgent: Boolean = false
+)
+
 data class DashboardUiModel(
     val userName: String,
     val timeOfDay: String,
@@ -33,6 +40,7 @@ data class DashboardUiModel(
     val inaccuracyWarning: String? = null,
     val recentLogs: List<DashboardLogUiItem>,
     val weekDays: List<DashboardWeekDayItem>,
+    val upcomingReminders: List<PrenatalReminderUiItem> = emptyList(),
     val milestones: List<String> = emptyList(),
     val symptoms: List<String> = emptyList(),
     val articles: List<ArticleInfo> = emptyList()
