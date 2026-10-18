@@ -9,18 +9,20 @@ sealed interface InsightsUiState {
 }
 
 data class InsightsUiModel(
-    val physiqueProgress: Float = 0f,
-    val physiqueSubtitle: String = "",
-    val physiqueStatus: String = "Healthy",
-    val progressColor: Color = Color(0xFFA1D386),
+    val gestationalAgeWeeks: Int = 0,
+    val gestationalAgeDays: Int = 0,
+    val gestationalAgeText: String = "",
+    val pregnancyProgress: Float = 0f, // 0.0f to 1.0f (weeks/40)
+    val goalCompletionRatio: Float = 0f, // 0.0f to 1.0f
+    val completedGoalsCount: Int = 0,
+    val totalGoalsCount: Int = 0,
+    val completedCheckinsCount: Int = 0,
     val activePeriod: String = "Weekly",
     val completedGoalsText: String = "",
     val goalsCompletionTip: String = "",
     val goalsCompletionTipColor: Color = Color(0xFFFFCC80),
     val healthWarningTip: String? = null,
     val healthWarningTipColor: Color = Color(0xFFCE93D8),
-    val bmiValue: Float? = null,
-    val bmiStatus: String? = null,
     val wellnessGoals: List<InsightGoalUiItem> = emptyList(),
     val rawGoals: List<cit.edu.primera.feature.goals.data.GoalDto> = emptyList(),
     val weightTrend: ChartData = ChartData(),

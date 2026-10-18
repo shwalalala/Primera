@@ -71,13 +71,22 @@ class InsightsViewModel(
         }
     }
 
+    private val _hrPeriod = MutableStateFlow("Weekly")
+    val hrPeriod: StateFlow<String> = _hrPeriod.asStateFlow()
+
+    private val _sleepPeriod = MutableStateFlow("Weekly")
+    val sleepPeriod: StateFlow<String> = _sleepPeriod.asStateFlow()
+
+    private val _spO2Period = MutableStateFlow("Weekly")
+    val spO2Period: StateFlow<String> = _spO2Period.asStateFlow()
+
     val uiState: StateFlow<InsightsUiState> = combine(
         dashboardRepository.observeDashboardData(),
         checkinsRepository.observeLogs(),
         checkinsRepository.observeUserWeight(),
         goalsRepository.observeGoals(),
         dashboardRepository.observeHealthRecords(),
-        combine(_activePeriod, _weightPeriod, _moodPeriod, _activityPeriod) { p -> p },
+        combine(_activePeriod, _weightPeriod, _moodPeriod, _activityPeriod, _hrPeriod, _sleepPeriod, _spO2Period) { p -> p },
         combine(_weightOffset, _moodOffset, _activityOffset, _hrOffset, _sleepOffset, _spO2Offset) { o -> o }
     ) { args ->
         val dashboardData = args[0] as cit.edu.primera.feature.dashboard.domain.DashboardData?
@@ -92,6 +101,9 @@ class InsightsViewModel(
         val weightPeriod = periods[1]
         val moodPeriod = periods[2]
         val activityPeriod = periods[3]
+        val hrPeriod = periods[4]
+        val sleepPeriod = periods[5]
+        val spO2Period = periods[6]
         
         val weightOffset = offsets[0]
         val moodOffset = offsets[1]
@@ -108,29 +120,48 @@ class InsightsViewModel(
         val totalGoalsCount = filteredGoals.size
         val completedGoalsCount = filteredGoals.count { it.currentValue >= it.targetValue }
         
-        // Progress Calculation
-        // baseScore from goals (completed/total)
-        val baseScore = if (totalGoalsCount > 0) (completedGoalsCount.toFloat() / totalGoalsCount) else 0f
-        
-        // checkinOffset from mood/symptoms (limited to +/- 20%)
-        val checkinOffset = calculateCheckinOffset(filteredLogsForProgress).coerceIn(-0.2f, 0.2f)
-        
-        // smartwatchContribution (e.g. steps vs goal, limited to 20%)
-        val smartwatchContribution = calculateSmartwatchContribution(healthRecords, activePeriod).coerceIn(0f, 0.2f)
-        
-        val finalProgress = (baseScore + checkinOffset + smartwatchContribution).coerceIn(0f, 1f)
+        // Pregnancy & Gestational Age Calculation (Robust Calendar Day Truncation & Post-Term support up to 42 weeks / 294 days)
+        val dueDate = dashboardData?.dueDate
+        val totalDaysGestation: Int
+        val daysRemaining: Int
 
-        val statusText = when {
-            finalProgress >= 0.6f -> "Healthy"
-            finalProgress >= 0.4f -> "Moderate"
-            else -> "Bad"
+        if (dueDate != null) {
+            val dueCal = Calendar.getInstance().apply { 
+                time = dueDate
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            val currentCal = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+
+            val diffMillis = dueCal.timeInMillis - currentCal.timeInMillis
+            val calculatedDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
+
+            daysRemaining = calculatedDays.coerceIn(-14, 280)
+            totalDaysGestation = (280 - daysRemaining).coerceIn(0, 294)
+        } else {
+            daysRemaining = 280
+            totalDaysGestation = 0
         }
 
-        val progressColor = when (statusText) {
-            "Healthy" -> Color(0xFFA1D386)
-            "Moderate" -> Color(0xFFFBBB67)
-            else -> Color(0xFFF28B82)
+        val gestationalAgeWeeks = totalDaysGestation / 7
+        val gestationalAgeDays = totalDaysGestation % 7
+        val pregnancyProgress = (totalDaysGestation.toFloat() / 280f).coerceIn(0f, 1f)
+
+        val gestationalAgeText = if (gestationalAgeWeeks >= 40) {
+            "40 Weeks $gestationalAgeDays Days (Post-term)"
+        } else {
+            "$gestationalAgeWeeks Weeks $gestationalAgeDays Days"
         }
+
+        val goalCompletionRatio = if (totalGoalsCount > 0) (completedGoalsCount.toFloat() / totalGoalsCount).coerceIn(0f, 1f) else 0f
+        val completedCheckinsCount = filteredLogsForProgress.size
 
         val healthWarning = generateHealthWarning(filteredLogsForProgress, activePeriod)
 
@@ -143,45 +174,29 @@ class InsightsViewModel(
         val moodValues = extractMoodValues(moodLogsForChart)
 
         // Extract Smartwatch Data
-        val hrValues = extractSmartwatchValues(healthRecords, activePeriod, hrOffset) { it.averageHeartRate?.toFloat() ?: 0f }
-        val sleepValues = extractSmartwatchValues(healthRecords, activePeriod, sleepOffset) { it.sleepMinutes.toFloat() / 60f }
-        val spO2Values = extractSmartwatchValues(healthRecords, activePeriod, spO2Offset) { it.spO2?.toFloat() ?: 0f }
-        val stepValues = extractSmartwatchValues(healthRecords, activePeriod, activityOffset) { it.steps.toFloat() }
-
-        // BMI Calculation
-        val heightCm = dashboardData?.heightCm?.toFloat() ?: 0f
-        val currentWeight = weightData?.weightKg?.toFloat() ?: 0f
-        var bmiValue: Float? = null
-        var bmiStatus: String? = null
-
-        if (heightCm > 0f && currentWeight > 0f) {
-            val heightMeters = heightCm / 100f
-            bmiValue = currentWeight / (heightMeters * heightMeters)
-
-            bmiStatus = when {
-                bmiValue < 18.5f -> "Underweight"
-                bmiValue in 18.5f..22.9f -> "Healthy"
-                bmiValue in 23.0f..27.4f -> "Overweight"
-                else -> "Obese"
-            }
-        }
+        val hrValues = extractSmartwatchValues(healthRecords, hrPeriod, hrOffset) { it.averageHeartRate?.toFloat() ?: 0f }
+        val sleepValues = extractSmartwatchValues(healthRecords, sleepPeriod, sleepOffset) { it.sleepMinutes.toFloat() / 60f }
+        val spO2Values = extractSmartwatchValues(healthRecords, spO2Period, spO2Offset) { it.spO2?.toFloat() ?: 0f }
+        val stepValues = extractSmartwatchValues(healthRecords, activityPeriod, activityOffset) { it.steps.toFloat() }
 
         InsightsUiState.Success(
             InsightsUiModel(
-                physiqueProgress = finalProgress,
-                physiqueSubtitle = if (finalProgress >= 1f) "100%" else "${(finalProgress * 100).toInt()}%",
-                physiqueStatus = statusText,
-                progressColor = progressColor,
+                gestationalAgeWeeks = gestationalAgeWeeks,
+                gestationalAgeDays = gestationalAgeDays,
+                gestationalAgeText = gestationalAgeText,
+                pregnancyProgress = pregnancyProgress,
+                goalCompletionRatio = goalCompletionRatio,
+                completedGoalsCount = completedGoalsCount,
+                totalGoalsCount = totalGoalsCount,
+                completedCheckinsCount = completedCheckinsCount,
                 activePeriod = activePeriod,
-                completedGoalsText = "This $activePeriod, you've completed $completedGoalsCount/$totalGoalsCount goals.",
+                completedGoalsText = "This $activePeriod, you've completed $completedGoalsCount/$totalGoalsCount goals with $completedCheckinsCount check-ins recorded.",
                 goalsCompletionTip = if (completedGoalsCount == totalGoalsCount && totalGoalsCount > 0) 
                     "You're doing great, Mom. Keep it up!" 
                     else getRandomGoalTip(),
-                goalsCompletionTipColor = progressColor.copy(alpha = 0.8f),
+                goalsCompletionTipColor = Color(0xFFA1D386).copy(alpha = 0.8f),
                 healthWarningTip = healthWarning,
                 healthWarningTipColor = if (healthWarning != null) Color(0xFFCE93D8) else Color.Transparent,
-                bmiValue = bmiValue,
-                bmiStatus = bmiStatus,
                 rawGoals = filteredGoals,
                 wellnessGoals = filteredGoals.map { goal ->
                     val isMandatory = goal.title == "Hydration" || goal.title == "Movement"
@@ -218,24 +233,24 @@ class InsightsViewModel(
                     highlightedIndex = _highlightedActivityIndex.value
                 ),
                 heartRateTrend = ChartData(
-                    title = "Heart Rate ($activePeriod)",
-                    dateRange = getDateRangeText(activePeriod, hrOffset),
+                    title = "Heart Rate ($hrPeriod)",
+                    dateRange = getDateRangeText(hrPeriod, hrOffset),
                     values = hrValues,
-                    labels = getChartLabels(activePeriod, hrOffset),
+                    labels = getChartLabels(hrPeriod, hrOffset),
                     highlightedIndex = _highlightedHrIndex.value
                 ),
                 sleepTrend = ChartData(
-                    title = "Sleep ($activePeriod)",
-                    dateRange = getDateRangeText(activePeriod, sleepOffset),
+                    title = "Sleep ($sleepPeriod)",
+                    dateRange = getDateRangeText(sleepPeriod, sleepOffset),
                     values = sleepValues,
-                    labels = getChartLabels(activePeriod, sleepOffset),
+                    labels = getChartLabels(sleepPeriod, sleepOffset),
                     highlightedIndex = _highlightedSleepIndex.value
                 ),
                 spO2Trend = ChartData(
-                    title = "SpO2 ($activePeriod)",
-                    dateRange = getDateRangeText(activePeriod, spO2Offset),
+                    title = "SpO2 ($spO2Period)",
+                    dateRange = getDateRangeText(spO2Period, spO2Offset),
                     values = spO2Values,
-                    labels = getChartLabels(activePeriod, spO2Offset),
+                    labels = getChartLabels(spO2Period, spO2Offset),
                     highlightedIndex = _highlightedSpO2Index.value
                 ),
                 longitudinalInsights = longitudinalInsights
@@ -577,14 +592,17 @@ class InsightsViewModel(
     fun onActivityNext() { _activityOffset.value += 1 }
     fun onActivityBarClick(index: Int) { _highlightedActivityIndex.value = index }
 
+    fun onHrPeriodSelected(period: String) { _hrPeriod.value = period }
     fun onHrPrevious() { _hrOffset.value -= 1 }
     fun onHrNext() { _hrOffset.value += 1 }
     fun onHrBarClick(index: Int) { _highlightedHrIndex.value = index }
 
+    fun onSleepPeriodSelected(period: String) { _sleepPeriod.value = period }
     fun onSleepPrevious() { _sleepOffset.value -= 1 }
     fun onSleepNext() { _sleepOffset.value += 1 }
     fun onSleepBarClick(index: Int) { _highlightedSleepIndex.value = index }
 
+    fun onSpO2PeriodSelected(period: String) { _spO2Period.value = period }
     fun onSpO2Previous() { _spO2Offset.value -= 1 }
     fun onSpO2Next() { _spO2Offset.value += 1 }
     fun onSpO2BarClick(index: Int) { _highlightedSpO2Index.value = index }
