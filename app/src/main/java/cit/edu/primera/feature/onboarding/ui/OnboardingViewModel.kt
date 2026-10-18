@@ -156,17 +156,42 @@ class OnboardingViewModel(
         }
     }
 
+    fun onAreChildrenLivingChange(areLiving: Boolean) {
+        _state.update { state ->
+            val newList = state.pregnancyHistories.toMutableList()
+            val current = newList[state.selectedPregnancyIndex]
+            newList[state.selectedPregnancyIndex] = current.copy(areChildrenLiving = areLiving)
+            state.copy(pregnancyHistories = newList)
+        }
+    }
+
+    fun toggleStructuredComplication(type: String) {
+        _state.update { state ->
+            val newList = state.pregnancyHistories.toMutableList()
+            val current = newList[state.selectedPregnancyIndex]
+            val updated = when (type) {
+                "GDM" -> current.copy(hasGdm = !current.hasGdm)
+                "Diabetes" -> current.copy(hasDiabetes = !current.hasDiabetes)
+                "Pre-eclampsia" -> current.copy(hasPreeclampsia = !current.hasPreeclampsia)
+                "Preterm delivery" -> current.copy(hasPretermDelivery = !current.hasPretermDelivery)
+                else -> current
+            }
+            newList[state.selectedPregnancyIndex] = updated
+            state.copy(pregnancyHistories = newList)
+        }
+    }
+
+    fun onAdditionalComplicationsChange(text: String) {
+        _state.update { state ->
+            val newList = state.pregnancyHistories.toMutableList()
+            val current = newList[state.selectedPregnancyIndex]
+            newList[state.selectedPregnancyIndex] = current.copy(additionalComplications = text)
+            state.copy(pregnancyHistories = newList)
+        }
+    }
+
     fun nextStep() {
         val currentState = _state.value
-        
-        // If moving to PREPARING, show confirmation dialog instead
-        val isMovingToPreparing = (currentState.currentStep == OnboardingStep.FIRST_PREGNANCY && currentState.isFirstPregnancy == true) ||
-                                 (currentState.currentStep == OnboardingStep.PREGNANCY_HISTORY)
-        
-        if (isMovingToPreparing) {
-            _state.update { it.copy(showConfirmationDialog = true) }
-            return
-        }
 
         val next = when (currentState.currentStep) {
             OnboardingStep.BIRTHDAY -> OnboardingStep.WEIGHT
@@ -188,19 +213,27 @@ class OnboardingViewModel(
             }
             OnboardingStep.EDD -> OnboardingStep.FIRST_PREGNANCY
             OnboardingStep.FIRST_PREGNANCY -> {
-                if (currentState.isFirstPregnancy == true) OnboardingStep.PREPARING
+                if (currentState.isFirstPregnancy == true) OnboardingStep.REVIEW_SUMMARY
                 else OnboardingStep.PREGNANCY_HISTORY
             }
-            OnboardingStep.PREGNANCY_HISTORY -> OnboardingStep.PREPARING
+            OnboardingStep.PREGNANCY_HISTORY -> OnboardingStep.REVIEW_SUMMARY
+            OnboardingStep.REVIEW_SUMMARY -> OnboardingStep.PREPARING
             OnboardingStep.PREPARING -> OnboardingStep.PREPARING
         }
         
-        _state.update { it.copy(currentStep = next) }
+        _state.update { it.copy(currentStep = next, showConfirmationDialog = false) }
         saveCurrentStep(next)
         
         if (next == OnboardingStep.PREPARING) {
             saveAndFinish()
         }
+    }
+
+    fun submitOnboarding() {
+        val next = OnboardingStep.PREPARING
+        _state.update { it.copy(currentStep = next) }
+        saveCurrentStep(next)
+        saveAndFinish()
     }
 
     fun goToUltrasound() {
@@ -245,7 +278,11 @@ class OnboardingViewModel(
                 else OnboardingStep.EDD
             }
             OnboardingStep.PREGNANCY_HISTORY -> OnboardingStep.FIRST_PREGNANCY
-            OnboardingStep.PREPARING -> OnboardingStep.FIRST_PREGNANCY
+            OnboardingStep.REVIEW_SUMMARY -> {
+                if (currentState.isFirstPregnancy == true) OnboardingStep.FIRST_PREGNANCY
+                else OnboardingStep.PREGNANCY_HISTORY
+            }
+            OnboardingStep.PREPARING -> OnboardingStep.REVIEW_SUMMARY
         }
         _state.update { it.copy(currentStep = prev) }
         saveCurrentStep(prev)
