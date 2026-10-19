@@ -31,7 +31,7 @@ class AuthDataSource {
     }
 
     suspend fun updateEmail(newEmail: String) {
-        auth.currentUser?.updateEmail(newEmail)?.await()
+        auth.currentUser?.verifyBeforeUpdateEmail(newEmail)?.await()
     }
 
     suspend fun updatePassword(newPassword: String) {
