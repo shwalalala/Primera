@@ -46,7 +46,7 @@ allprojects {
             force("io.netty:netty-codec:4.2.19.Final")
 
             // Resolves Alerts #12, #11, #41: Bouncy Castle Name Constraints bypass via trailing dots, GOST 28147 CTR keystream reuse, and Lazy ASN.1 sequence nesting-depth guard resets
-            force("org.bouncycastle:bcprov-jdk18on:1.85")
+            force("org.bouncycastle:bcprov-jdk18on:1.86")
 
             // Resolves Alert #7: jose4j Denial-of-Service via compressed JWE content (zip bomb)
             force("org.bitbucket.b_c:jose4j:0.9.7")
