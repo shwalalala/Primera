@@ -2,11 +2,10 @@
 # package ecosystems to update and where the package manifests are located.
 # Please see the documentation for all configuration options:
 # https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
 version: 2
 updates:
   - package-ecosystem: "gradle"
-    directory: "/" # Location of build files, settings.gradle.kts, and gradle/libs.versions.toml
+    directory: "/" 
     schedule:
       interval: "weekly"
     groups:
@@ -18,12 +17,19 @@ updates:
           - "com.google.firebase:*"
       androidx-updates:
         patterns:
-          - "androidx.*"
+          - "androidx.*:*" # Corrected Maven wildcard format
+
+  - package-ecosystem: "gradle"
+    directory: "/app" 
+    schedule:
+      interval: "weekly"
 
   - package-ecosystem: "github-actions"
-    directory: "/" # Location of .github/workflows/
+    directory: "/" 
     schedule:
       interval: "weekly"
     groups:
       all-actions:
-        dependency-type: "all"
+        patterns:
+          - "*"
+
