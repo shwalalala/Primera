@@ -9,8 +9,21 @@ updates:
     directory: "/" # Location of build files, settings.gradle.kts, and gradle/libs.versions.toml
     schedule:
       interval: "weekly"
+    groups:
+      netty-updates:
+        patterns:
+          - "io.netty:*"
+      firebase-updates:
+        patterns:
+          - "com.google.firebase:*"
+      androidx-updates:
+        patterns:
+          - "androidx.*"
 
   - package-ecosystem: "github-actions"
     directory: "/" # Location of .github/workflows/
     schedule:
       interval: "weekly"
+    groups:
+      all-actions:
+        dependency-type: "all"
