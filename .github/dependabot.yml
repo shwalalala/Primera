@@ -8,28 +8,29 @@ updates:
     directory: "/" 
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
     groups:
-      netty-updates:
+      # Bundled all core Android/Kotlin plugins & libraries together
+      android-core:
+        patterns:
+          - "com.android.*"
+          - "org.jetbrains.kotlin*"
+          - "androidx.*"
+          - "com.google.firebase:*"
+      # Bundled third-party libraries & transitive security overrides
+      third-party-deps:
         patterns:
           - "io.netty:*"
-      firebase-updates:
-        patterns:
-          - "com.google.firebase:*"
-      androidx-updates:
-        patterns:
-          - "androidx.*:*" # Corrected Maven wildcard format
-
-  - package-ecosystem: "gradle"
-    directory: "/app" 
-    schedule:
-      interval: "weekly"
+          - "org.bitbucket.b_c:*"
+          - "org.bouncycastle:*"
+          - "org.jdom:*"
 
   - package-ecosystem: "github-actions"
     directory: "/" 
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 2
     groups:
       all-actions:
         patterns:
           - "*"
-
