@@ -3,6 +3,8 @@ package cit.edu.primera.feature.dashboard.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -392,11 +394,12 @@ fun BabyDevelopmentSection(
 @Composable
 fun EducationalArticlesSection(
     articles: List<ArticleInfo>,
+    onArticleClick: (ArticleInfo) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.padding(vertical = 12.dp)) {
         Text(
-            "Educational Articles",
+            "Educational Articles & AI Guidance",
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold,
             color = TextPrimary,
@@ -410,19 +413,23 @@ fun EducationalArticlesSection(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(articles) { article ->
-                ArticleCard(article)
+                ArticleCard(article = article, onClick = { onArticleClick(article) })
             }
         }
     }
 }
 
 @Composable
-fun ArticleCard(article: ArticleInfo) {
+fun ArticleCard(
+    article: ArticleInfo,
+    onClick: () -> Unit = {}
+) {
     Box(
         modifier = Modifier
-            .width(200.dp)
+            .width(220.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(SurfaceWhite)
+            .clickable(onClick = onClick)
             .padding(12.dp)
     ) {
         Column {
@@ -444,14 +451,90 @@ fun ArticleCard(article: ArticleInfo) {
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = TextPrimary,
-                maxLines = 1
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
+            Spacer(Modifier.height(2.dp))
             Text(
                 text = article.description,
                 fontSize = 12.sp,
                 color = TextSecondary,
-                maxLines = 2
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "Tap to read full article →",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = PrimeraViolet
             )
         }
     }
+}
+
+@Composable
+fun ArticleDetailDialog(
+    article: ArticleInfo,
+    onDismiss: () -> Unit
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("📚", fontSize = 28.sp)
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = article.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(vertical = 8.dp)
+            ) {
+                Text(
+                    text = article.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                    lineHeight = 20.sp
+                )
+                
+                Spacer(Modifier.height(16.dp))
+                
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(PrimeraLilac.copy(alpha = 0.25f))
+                        .padding(12.dp)
+                ) {
+                    Column {
+                        Text(
+                            text = "💡 Maternal Care Guidance",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = PrimeraViolet
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "Always consult your healthcare provider or obstetrician if you notice sudden health changes or have questions regarding your pregnancy.",
+                            fontSize = 12.sp,
+                            color = TextPrimary
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) {
+                Text("Close", color = PrimeraViolet, fontWeight = FontWeight.Bold)
+            }
+        }
+    )
 }

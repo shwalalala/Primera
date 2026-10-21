@@ -3,9 +3,11 @@ package cit.edu.primera.core.data
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 
 interface PreferenceRepository {
-    fun shouldShowOnboarding(userId: String): Boolean
+    suspend fun shouldShowOnboarding(userId: String): Boolean
     fun setOnboardingCompleted(userId: String)
     fun getOnboardingLastStep(userId: String): String?
     fun setOnboardingLastStep(userId: String, step: String)
@@ -13,6 +15,7 @@ interface PreferenceRepository {
     fun setWatchSyncEnabled(userId: String, enabled: Boolean)
     fun getCustomOptions(userId: String, category: String): Set<String>
     fun addCustomOption(userId: String, category: String, label: String)
+    fun clearLocalData()
 }
 
 class PreferenceRepositoryImpl(context: Context) : PreferenceRepository {
@@ -26,8 +29,31 @@ class PreferenceRepositoryImpl(context: Context) : PreferenceRepository {
         private const val KEY_CUSTOM_OPTIONS_PREFIX = "custom_options_"
     }
 
-    override fun shouldShowOnboarding(userId: String): Boolean {
-        return !sharedPreferences.getBoolean(KEY_ONBOARDING_COMPLETED + userId, false)
+    override suspend fun shouldShowOnboarding(userId: String): Boolean {
+        if (userId.isBlank()) return true
+
+        val isCompletedLocally = sharedPreferences.getBoolean(KEY_ONBOARDING_COMPLETED + userId, false)
+        if (isCompletedLocally) return false
+
+        return try {
+            val snapshot = FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(userId)
+                .get()
+                .await()
+
+            val isCompletedInFirestore = (snapshot.getBoolean("onboardingCompleted") == true)
+                    || (snapshot.get("birthday") != null)
+
+            if (isCompletedInFirestore) {
+                setOnboardingCompleted(userId)
+                false
+            } else {
+                true
+            }
+        } catch (_: Exception) {
+            true
+        }
     }
 
     override fun setOnboardingCompleted(userId: String) {
@@ -62,4 +88,9 @@ class PreferenceRepositoryImpl(context: Context) : PreferenceRepository {
         current.add(label)
         sharedPreferences.edit { putStringSet(KEY_CUSTOM_OPTIONS_PREFIX + category.lowercase() + "_" + userId, current) }
     }
+
+    override fun clearLocalData() {
+        sharedPreferences.edit { clear() }
+    }
 }
+

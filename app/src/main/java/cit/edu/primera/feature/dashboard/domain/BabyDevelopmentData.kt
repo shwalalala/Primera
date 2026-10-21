@@ -12,6 +12,10 @@ data class ArticleInfo(
     val imageUrl: String? = null
 )
 
+/**
+ * Static fallback content for weekly pregnancy milestones, symptoms, and articles.
+ * Used when the device is offline or when the Gemini AI dynamic content service is unavailable.
+ */
 object BabyDevelopmentData {
     val weeklyContent = mapOf(
         1 to WeeklyInfo(

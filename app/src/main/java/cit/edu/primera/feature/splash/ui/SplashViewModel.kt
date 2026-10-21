@@ -3,6 +3,7 @@ package cit.edu.primera.feature.splash.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cit.edu.primera.core.data.PreferenceRepository
+import cit.edu.primera.feature.welcome.ui.WelcomeSessionState
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -40,9 +41,8 @@ class SplashViewModel(
                     _effect.send(SplashEffect.NavigateToDashboard)
                 }
             } else {
-                // Not logged in, check if we should show Welcome walkthrough
-                // (using any valid ID for the general check, or just default to true if never seen)
-                if (preferenceRepository.shouldShowOnboarding("guest")) {
+                // The welcome walkthrough is shown once per app process and is not persisted locally.
+                if (!WelcomeSessionState.wasShown()) {
                     _effect.send(SplashEffect.Navigate)
                 } else {
                     _effect.send(SplashEffect.NavigateToAuth)

@@ -3,6 +3,7 @@ package cit.edu.primera.feature.onboarding.data
 import cit.edu.primera.feature.onboarding.domain.OnboardingProfile
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.tasks.await
 import java.util.*
 
@@ -48,9 +49,9 @@ class OnboardingRepositoryImpl : OnboardingRepository {
                 "updatedAt" to Date()
             )
 
-            // Update the user document. Using merge(true) to avoid overwriting existing fields like email
+            // Update the user document. Using merge(true) to avoid failing if user document isn't fully created yet
             firestore.collection("users").document(userId)
-                .update(profileData as Map<String, Any>)
+                .set(profileData as Map<String, Any>, SetOptions.merge())
                 .await()
 
             Result.success(Unit)

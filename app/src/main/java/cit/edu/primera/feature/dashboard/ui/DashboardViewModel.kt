@@ -22,7 +22,11 @@ class DashboardViewModel(
     private val healthConnectManager: HealthConnectManager,
     private val preferenceRepository: cit.edu.primera.core.data.PreferenceRepository,
     private val networkMonitor: cit.edu.primera.core.util.NetworkMonitor,
+    private val geminiContentRepository: cit.edu.primera.feature.dashboard.data.GeminiContentRepository? = null,
 ) : ViewModel() {
+
+    private val _weeklyContent = MutableStateFlow<cit.edu.primera.feature.dashboard.domain.WeeklyInfo?>(null)
+    private var currentLoadedWeek: Int? = null
 
     init {
         viewModelScope.launch {
@@ -39,22 +43,23 @@ class DashboardViewModel(
 
     val uiState: StateFlow<DashboardUiState> = combine(
         repository.observeDashboardData(),
-        repository.observeHealthRecords()
-    ) { data, healthRecords ->
+        repository.observeHealthRecords(),
+        _weeklyContent
+    ) { data, healthRecords, weeklyContent ->
         if (data == null) {
-            DashboardUiState.Success(createDefaultUiModel())
+            DashboardUiState.Success(createDefaultUiModel(weeklyContent))
         } else {
-            DashboardUiState.Success(mapToUiModel(data, healthRecords))
+            val week = DashboardBusinessLogic.getWeekNumber(data.dueDate)
+            ensureWeeklyContent(week)
+            DashboardUiState.Success(mapToUiModel(data, healthRecords, weeklyContent, week))
         } as DashboardUiState
     }
         .onStart { 
             // Optional: emit Loading explicitly if needed
         }
         .catch { e ->
-            // If the index is still building, we might get an error. 
-            // We can choose to show an empty state or the error.
             if (e.message?.contains("index") == true) {
-                emit(DashboardUiState.Success(createDefaultUiModel()))
+                emit(DashboardUiState.Success(createDefaultUiModel(null)))
             } else {
                 emit(DashboardUiState.Error(e.message ?: "An unexpected error occurred"))
             }
@@ -65,7 +70,22 @@ class DashboardViewModel(
             initialValue = DashboardUiState.Loading
         )
 
-    private fun createDefaultUiModel(): DashboardUiModel {
+    private fun ensureWeeklyContent(week: Int) {
+        if (currentLoadedWeek != week) {
+            currentLoadedWeek = week
+            viewModelScope.launch {
+                val content = if (isOnline.value && geminiContentRepository != null) {
+                    geminiContentRepository.getWeeklyContent(week)
+                } else {
+                    cit.edu.primera.feature.dashboard.domain.BabyDevelopmentData.getInfoForWeek(week)
+                }
+                _weeklyContent.value = content
+            }
+        }
+    }
+
+    private fun createDefaultUiModel(weeklyContent: cit.edu.primera.feature.dashboard.domain.WeeklyInfo?): DashboardUiModel {
+        val info = weeklyContent ?: cit.edu.primera.feature.dashboard.domain.BabyDevelopmentData.getInfoForWeek(1)
         return DashboardUiModel(
             userName = "Guest",
             timeOfDay = DashboardBusinessLogic.getTimeOfDay(),
@@ -90,15 +110,20 @@ class DashboardViewModel(
             inaccuracyWarning = null,
             recentLogs = emptyList(),
             weekDays = getCurrentWeekDays(),
-            milestones = DashboardBusinessLogic.getWeeklyMilestones(1),
-            symptoms = DashboardBusinessLogic.getWeeklySymptoms(1),
-            articles = DashboardBusinessLogic.getWeeklyArticles(1)
+            milestones = info.milestones,
+            symptoms = info.symptoms,
+            articles = info.articles
         )
     }
 
-    private fun mapToUiModel(data: DashboardData, healthRecords: List<cit.edu.primera.feature.smartwatchconnection.domain.SmartwatchHealth>): DashboardUiModel {
-        val week = DashboardBusinessLogic.getWeekNumber(data.dueDate)
+    private fun mapToUiModel(
+        data: DashboardData,
+        healthRecords: List<cit.edu.primera.feature.smartwatchconnection.domain.SmartwatchHealth>,
+        weeklyContent: cit.edu.primera.feature.dashboard.domain.WeeklyInfo?,
+        week: Int
+    ): DashboardUiModel {
         val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
+        val info = weeklyContent ?: cit.edu.primera.feature.dashboard.domain.BabyDevelopmentData.getInfoForWeek(week)
         
         // Watch sync is active if the user has performed at least one sync session
         val isWatchSynced = preferenceRepository.isWatchSyncEnabled(userId)
@@ -162,9 +187,9 @@ class DashboardViewModel(
                     )
                 },
             weekDays = getCurrentWeekDays(),
-            milestones = DashboardBusinessLogic.getWeeklyMilestones(week),
-            symptoms = DashboardBusinessLogic.getWeeklySymptoms(week),
-            articles = DashboardBusinessLogic.getWeeklyArticles(week)
+            milestones = info.milestones,
+            symptoms = info.symptoms,
+            articles = info.articles
         )
     }
 

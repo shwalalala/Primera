@@ -39,6 +39,8 @@ import cit.edu.primera.feature.auth.ui.AuthViewModel
 import cit.edu.primera.feature.auth.ui.ForgotPasswordScreen
 import cit.edu.primera.feature.auth.ui.LoginScreen
 import cit.edu.primera.feature.auth.ui.RegisterScreen
+import cit.edu.primera.feature.auth.ui.rememberFacebookLoginLauncher
+import cit.edu.primera.feature.auth.ui.rememberGoogleLoginLauncher
 import cit.edu.primera.feature.checkins.ui.CheckinPreviewScreen
 import cit.edu.primera.feature.checkins.ui.CheckinsOverviewScreen
 import cit.edu.primera.feature.checkins.ui.CheckinsViewModel
@@ -183,10 +185,7 @@ fun AppNavGraph(
 
                 AuthScreenHost(
                     state = state,
-                    authViewModel = authViewModel,
-                    onTermsClicked = {
-                        navController.navigate(Routes.FORGOT_PW)
-                    }
+                    authViewModel = authViewModel
                 )
             }
 
@@ -408,29 +407,49 @@ fun PlaceholderScreen(name: String) {
 @Composable
 fun AuthScreenHost(
     state: AuthUiState,
-    authViewModel: AuthViewModel,
-    onTermsClicked: () -> Unit
+    authViewModel: AuthViewModel
 ) {
-    when (state.activeTab) {
-        AuthTab.LOGIN -> LoginScreen(
-            state = state,
-            onEmailChange = authViewModel::onEmailChange,
-            onPasswordChange = authViewModel::onPasswordChange,
-            onRememberMeToggle = authViewModel::onRememberMeToggle,
-            onForgotPasswordClicked = authViewModel::onForgotPasswordClicked,
-            onLoginClicked = authViewModel::onLoginClicked,
-            onTabSelected = authViewModel::onTabSelected
-        )
+    val launchFacebookLogin = rememberFacebookLoginLauncher(
+        onAuthComplete = authViewModel::onFacebookLoginSuccess,
+        onAuthError = authViewModel::onFacebookLoginError
+    )
+    val launchGoogleLogin = rememberGoogleLoginLauncher(
+        onAuthComplete = authViewModel::onGoogleLoginSuccess,
+        onAuthError = authViewModel::onGoogleLoginError
+    )
 
-        AuthTab.SIGNUP -> RegisterScreen(
-            state = state,
-            onUsernameChange = authViewModel::onUsernameChange,
-            onEmailChange = authViewModel::onEmailChange,
-            onPasswordChange = authViewModel::onPasswordChange,
-            onAgreedToTermsToggle = authViewModel::onAgreedToTermsToggle,
-            onTermsClicked = onTermsClicked,
-            onSignUpClicked = authViewModel::onSignUpClicked,
-            onTabSelected = authViewModel::onTabSelected
-        )
+    when (state.activeTab) {
+        AuthTab.LOGIN -> {
+            LoginScreen(
+                state = state,
+                onEmailChange = authViewModel::onEmailChange,
+                onPasswordChange = authViewModel::onPasswordChange,
+                onRememberMeToggle = authViewModel::onRememberMeToggle,
+                onForgotPasswordClicked = authViewModel::onForgotPasswordClicked,
+                onLoginClicked = authViewModel::onLoginClicked,
+                onTabSelected = authViewModel::onTabSelected,
+                onSocialLoginClicked = authViewModel::onSocialLoginClicked,
+                onFacebookLoginClicked = { launchFacebookLogin() },
+                onGoogleLoginClicked = { launchGoogleLogin() }
+            )
+        }
+
+        AuthTab.SIGNUP -> {
+            RegisterScreen(
+                state = state,
+                onUsernameChange = authViewModel::onUsernameChange,
+                onEmailChange = authViewModel::onEmailChange,
+                onPasswordChange = authViewModel::onPasswordChange,
+                onConfirmPasswordChange = authViewModel::onConfirmPasswordChange,
+                onAgreedToTermsToggle = authViewModel::onAgreedToTermsToggle,
+                onTermsClicked = authViewModel::onTermsClicked,
+                onDismissTermsDialog = authViewModel::onDismissTermsDialog,
+                onSignUpClicked = authViewModel::onSignUpClicked,
+                onTabSelected = authViewModel::onTabSelected,
+                onSocialLoginClicked = authViewModel::onSocialLoginClicked,
+                onFacebookLoginClicked = { launchFacebookLogin() },
+                onGoogleLoginClicked = { launchGoogleLogin() }
+            )
+        }
     }
 }

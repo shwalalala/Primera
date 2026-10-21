@@ -24,7 +24,18 @@ class AuthViewModel(
     }
 
     fun onTabSelected(tab: AuthTab) {
-        _state.update { it.copy(activeTab = tab, errorMessage = null, resetEmailSent = false) }
+        _state.update {
+            it.copy(
+                activeTab = tab,
+                errorMessage = null,
+                resetEmailSent = false,
+                usernameError = null,
+                emailError = null,
+                passwordError = null,
+                confirmPasswordError = null,
+                termsError = null
+            )
+        }
     }
 
     fun onUsernameChange(value: String) {
@@ -36,7 +47,30 @@ class AuthViewModel(
     }
 
     fun onPasswordChange(value: String) {
-        _state.update { it.copy(password = value, passwordError = null) }
+        val strength = calculatePasswordStrength(value)
+        _state.update {
+            val confirmErr = if (it.confirmPassword.isNotBlank() && it.confirmPassword != value) {
+                "Passwords do not match"
+            } else null
+            it.copy(
+                password = value,
+                passwordStrength = strength,
+                passwordError = null,
+                confirmPasswordError = confirmErr
+            )
+        }
+    }
+
+    fun onConfirmPasswordChange(value: String) {
+        _state.update {
+            val confirmErr = if (value.isNotBlank() && value != it.password) {
+                "Passwords do not match"
+            } else null
+            it.copy(
+                confirmPassword = value,
+                confirmPasswordError = confirmErr
+            )
+        }
     }
 
     fun onRememberMeToggle(checked: Boolean) {
@@ -47,13 +81,22 @@ class AuthViewModel(
         _state.update { it.copy(agreedToTerms = checked, termsError = null) }
     }
 
+    fun onTermsClicked() {
+        _state.update { it.copy(showTermsDialog = true) }
+    }
+
+    fun onDismissTermsDialog() {
+        _state.update { it.copy(showTermsDialog = false) }
+    }
+
     fun onLoginClicked() {
         val currentState = _state.value
+        val trimmedEmail = currentState.email.trim()
         if (!validateLoginForm()) return
         
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
-            val result = authRepository.login(currentState.email, currentState.password)
+            val result = authRepository.login(trimmedEmail, currentState.password)
             
             result.fold(
                 onSuccess = {
@@ -63,7 +106,8 @@ class AuthViewModel(
                         isAuthenticated = true,
                         username = "",
                         email = "",
-                        password = ""
+                        password = "",
+                        confirmPassword = ""
                     ) }
                     if (preferenceRepository.shouldShowOnboarding(userId)) {
                         _effect.send(AuthEffect.NavigateToOnboarding)
@@ -78,13 +122,15 @@ class AuthViewModel(
 
     fun onSignUpClicked() {
         val currentState = _state.value
+        val trimmedUsername = currentState.username.trim()
+        val trimmedEmail = currentState.email.trim()
         if (!validateRegisterForm()) return
 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
             val result = authRepository.signUp(
-                currentState.username,
-                currentState.email,
+                trimmedUsername,
+                trimmedEmail,
                 currentState.password
             )
 
@@ -95,7 +141,8 @@ class AuthViewModel(
                         isAuthenticated = true,
                         username = "",
                         email = "",
-                        password = ""
+                        password = "",
+                        confirmPassword = ""
                     ) }
                     _effect.send(AuthEffect.NavigateToOnboarding)
                 },
@@ -105,39 +152,126 @@ class AuthViewModel(
     }
 
     fun onForgotPasswordClicked() {
-        _state.update { it.copy(errorMessage = null, resetEmailSent = false) }
+        _state.update { it.copy(errorMessage = null, resetEmailSent = false, emailError = null) }
         viewModelScope.launch {
             _effect.send(AuthEffect.NavigateToForgotPassword)
         }
     }
 
     fun onResetPasswordClicked() {
-        val email = _state.value.email
+        val email = _state.value.email.trim()
         if (email.isBlank()) {
             _state.update { it.copy(emailError = "Email is required to reset password") }
+            return
+        }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            _state.update { it.copy(emailError = "Invalid email format") }
             return
         }
 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null, resetEmailSent = false) }
             val result = authRepository.sendPasswordResetEmail(email)
+            // Always set resetEmailSent = true to prevent user enumeration attacks.
             result.fold(
                 onSuccess = {
                     _state.update { it.copy(isLoading = false, resetEmailSent = true) }
                 },
-                onFailure = { _state.update { it.copy(isLoading = false, errorMessage = "Failed to send reset email. Please verify your email address.") } }
+                onFailure = {
+                    _state.update { it.copy(isLoading = false, resetEmailSent = true) }
+                }
             )
         }
+    }
+
+    fun onSocialLoginClicked(provider: String) {
+        _state.update { it.copy(errorMessage = "$provider login is coming soon") }
+    }
+
+    fun onFacebookLoginSuccess(accessToken: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, errorMessage = null) }
+            val result = authRepository.loginWithFacebook(accessToken)
+            
+            result.fold(
+                onSuccess = {
+                    val userId = authRepository.getCurrentUserId() ?: ""
+                    _state.update { it.copy(
+                        isLoading = false,
+                        isAuthenticated = true
+                    ) }
+                    if (preferenceRepository.shouldShowOnboarding(userId)) {
+                        _effect.send(AuthEffect.NavigateToOnboarding)
+                    } else {
+                        _effect.send(AuthEffect.NavigateToDashboard)
+                    }
+                },
+                onFailure = { 
+                    _state.update { it.copy(isLoading = false, errorMessage = "Facebook login failed. Please try again.") } 
+                }
+            )
+        }
+    }
+    
+    fun onFacebookLoginError(error: Exception) {
+        android.util.Log.e("AuthViewModel", "Facebook login error", error)
+        val msg = error.message ?: ""
+        val displayError = if (msg.contains("canceled", ignoreCase = true) || msg.contains("cancelled", ignoreCase = true)) {
+            "Facebook login was cancelled."
+        } else {
+            "Facebook login failed. Please verify Facebook App setup."
+        }
+        _state.update { it.copy(isLoading = false, errorMessage = displayError) }
+    }
+
+    fun onGoogleLoginSuccess(idToken: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, errorMessage = null) }
+            val result = authRepository.loginWithGoogle(idToken)
+
+            result.fold(
+                onSuccess = {
+                    val userId = authRepository.getCurrentUserId() ?: ""
+                    _state.update { it.copy(
+                        isLoading = false,
+                        isAuthenticated = true
+                    ) }
+                    if (preferenceRepository.shouldShowOnboarding(userId)) {
+                        _effect.send(AuthEffect.NavigateToOnboarding)
+                    } else {
+                        _effect.send(AuthEffect.NavigateToDashboard)
+                    }
+                },
+                onFailure = {
+                    _state.update { it.copy(isLoading = false, errorMessage = "Google login failed. Please try again.") }
+                }
+            )
+        }
+    }
+
+    fun onGoogleLoginError(error: Exception) {
+        android.util.Log.e("AuthViewModel", "Google login error", error)
+        val msg = error.message ?: ""
+        val displayError = if (msg.contains("SHA-1", ignoreCase = true) || msg.contains("Web Client ID", ignoreCase = true)) {
+            "Google login requires SHA-1 fingerprint configuration in Firebase Console."
+        } else if (msg.contains("canceled", ignoreCase = true) || msg.contains("cancelled", ignoreCase = true)) {
+            "Google login was cancelled."
+        } else {
+            "Google login was cancelled or failed. Please try again."
+        }
+        _state.update { it.copy(isLoading = false, errorMessage = displayError) }
     }
 
     fun logout() {
         viewModelScope.launch {
             authRepository.logout()
+            preferenceRepository.clearLocalData()
             _state.update { it.copy(
                 isAuthenticated = false,
                 username = "",
                 email = "",
-                password = ""
+                password = "",
+                confirmPassword = ""
             ) }
             _effect.send(AuthEffect.NavigateToLogin)
         }
@@ -157,15 +291,36 @@ class AuthViewModel(
         }
     }
 
+    private fun calculatePasswordStrength(password: String): PasswordStrength {
+        if (password.isEmpty()) return PasswordStrength.NONE
+        if (password.length < 6) return PasswordStrength.WEAK
+
+        var score = 0
+        if (password.length >= 8) score++
+        if (password.any { it.isUpperCase() } && password.any { it.isLowerCase() }) score++
+        if (password.any { it.isDigit() }) score++
+        if (password.any { !it.isLetterOrDigit() }) score++
+
+        return when {
+            score >= 3 && password.length >= 8 -> PasswordStrength.STRONG
+            score >= 2 -> PasswordStrength.FAIR
+            else -> PasswordStrength.WEAK
+        }
+    }
+
     private fun validateLoginForm(): Boolean {
-        val email = _state.value.email
+        val email = _state.value.email.trim()
         val password = _state.value.password
         var isValid = true
 
         if (email.isBlank()) {
             _state.update { it.copy(emailError = "Email is required") }
             isValid = false
+        } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            _state.update { it.copy(emailError = "Invalid email format") }
+            isValid = false
         }
+        
         if (password.isBlank()) {
             _state.update { it.copy(passwordError = "Password is required") }
             isValid = false
@@ -174,9 +329,10 @@ class AuthViewModel(
     }
 
     private fun validateRegisterForm(): Boolean {
-        val username = _state.value.username
-        val email = _state.value.email
+        val username = _state.value.username.trim()
+        val email = _state.value.email.trim()
         val password = _state.value.password
+        val confirmPassword = _state.value.confirmPassword
         val agreed = _state.value.agreedToTerms
         var isValid = true
 
@@ -187,11 +343,33 @@ class AuthViewModel(
         if (email.isBlank()) {
             _state.update { it.copy(emailError = "Email is required") }
             isValid = false
-        }
-        if (password.length < 6) {
-            _state.update { it.copy(passwordError = "Password must be at least 6 characters") }
+        } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            _state.update { it.copy(emailError = "Invalid email format") }
             isValid = false
         }
+        
+        if (password.isBlank()) {
+            _state.update { it.copy(passwordError = "Password is required") }
+            isValid = false
+        } else if (password.length < 8) {
+            _state.update { it.copy(passwordError = "Password must be at least 8 characters") }
+            isValid = false
+        } else if (!password.any { it.isDigit() || !it.isLetterOrDigit() } || !password.any { it.isLetter() }) {
+            _state.update { it.copy(passwordError = "Password must contain letters and numbers/symbols") }
+            isValid = false
+        } else if (calculatePasswordStrength(password) == PasswordStrength.WEAK) {
+            _state.update { it.copy(passwordError = "Password is too weak. Please include uppercase, lowercase, numbers or symbols.") }
+            isValid = false
+        }
+
+        if (confirmPassword.isBlank()) {
+            _state.update { it.copy(confirmPasswordError = "Please confirm your password") }
+            isValid = false
+        } else if (confirmPassword != password) {
+            _state.update { it.copy(confirmPasswordError = "Passwords do not match") }
+            isValid = false
+        }
+        
         if (!agreed) {
             _state.update { it.copy(termsError = "You must agree to terms") }
             isValid = false

@@ -160,7 +160,7 @@ fun ProfileContent(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = if (state.isEditing) "Save Changes" else "Edit Profile",
+                    text = if (state.isEditing) "Save Changes" else "Edit Personal Information",
                     color = PrimeraLogoStart,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
