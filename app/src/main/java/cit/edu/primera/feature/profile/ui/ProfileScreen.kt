@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cit.edu.primera.core.di.ViewModelProvider
@@ -40,6 +42,23 @@ fun ProfileScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
+    ProfileScreenContent(
+        state = state,
+        onBack = onBack,
+        onNavigateToSettings = onNavigateToSettings,
+        onClearMessages = viewModel::clearMessages,
+        viewModel = viewModel
+    )
+}
+
+@Composable
+fun ProfileScreenContent(
+    state: ProfileUiState,
+    onBack: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    onClearMessages: () -> Unit,
+    viewModel: ProfileViewModel
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -102,10 +121,9 @@ fun ProfileScreen(
         }
     }
     
-    // Success message handling
     state.successMessage?.let { msg ->
         LaunchedEffect(msg) {
-            viewModel.clearMessages()
+            onClearMessages()
         }
     }
 }
@@ -698,5 +716,55 @@ fun ProfileField(
                 }
             }
         }
+    }
+}
+
+private val previewProfileViewModel by lazy {
+    ProfileViewModel(
+        dashboardRepository = object : cit.edu.primera.feature.dashboard.data.DashboardRepository {
+            override fun observeDashboardData() = kotlinx.coroutines.flow.flowOf(null)
+            override suspend fun updateStepsGoal(goal: Long) = Result.success(Unit)
+            override suspend fun updateHealthData(steps: Long, heartRate: Long, sleepHours: Long, sleepMinutes: Long, spO2: Long?) = Result.success(Unit)
+            override suspend fun saveHistoricalRecord(record: cit.edu.primera.feature.smartwatchconnection.domain.SmartwatchHealth) = Result.success(Unit)
+            override fun observeHealthRecords(): kotlinx.coroutines.flow.Flow<List<cit.edu.primera.feature.smartwatchconnection.domain.SmartwatchHealth>> = kotlinx.coroutines.flow.flowOf(emptyList())
+        },
+        checkinsRepository = object : cit.edu.primera.feature.checkins.data.CheckinsRepository {
+            override fun observeLogs(): kotlinx.coroutines.flow.Flow<List<cit.edu.primera.feature.checkins.data.CheckinLogDto>> = kotlinx.coroutines.flow.flowOf(emptyList())
+            override fun observeUserWeight(): kotlinx.coroutines.flow.Flow<cit.edu.primera.feature.checkins.data.CheckinUserDto?> = kotlinx.coroutines.flow.flowOf(null)
+            override suspend fun saveLog(log: cit.edu.primera.feature.checkins.data.CheckinLogDto) = Result.success(Unit)
+            override suspend fun updateUserWeight(weightKg: Int) = Result.success(Unit)
+            override fun getCustomOptions(category: String) = emptySet<String>()
+            override fun addCustomOption(category: String, label: String) {}
+        },
+        onboardingRepository = object : cit.edu.primera.feature.onboarding.data.OnboardingRepository {
+            override suspend fun saveProfile(profile: cit.edu.primera.feature.onboarding.domain.OnboardingProfile) = Result.success(Unit)
+        }
+    )
+}
+
+@Preview(name = "Compact Phone", device = Devices.PHONE)
+@Preview(name = "Small Phone", widthDp = 360, heightDp = 640)
+@Preview(name = "Large Phone", widthDp = 480, heightDp = 960)
+@Composable
+private fun ProfileScreenPreview() {
+    PrimeraTheme {
+        ProfileScreenContent(
+            state = ProfileUiState(
+                email = "sarah.miller@example.com",
+                birthday = java.util.Date(),
+                weightKg = 65,
+                heightCm = 168,
+                isFirstPregnancy = false,
+                emergencyContact = cit.edu.primera.feature.profile.domain.EmergencyContact(
+                    name = "John Miller",
+                    relationship = "Spouse",
+                    primaryPhone = "09171234567"
+                )
+            ),
+            onBack = {},
+            onNavigateToSettings = {},
+            onClearMessages = {},
+            viewModel = previewProfileViewModel
+        )
     }
 }

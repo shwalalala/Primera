@@ -39,7 +39,6 @@ import cit.edu.primera.ui.components.*
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingHostScreen(
     onOnboardingComplete: () -> Unit,
@@ -74,54 +73,149 @@ fun OnboardingHostScreen(
         )
     }
 
-    Scaffold(
-        topBar = {
-            if (state.currentStep != OnboardingStep.PREPARING) {
-                OnboardingTopBar(
-                    onBackClick = { 
-                        if (state.currentStep == OnboardingStep.BIRTHDAY) {
-                            onBack()
-                        } else {
-                            viewModel.previousStep()
-                        }
-                    },
-                    currentStep = state.currentStep.ordinal + 1,
-                    totalSteps = OnboardingStep.entries.size - 1
-                )
+    OnboardingScaffoldLayout(
+        state = state,
+        onBack = {
+            if (state.currentStep == OnboardingStep.BIRTHDAY) {
+                onBack()
+            } else {
+                viewModel.previousStep()
             }
         },
-        containerColor = Color.Transparent
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            BackgroundCream,
-                            PrimeraLilac.copy(alpha = 0.45f)
-                        )
+        stepContent = { step ->
+            when (step) {
+                OnboardingStep.BIRTHDAY -> BirthdayStep(
+                    birthday = state.birthday,
+                    onBirthdayChange = { viewModel.onBirthdayChange(it) },
+                    onContinue = { viewModel.nextStep() }
+                )
+                OnboardingStep.WEIGHT -> WeightStep(
+                    weightKg = state.weightKg,
+                    onWeightChange = { viewModel.onWeightChange(it) },
+                    onContinue = { viewModel.nextStep() }
+                )
+                OnboardingStep.HEIGHT -> HeightStep(
+                    heightCm = state.heightCm,
+                    onHeightChange = { viewModel.onHeightChange(it) },
+                    onContinue = { viewModel.nextStep() }
+                )
+                OnboardingStep.CYCLE_REGULARITY -> CycleRegularityStep(
+                    isCycleRegular = state.isCycleRegular,
+                    onIsCycleRegularChange = { viewModel.onIsCycleRegularChange(it) },
+                    onContinue = { viewModel.nextStep() }
+                )
+                OnboardingStep.CYCLE_VARIANCE -> CycleVarianceStep(
+                    shortestCycleDays = state.shortestCycleDays,
+                    longestCycleDays = state.longestCycleDays,
+                    onShortestCycleChange = { viewModel.onShortestCycleChange(it) },
+                    onLongestCycleChange = { viewModel.onLongestCycleChange(it) },
+                    onContinue = { viewModel.nextStep() }
+                )
+                OnboardingStep.HAD_ULTRASOUND -> HadUltrasoundStep(
+                    hasHadUltrasound = state.hasHadUltrasound,
+                    onHasHadUltrasoundChange = { viewModel.onHasHadUltrasoundChange(it) },
+                    onContinue = {
+                        if (state.hasHadUltrasound == true) viewModel.goToUltrasound()
+                        else viewModel.nextStep()
+                    }
+                )
+                OnboardingStep.LMP -> LmpStep(
+                    lmpDate = state.lmpDate,
+                    onLmpDateChange = { viewModel.onLmpDateChange(it) },
+                    onGoToUltrasound = { viewModel.goToUltrasound() },
+                    onContinue = { viewModel.nextStep() }
+                )
+                OnboardingStep.ULTRASOUND -> UltrasoundStep(
+                    scanDate = state.scanDate,
+                    isRevisedEdd = state.isRevisedEdd,
+                    scanWeeks = state.scanWeeks,
+                    scanDays = state.scanDays,
+                    eddDate = state.eddDate,
+                    onScanDateChange = { viewModel.onScanDateChange(it) },
+                    onIsRevisedEddChange = { viewModel.onIsRevisedEddChange(it) },
+                    onScanWeeksChange = { viewModel.onScanWeeksChange(it) },
+                    onScanDaysChange = { viewModel.onScanDaysChange(it) },
+                    onEddDateChange = { viewModel.onEddDateChange(it) },
+                    onContinue = { viewModel.nextStep() }
+                )
+                OnboardingStep.EDD -> EddStep(
+                    isTentative = state.isCycleRegular == false && state.hasHadUltrasound == false,
+                    positiveTestDate = state.positiveTestDate,
+                    eddDate = state.eddDate,
+                    onPositiveTestDateChange = { viewModel.onPositiveTestDateChange(it) },
+                    onEddDateChange = { viewModel.onEddDateChange(it) },
+                    onContinue = { viewModel.nextStep() }
+                )
+                OnboardingStep.FIRST_PREGNANCY -> FirstPregnancyStep(
+                    isFirstPregnancy = state.isFirstPregnancy,
+                    onIsFirstPregnancyChange = { viewModel.onIsFirstPregnancyChange(it) },
+                    onContinue = { viewModel.nextStep() }
+                )
+                OnboardingStep.PREGNANCY_HISTORY -> PregnancyHistoryStep(
+                    state = state,
+                    onSelectPregnancy = { viewModel.onSelectPregnancy(it) },
+                    onRemovePregnancy = { viewModel.removePregnancy(it) },
+                    onAddPregnancy = { viewModel.addPregnancy() },
+                    onDeliveryDateChange = { viewModel.onHistoryDeliveryDateChange(it) },
+                    onDeliveryTypeChange = { viewModel.onDeliveryTypeChange(it) },
+                    onChildrenDeliveredChange = { viewModel.onChildrenDeliveredChange(it) },
+                    onAreChildrenLivingChange = { viewModel.onAreChildrenLivingChange(it) },
+                    onToggleStructuredComplication = { viewModel.toggleStructuredComplication(it) },
+                    onToggleComplication = { viewModel.toggleComplication(it) },
+                    onAdditionalComplicationsChange = { viewModel.onAdditionalComplicationsChange(it) },
+                    onContinue = { viewModel.nextStep() }
+                )
+                OnboardingStep.REVIEW_SUMMARY -> ReviewSummaryStep(
+                    state = state,
+                    onSubmit = { viewModel.submitOnboarding() }
+                )
+                OnboardingStep.PREPARING -> PreparingStep(
+                    progress = state.preparationProgress
+                )
+            }
+        }
+    )
+}
+
+@Composable
+fun OnboardingScaffoldLayout(
+    state: OnboardingState,
+    onBack: () -> Unit,
+    stepContent: @Composable (OnboardingStep) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        BackgroundCream,
+                        PrimeraLilac.copy(alpha = 0.45f)
                     )
                 )
-                .padding(innerPadding),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Crossfade(targetState = state.currentStep, label = "OnboardingStep") { step ->
-                when (step) {
-                    OnboardingStep.BIRTHDAY -> BirthdayStep(state, viewModel)
-                    OnboardingStep.WEIGHT -> WeightStep(state, viewModel)
-                    OnboardingStep.HEIGHT -> HeightStep(state, viewModel)
-                    OnboardingStep.CYCLE_REGULARITY -> CycleRegularityStep(state, viewModel)
-                    OnboardingStep.CYCLE_VARIANCE -> CycleVarianceStep(state, viewModel)
-                    OnboardingStep.HAD_ULTRASOUND -> HadUltrasoundStep(state, viewModel)
-                    OnboardingStep.LMP -> LmpStep(state, viewModel)
-                    OnboardingStep.ULTRASOUND -> UltrasoundStep(state, viewModel)
-                    OnboardingStep.EDD -> EddStep(state, viewModel)
-                    OnboardingStep.FIRST_PREGNANCY -> FirstPregnancyStep(state, viewModel)
-                    OnboardingStep.PREGNANCY_HISTORY -> PregnancyHistoryStep(state, viewModel)
-                    OnboardingStep.REVIEW_SUMMARY -> ReviewSummaryStep(state, viewModel)
-                    OnboardingStep.PREPARING -> PreparingStep(state)
+            )
+    ) {
+        Scaffold(
+            topBar = {
+                if (state.currentStep != OnboardingStep.PREPARING) {
+                    OnboardingTopBar(
+                        onBackClick = onBack,
+                        currentStep = state.currentStep.ordinal + 1,
+                        totalSteps = OnboardingStep.entries.size
+                    )
+                }
+            },
+            containerColor = Color.Transparent
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Crossfade(targetState = state.currentStep, label = "OnboardingStep") { step ->
+                    stepContent(step)
                 }
             }
         }
@@ -189,29 +283,36 @@ fun OnboardingLayout(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp)
-            .verticalScroll(rememberScrollState()),
+            .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(40.dp))
-        PrimeraTitle(
-            text = title,
-            textAlign = TextAlign.Center,
-        )
-        if (subtitle != null) {
-            Spacer(Modifier.height(12.dp))
-            PrimeraLabel(
-                text = subtitle,
-                textAlign = TextAlign.Center
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(Modifier.height(40.dp))
+            PrimeraTitle(
+                text = title,
+                textAlign = TextAlign.Center,
             )
+            if (subtitle != null) {
+                Spacer(Modifier.height(12.dp))
+                PrimeraLabel(
+                    text = subtitle,
+                    textAlign = TextAlign.Center
+                )
+            }
+            Spacer(Modifier.height(48.dp))
+            content()
+            Spacer(Modifier.height(24.dp))
         }
-        Spacer(Modifier.height(48.dp))
-        content()
-        Spacer(Modifier.weight(1f))
-        Spacer(Modifier.height(32.dp))
+
         PrimeraGradientButton(
             text = "Continue",
             enabled = isContinueEnabled,
@@ -225,24 +326,28 @@ fun OnboardingLayout(
 }
 
 @Composable
-fun BirthdayStep(state: OnboardingState, viewModel: OnboardingViewModel) {
+fun BirthdayStep(
+    birthday: Date?,
+    onBirthdayChange: (Date) -> Unit,
+    onContinue: () -> Unit
+) {
     OnboardingLayout(
         title = "Tell Us Your Birthday",
-        onContinue = { viewModel.nextStep() },
-        isContinueEnabled = state.birthday != null
+        onContinue = onContinue,
+        isContinueEnabled = birthday != null
     ) {
         val calendar = Calendar.getInstance()
         val minYear = calendar.get(Calendar.YEAR) - 100
         val maxYear = calendar.get(Calendar.YEAR) - 13
-        
+
         Row(verticalAlignment = Alignment.CenterVertically) {
             PrimeraLabel("Select Date")
             Text(" *", color = ErrorRed, style = MaterialTheme.typography.labelSmall)
         }
-        
+
         PrimeraDatePicker(
-            selectedDate = state.birthday,
-            onDateSelected = { viewModel.onBirthdayChange(it) },
+            selectedDate = birthday,
+            onDateSelected = onBirthdayChange,
             yearRange = minYear..maxYear,
             modifier = Modifier.fillMaxWidth()
         )
@@ -250,18 +355,22 @@ fun BirthdayStep(state: OnboardingState, viewModel: OnboardingViewModel) {
 }
 
 @Composable
-fun WeightStep(state: OnboardingState, viewModel: OnboardingViewModel) {
+fun WeightStep(
+    weightKg: Int,
+    onWeightChange: (Int) -> Unit,
+    onContinue: () -> Unit
+) {
     OnboardingLayout(
         title = "Pre-pregnancy Weight",
-        onContinue = { viewModel.nextStep() },
-        isContinueEnabled = state.weightKg in 30..250 // Added reasonable range validation
+        onContinue = onContinue,
+        isContinueEnabled = weightKg in 30..250
     ) {
         LabeledField(
             label = "Weight before pregnancy (kg) *",
-            value = if (state.weightKg == 0) "" else state.weightKg.toString(),
-            onValueChange = { value -> 
+            value = if (weightKg == 0) "" else weightKg.toString(),
+            onValueChange = { value ->
                 val weight = value.filter { it.isDigit() }.toIntOrNull() ?: 0
-                viewModel.onWeightChange(weight) 
+                onWeightChange(weight)
             },
             placeholder = "Enter weight in kg",
             keyboardType = KeyboardType.Number
@@ -270,18 +379,22 @@ fun WeightStep(state: OnboardingState, viewModel: OnboardingViewModel) {
 }
 
 @Composable
-fun HeightStep(state: OnboardingState, viewModel: OnboardingViewModel) {
+fun HeightStep(
+    heightCm: Int,
+    onHeightChange: (Int) -> Unit,
+    onContinue: () -> Unit
+) {
     OnboardingLayout(
         title = "Your Height",
-        onContinue = { viewModel.nextStep() },
-        isContinueEnabled = state.heightCm in 50..250 // Added reasonable range validation
+        onContinue = onContinue,
+        isContinueEnabled = heightCm in 50..250
     ) {
         LabeledField(
             label = "Height (cm) *",
-            value = if (state.heightCm == 0) "" else state.heightCm.toString(),
-            onValueChange = { value -> 
+            value = if (heightCm == 0) "" else heightCm.toString(),
+            onValueChange = { value ->
                 val height = value.filter { it.isDigit() }.toIntOrNull() ?: 0
-                viewModel.onHeightChange(height)
+                onHeightChange(height)
             },
             placeholder = "Enter height in cm",
             keyboardType = KeyboardType.Number
@@ -290,7 +403,11 @@ fun HeightStep(state: OnboardingState, viewModel: OnboardingViewModel) {
 }
 
 @Composable
-fun CycleRegularityStep(state: OnboardingState, viewModel: OnboardingViewModel) {
+fun CycleRegularityStep(
+    isCycleRegular: Boolean?,
+    onIsCycleRegularChange: (Boolean) -> Unit,
+    onContinue: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -313,37 +430,43 @@ fun CycleRegularityStep(state: OnboardingState, viewModel: OnboardingViewModel) 
 
         PrimeraOptionButton(
             text = "Regular",
-            isSelected = state.isCycleRegular == true,
-            onClick = { viewModel.onIsCycleRegularChange(true) }
+            isSelected = isCycleRegular == true,
+            onClick = { onIsCycleRegularChange(true) }
         )
         Spacer(Modifier.height(16.dp))
         PrimeraOptionButton(
             text = "Irregular",
-            isSelected = state.isCycleRegular == false,
-            onClick = { viewModel.onIsCycleRegularChange(false) }
+            isSelected = isCycleRegular == false,
+            onClick = { onIsCycleRegularChange(false) }
         )
 
         Spacer(Modifier.height(48.dp))
-        if (state.isCycleRegular != null) {
-            PrimeraGradientButton(text = "Continue", onClick = { viewModel.nextStep() })
+        if (isCycleRegular != null) {
+            PrimeraGradientButton(text = "Continue", onClick = onContinue)
         }
     }
 }
 
 @Composable
-fun CycleVarianceStep(state: OnboardingState, viewModel: OnboardingViewModel) {
+fun CycleVarianceStep(
+    shortestCycleDays: Int,
+    longestCycleDays: Int,
+    onShortestCycleChange: (Int) -> Unit,
+    onLongestCycleChange: (Int) -> Unit,
+    onContinue: () -> Unit
+) {
     OnboardingLayout(
         title = "Your Cycle Variance",
         subtitle = "Tell us your shortest and longest cycle lengths over the past 3 to 6 months.",
-        onContinue = { viewModel.nextStep() },
-        isContinueEnabled = state.shortestCycleDays in 15..50 && state.longestCycleDays in 15..90
+        onContinue = onContinue,
+        isContinueEnabled = shortestCycleDays in 15..50 && longestCycleDays in 15..90
     ) {
         LabeledField(
             label = "Shortest Cycle (days) *",
-            value = if (state.shortestCycleDays == 0) "" else state.shortestCycleDays.toString(),
+            value = if (shortestCycleDays == 0) "" else shortestCycleDays.toString(),
             onValueChange = { value ->
                 val days = value.filter { it.isDigit() }.toIntOrNull() ?: 0
-                viewModel.onShortestCycleChange(days)
+                onShortestCycleChange(days)
             },
             placeholder = "e.g. 25",
             keyboardType = KeyboardType.Number
@@ -351,10 +474,10 @@ fun CycleVarianceStep(state: OnboardingState, viewModel: OnboardingViewModel) {
         Spacer(Modifier.height(24.dp))
         LabeledField(
             label = "Longest Cycle (days) *",
-            value = if (state.longestCycleDays == 0) "" else state.longestCycleDays.toString(),
+            value = if (longestCycleDays == 0) "" else longestCycleDays.toString(),
             onValueChange = { value ->
                 val days = value.filter { it.isDigit() }.toIntOrNull() ?: 0
-                viewModel.onLongestCycleChange(days)
+                onLongestCycleChange(days)
             },
             placeholder = "e.g. 35",
             keyboardType = KeyboardType.Number
@@ -363,7 +486,11 @@ fun CycleVarianceStep(state: OnboardingState, viewModel: OnboardingViewModel) {
 }
 
 @Composable
-fun HadUltrasoundStep(state: OnboardingState, viewModel: OnboardingViewModel) {
+fun HadUltrasoundStep(
+    hasHadUltrasound: Boolean?,
+    onHasHadUltrasoundChange: (Boolean) -> Unit,
+    onContinue: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -386,69 +513,85 @@ fun HadUltrasoundStep(state: OnboardingState, viewModel: OnboardingViewModel) {
 
         PrimeraOptionButton(
             text = "Yes, I've had one",
-            isSelected = state.hasHadUltrasound == true,
-            onClick = { viewModel.onHasHadUltrasoundChange(true) }
+            isSelected = hasHadUltrasound == true,
+            onClick = { onHasHadUltrasoundChange(true) }
         )
         Spacer(Modifier.height(16.dp))
         PrimeraOptionButton(
             text = "No, not yet",
-            isSelected = state.hasHadUltrasound == false,
-            onClick = { viewModel.onHasHadUltrasoundChange(false) }
+            isSelected = hasHadUltrasound == false,
+            onClick = { onHasHadUltrasoundChange(false) }
         )
 
         Spacer(Modifier.height(48.dp))
-        if (state.hasHadUltrasound != null) {
+        if (hasHadUltrasound != null) {
             PrimeraGradientButton(
                 text = "Continue",
-                onClick = { 
-                    if (state.hasHadUltrasound == true) viewModel.goToUltrasound()
-                    else viewModel.nextStep()
-                }
+                onClick = onContinue
             )
         }
     }
 }
 
 @Composable
-fun LmpStep(state: OnboardingState, viewModel: OnboardingViewModel) {
+fun LmpStep(
+    lmpDate: Date?,
+    onLmpDateChange: (Date) -> Unit,
+    onGoToUltrasound: () -> Unit,
+    onContinue: () -> Unit
+) {
     OnboardingLayout(
         title = "When was the First Day of your Last Period?",
-        onContinue = { viewModel.nextStep() },
-        isContinueEnabled = state.lmpDate != null
+        onContinue = onContinue,
+        isContinueEnabled = lmpDate != null
     ) {
         val calendar = Calendar.getInstance()
         val currentYear = calendar.get(Calendar.YEAR)
-        
+
         Row(verticalAlignment = Alignment.CenterVertically) {
             PrimeraLabel("Select Date")
             Text(" *", color = ErrorRed, style = MaterialTheme.typography.labelSmall)
         }
-        
+
         PrimeraDatePicker(
-            selectedDate = state.lmpDate,
-            onDateSelected = { viewModel.onLmpDateChange(it) },
+            selectedDate = lmpDate,
+            onDateSelected = onLmpDateChange,
             yearRange = (currentYear - 1)..currentYear,
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(Modifier.height(32.dp))
-        
+
         PrimeraOutlinedButton(
             text = "Already have your ultrasound?",
-            onClick = { viewModel.goToUltrasound() }
+            onClick = onGoToUltrasound
         )
     }
 }
 
 @Composable
-fun UltrasoundStep(state: OnboardingState, viewModel: OnboardingViewModel) {
+fun UltrasoundStep(
+    scanDate: Date?,
+    isRevisedEdd: Boolean,
+    scanWeeks: Int,
+    scanDays: Int,
+    eddDate: Date?,
+    onScanDateChange: (Date) -> Unit,
+    onIsRevisedEddChange: (Boolean) -> Unit,
+    onScanWeeksChange: (Int) -> Unit,
+    onScanDaysChange: (Int) -> Unit,
+    onEddDateChange: (Date) -> Unit,
+    onContinue: () -> Unit
+) {
+    val isContinueEnabled = if (scanDate != null) {
+        if (isRevisedEdd) eddDate != null
+        else (scanWeeks > 0 || scanDays > 0)
+    } else false
+
     OnboardingLayout(
         title = "Ultrasound Details",
-        onContinue = { viewModel.nextStep() },
-        isContinueEnabled = if (state.scanDate != null) {
-            if (state.isRevisedEdd) state.eddDate != null 
-            else (state.scanWeeks > 0 || state.scanDays > 0)
-        } else false
+        onContinue = onContinue,
+        isContinueEnabled = isContinueEnabled
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             PrimeraLabel("Date the ultrasound was performed")
@@ -456,14 +599,14 @@ fun UltrasoundStep(state: OnboardingState, viewModel: OnboardingViewModel) {
         }
         val currentYear = Calendar.getInstance().get(Calendar.YEAR)
         PrimeraDatePicker(
-            selectedDate = state.scanDate,
-            onDateSelected = { viewModel.onScanDateChange(it) },
+            selectedDate = scanDate,
+            onDateSelected = onScanDateChange,
             yearRange = (currentYear - 1)..currentYear,
             modifier = Modifier.fillMaxWidth()
         )
-        
+
         Spacer(Modifier.height(32.dp))
-        
+
         Text(
             text = "What information was provided? *",
             style = MaterialTheme.typography.headlineSmall,
@@ -471,15 +614,15 @@ fun UltrasoundStep(state: OnboardingState, viewModel: OnboardingViewModel) {
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(16.dp))
-        
+
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            PrimeraOptionChip("Gestational Age", !state.isRevisedEdd) { viewModel.onIsRevisedEddChange(false) }
-            PrimeraOptionChip("Revised Due Date", state.isRevisedEdd) { viewModel.onIsRevisedEddChange(true) }
+            PrimeraOptionChip("Gestational Age", !isRevisedEdd) { onIsRevisedEddChange(false) }
+            PrimeraOptionChip("Revised Due Date", isRevisedEdd) { onIsRevisedEddChange(true) }
         }
-        
+
         Spacer(Modifier.height(24.dp))
-        
-        if (!state.isRevisedEdd) {
+
+        if (!isRevisedEdd) {
             PrimeraLabel("Gestational Age at scan *")
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -487,16 +630,16 @@ fun UltrasoundStep(state: OnboardingState, viewModel: OnboardingViewModel) {
             ) {
                 LabeledField(
                     label = "Weeks",
-                    value = if (state.scanWeeks == 0) "" else state.scanWeeks.toString(),
-                    onValueChange = { viewModel.onScanWeeksChange(it.toIntOrNull() ?: 0) },
+                    value = if (scanWeeks == 0) "" else scanWeeks.toString(),
+                    onValueChange = { onScanWeeksChange(it.toIntOrNull() ?: 0) },
                     placeholder = "0",
                     modifier = Modifier.weight(1f),
                     keyboardType = KeyboardType.Number
                 )
                 LabeledField(
                     label = "Days",
-                    value = if (state.scanDays == 0) "" else state.scanDays.toString(),
-                    onValueChange = { viewModel.onScanDaysChange(it.toIntOrNull() ?: 0) },
+                    value = if (scanDays == 0) "" else scanDays.toString(),
+                    onValueChange = { onScanDaysChange(it.toIntOrNull() ?: 0) },
                     placeholder = "0",
                     modifier = Modifier.weight(1f),
                     keyboardType = KeyboardType.Number
@@ -505,8 +648,8 @@ fun UltrasoundStep(state: OnboardingState, viewModel: OnboardingViewModel) {
         } else {
             PrimeraLabel("Revised Due Date *")
             PrimeraDatePicker(
-                selectedDate = state.eddDate,
-                onDateSelected = { viewModel.onEddDateChange(it) },
+                selectedDate = eddDate,
+                onDateSelected = onEddDateChange,
                 yearRange = currentYear..(currentYear + 1),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -515,14 +658,19 @@ fun UltrasoundStep(state: OnboardingState, viewModel: OnboardingViewModel) {
 }
 
 @Composable
-fun EddStep(state: OnboardingState, viewModel: OnboardingViewModel) {
-    val isTentative = state.isCycleRegular == false && state.hasHadUltrasound == false
-    
+fun EddStep(
+    isTentative: Boolean,
+    positiveTestDate: Date?,
+    eddDate: Date?,
+    onPositiveTestDateChange: (Date) -> Unit,
+    onEddDateChange: (Date) -> Unit,
+    onContinue: () -> Unit
+) {
     OnboardingLayout(
         title = if (isTentative) "Tentative Due Date" else "When is your Expected Date of Delivery?",
         subtitle = if (isTentative) "Since you have irregular cycles and no scan yet, this is a placeholder estimate." else null,
-        onContinue = { viewModel.nextStep() },
-        isContinueEnabled = state.eddDate != null && (!isTentative || state.positiveTestDate != null)
+        onContinue = onContinue,
+        isContinueEnabled = eddDate != null && (!isTentative || positiveTestDate != null)
     ) {
         if (isTentative) {
             Card(
@@ -536,7 +684,7 @@ fun EddStep(state: OnboardingState, viewModel: OnboardingViewModel) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Close, // Using Close as a placeholder for Info/Warning
+                        imageVector = Icons.Default.Close,
                         contentDescription = null,
                         tint = PrimeraViolet,
                         modifier = Modifier.size(24.dp)
@@ -549,15 +697,15 @@ fun EddStep(state: OnboardingState, viewModel: OnboardingViewModel) {
                     )
                 }
             }
-            
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 PrimeraLabel("Date of positive pregnancy test")
                 Text(" *", color = ErrorRed, style = MaterialTheme.typography.labelSmall)
             }
             val calendar = Calendar.getInstance()
             PrimeraDatePicker(
-                selectedDate = state.positiveTestDate,
-                onDateSelected = { viewModel.onPositiveTestDateChange(it) },
+                selectedDate = positiveTestDate,
+                onDateSelected = onPositiveTestDateChange,
                 yearRange = (calendar.get(Calendar.YEAR) - 1)..calendar.get(Calendar.YEAR),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -569,10 +717,10 @@ fun EddStep(state: OnboardingState, viewModel: OnboardingViewModel) {
             Text(" *", color = ErrorRed, style = MaterialTheme.typography.labelSmall)
         }
         val currentYear = Calendar.getInstance().get(Calendar.YEAR)
-        
+
         PrimeraDatePicker(
-            selectedDate = state.eddDate,
-            onDateSelected = { viewModel.onEddDateChange(it) },
+            selectedDate = eddDate,
+            onDateSelected = onEddDateChange,
             yearRange = currentYear..(currentYear + 1),
             modifier = Modifier.fillMaxWidth()
         )
@@ -580,7 +728,11 @@ fun EddStep(state: OnboardingState, viewModel: OnboardingViewModel) {
 }
 
 @Composable
-fun FirstPregnancyStep(state: OnboardingState, viewModel: OnboardingViewModel) {
+fun FirstPregnancyStep(
+    isFirstPregnancy: Boolean?,
+    onIsFirstPregnancyChange: (Boolean) -> Unit,
+    onContinue: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -595,32 +747,45 @@ fun FirstPregnancyStep(state: OnboardingState, viewModel: OnboardingViewModel) {
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(48.dp))
-        
+
         PrimeraOptionButton(
             text = "Yes",
-            isSelected = state.isFirstPregnancy == true,
-            onClick = { viewModel.onIsFirstPregnancyChange(true) }
+            isSelected = isFirstPregnancy == true,
+            onClick = { onIsFirstPregnancyChange(true) }
         )
         Spacer(Modifier.height(16.dp))
         PrimeraOptionButton(
             text = "No",
-            isSelected = state.isFirstPregnancy == false,
-            onClick = { viewModel.onIsFirstPregnancyChange(false) }
+            isSelected = isFirstPregnancy == false,
+            onClick = { onIsFirstPregnancyChange(false) }
         )
-        
+
         Spacer(Modifier.height(48.dp))
-        if (state.isFirstPregnancy != null) {
-            PrimeraGradientButton(text = "Continue", onClick = { viewModel.nextStep() })
+        if (isFirstPregnancy != null) {
+            PrimeraGradientButton(text = "Continue", onClick = onContinue)
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PregnancyHistoryStep(state: OnboardingState, viewModel: OnboardingViewModel) {
+fun PregnancyHistoryStep(
+    state: OnboardingState,
+    onSelectPregnancy: (Int) -> Unit,
+    onRemovePregnancy: (Int) -> Unit,
+    onAddPregnancy: () -> Unit,
+    onDeliveryDateChange: (Date) -> Unit,
+    onDeliveryTypeChange: (String) -> Unit,
+    onChildrenDeliveredChange: (String) -> Unit,
+    onAreChildrenLivingChange: (Boolean) -> Unit,
+    onToggleStructuredComplication: (String) -> Unit,
+    onToggleComplication: (String) -> Unit,
+    onAdditionalComplicationsChange: (String) -> Unit,
+    onContinue: () -> Unit
+) {
     var showDatePicker by remember { mutableStateOf(false) }
     val currentPregnancy = state.currentPregnancy
-    
+
     if (showDatePicker) {
         val currentYear = Calendar.getInstance().get(Calendar.YEAR)
         AlertDialog(
@@ -631,7 +796,7 @@ fun PregnancyHistoryStep(state: OnboardingState, viewModel: OnboardingViewModel)
                 PrimeraDatePicker(
                     selectedDate = currentPregnancy.deliveryDate,
                     onDateSelected = { date ->
-                        viewModel.onHistoryDeliveryDateChange(date)
+                        onDeliveryDateChange(date)
                         showDatePicker = false
                     },
                     yearRange = (currentYear - 20)..currentYear,
@@ -652,7 +817,7 @@ fun PregnancyHistoryStep(state: OnboardingState, viewModel: OnboardingViewModel)
 
     OnboardingLayout(
         title = "Pregnancy History",
-        onContinue = { viewModel.nextStep() },
+        onContinue = onContinue,
         isContinueEnabled = state.pregnancyHistories.all { state.isPregnancyComplete(state.pregnancyHistories.indexOf(it)) }
     ) {
         PrimeraSubheader(
@@ -669,7 +834,7 @@ fun PregnancyHistoryStep(state: OnboardingState, viewModel: OnboardingViewModel)
             state.pregnancyHistories.forEachIndexed { index, history ->
                 val isSel = state.selectedPregnancyIndex == index
                 val isCompleted = state.isPregnancyComplete(index)
-                
+
                 Box(contentAlignment = Alignment.TopEnd) {
                     Box(
                         modifier = Modifier
@@ -677,7 +842,7 @@ fun PregnancyHistoryStep(state: OnboardingState, viewModel: OnboardingViewModel)
                             .clip(CircleShape)
                             .background(if (isSel) PrimeraViolet else if (isCompleted) PrimeraViolet.copy(alpha = 0.2f) else SurfaceWhite)
                             .border(1.dp, if (isSel) PrimeraViolet else InputBorder, CircleShape)
-                            .clickable { viewModel.onSelectPregnancy(index) },
+                            .clickable { onSelectPregnancy(index) },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -685,13 +850,13 @@ fun PregnancyHistoryStep(state: OnboardingState, viewModel: OnboardingViewModel)
                             color = if (isSel) SurfaceWhite else TextPrimary
                         )
                     }
-                    
+
                     if (state.pregnancyHistories.size > 1) {
                         Surface(
                             modifier = Modifier
                                 .size(16.dp)
                                 .offset(x = 4.dp, y = (-4).dp)
-                                .clickable { viewModel.removePregnancy(index) },
+                                .clickable { onRemovePregnancy(index) },
                             shape = CircleShape,
                             color = ErrorRed,
                             contentColor = Color.White
@@ -701,8 +866,7 @@ fun PregnancyHistoryStep(state: OnboardingState, viewModel: OnboardingViewModel)
                     }
                 }
             }
-            
-            // Add Button (+), only enabled if the previous pregnancy is complete
+
             val canAdd = state.isPregnancyComplete(state.pregnancyHistories.lastIndex) && state.pregnancyHistories.size < 10
             Box(
                 modifier = Modifier
@@ -710,16 +874,15 @@ fun PregnancyHistoryStep(state: OnboardingState, viewModel: OnboardingViewModel)
                     .clip(CircleShape)
                     .background(if (canAdd) PrimeraViolet.copy(alpha = 0.1f) else SurfaceWhite.copy(alpha = 0.5f))
                     .border(1.dp, if (canAdd) PrimeraViolet else InputBorder.copy(alpha = 0.5f), CircleShape)
-                    .clickable(enabled = canAdd) { viewModel.addPregnancy() },
+                    .clickable(enabled = canAdd) { onAddPregnancy() },
                 contentAlignment = Alignment.Center
             ) {
                 Text("+", color = if (canAdd) PrimeraViolet else TextHint, fontSize = 20.sp)
             }
         }
-        
+
         Spacer(Modifier.height(32.dp))
-        
-        // Form for the CURRENT pregnancy
+
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.align(Alignment.Start)) {
             PrimeraLabel(
                 text = "Date of Delivery",
@@ -743,15 +906,15 @@ fun PregnancyHistoryStep(state: OnboardingState, viewModel: OnboardingViewModel)
                 color = if (currentPregnancy.deliveryDate == null) TextHint else TextPrimary
             )
         }
-        
+
         Spacer(Modifier.height(24.dp))
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.align(Alignment.Start)) {
             PrimeraLabel("Type of Delivery")
             Text(" *", color = ErrorRed, style = MaterialTheme.typography.labelSmall)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            PrimeraOptionChip("Vaginal", currentPregnancy.deliveryType == "Vaginal") { viewModel.onDeliveryTypeChange("Vaginal") }
-            PrimeraOptionChip("C-section", currentPregnancy.deliveryType == "C-section") { viewModel.onDeliveryTypeChange("C-section") }
+            PrimeraOptionChip("Vaginal", currentPregnancy.deliveryType == "Vaginal") { onDeliveryTypeChange("Vaginal") }
+            PrimeraOptionChip("C-section", currentPregnancy.deliveryType == "C-section") { onDeliveryTypeChange("C-section") }
         }
 
         Spacer(Modifier.height(24.dp))
@@ -760,19 +923,18 @@ fun PregnancyHistoryStep(state: OnboardingState, viewModel: OnboardingViewModel)
             Text(" *", color = ErrorRed, style = MaterialTheme.typography.labelSmall)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            PrimeraOptionChip("Single", currentPregnancy.childrenDelivered == "Single") { viewModel.onChildrenDeliveredChange("Single") }
-            PrimeraOptionChip("Twins", currentPregnancy.childrenDelivered == "Twins") { viewModel.onChildrenDeliveredChange("Twins") }
-            PrimeraOptionChip("Multiple", currentPregnancy.childrenDelivered == "Multiple") { viewModel.onChildrenDeliveredChange("Multiple") }
+            PrimeraOptionChip("Single", currentPregnancy.childrenDelivered == "Single") { onChildrenDeliveredChange("Single") }
+            PrimeraOptionChip("Twins", currentPregnancy.childrenDelivered == "Twins") { onChildrenDeliveredChange("Twins") }
+            PrimeraOptionChip("Multiple", currentPregnancy.childrenDelivered == "Multiple") { onChildrenDeliveredChange("Multiple") }
         }
 
         Spacer(Modifier.height(24.dp))
-        // TODO: Support conditional questions based on pregnancy history
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.align(Alignment.Start)) {
             PrimeraLabel("Are previous children living?")
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            PrimeraOptionChip("Yes", currentPregnancy.areChildrenLiving == true) { viewModel.onAreChildrenLivingChange(true) }
-            PrimeraOptionChip("No / Deceased", currentPregnancy.areChildrenLiving == false) { viewModel.onAreChildrenLivingChange(false) }
+            PrimeraOptionChip("Yes", currentPregnancy.areChildrenLiving == true) { onAreChildrenLivingChange(true) }
+            PrimeraOptionChip("No / Deceased", currentPregnancy.areChildrenLiving == false) { onAreChildrenLivingChange(false) }
         }
 
         Spacer(Modifier.height(24.dp))
@@ -781,22 +943,22 @@ fun PregnancyHistoryStep(state: OnboardingState, viewModel: OnboardingViewModel)
             PrimeraOptionCard(
                 text = "Gestational Diabetes (GDM)",
                 isSelected = currentPregnancy.hasGdm,
-                onClick = { viewModel.toggleStructuredComplication("GDM") }
+                onClick = { onToggleStructuredComplication("GDM") }
             )
             PrimeraOptionCard(
                 text = "Pre-existing Diabetes",
                 isSelected = currentPregnancy.hasDiabetes,
-                onClick = { viewModel.toggleStructuredComplication("Diabetes") }
+                onClick = { onToggleStructuredComplication("Diabetes") }
             )
             PrimeraOptionCard(
                 text = "Pre-eclampsia / Eclampsia",
                 isSelected = currentPregnancy.hasPreeclampsia,
-                onClick = { viewModel.toggleStructuredComplication("Pre-eclampsia") }
+                onClick = { onToggleStructuredComplication("Pre-eclampsia") }
             )
             PrimeraOptionCard(
                 text = "Preterm Delivery",
                 isSelected = currentPregnancy.hasPretermDelivery,
-                onClick = { viewModel.toggleStructuredComplication("Preterm delivery") }
+                onClick = { onToggleStructuredComplication("Preterm delivery") }
             )
             val legacyComplications = listOf(
                 "Pregnancy induced hypertension",
@@ -806,7 +968,7 @@ fun PregnancyHistoryStep(state: OnboardingState, viewModel: OnboardingViewModel)
                 PrimeraOptionCard(
                     text = comp,
                     isSelected = currentPregnancy.complications.contains(comp),
-                    onClick = { viewModel.toggleComplication(comp) }
+                    onClick = { onToggleComplication(comp) }
                 )
             }
         }
@@ -815,16 +977,19 @@ fun PregnancyHistoryStep(state: OnboardingState, viewModel: OnboardingViewModel)
         LabeledField(
             label = "Additional Delivery Complications (Open-ended)",
             value = currentPregnancy.additionalComplications,
-            onValueChange = { viewModel.onAdditionalComplicationsChange(it) },
+            onValueChange = onAdditionalComplicationsChange,
             placeholder = "Specify any other complications or details..."
         )
     }
 }
 
 @Composable
-fun ReviewSummaryStep(state: OnboardingState, viewModel: OnboardingViewModel) {
+fun ReviewSummaryStep(
+    state: OnboardingState,
+    onSubmit: () -> Unit
+) {
     val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.US)
-    
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -869,7 +1034,7 @@ fun ReviewSummaryStep(state: OnboardingState, viewModel: OnboardingViewModel) {
 
         PrimeraGradientButton(
             text = "Submit & Start",
-            onClick = { viewModel.submitOnboarding() }
+            onClick = onSubmit
         )
         Spacer(Modifier.height(16.dp))
     }
@@ -888,7 +1053,7 @@ fun SummaryRow(label: String, value: String) {
 }
 
 @Composable
-fun PreparingStep(state: OnboardingState) {
+fun PreparingStep(progress: Float) {
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -899,9 +1064,8 @@ fun PreparingStep(state: OnboardingState) {
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(64.dp))
-        
+
         Box(contentAlignment = Alignment.Center) {
-            val progress = state.preparationProgress
             val strokeWidth = with(LocalDensity.current) { 12.dp.toPx() }
             Canvas(modifier = Modifier.size(200.dp)) {
                 drawArc(
@@ -928,14 +1092,17 @@ fun PreparingStep(state: OnboardingState) {
     }
 }
 
+// ================= PREVIEWS =================
+
 @Preview(widthDp = 393, heightDp = 852, showBackground = true, name = "Onboarding - Birthday Step")
 @Composable
 private fun BirthdayStepPreview() {
     PrimeraTheme {
         Box(modifier = Modifier.background(BackgroundCream)) {
             BirthdayStep(
-                state = OnboardingState(currentStep = OnboardingStep.BIRTHDAY),
-                viewModel = viewModel()
+                birthday = null,
+                onBirthdayChange = {},
+                onContinue = {}
             )
         }
     }
@@ -947,8 +1114,9 @@ private fun WeightStepPreview() {
     PrimeraTheme {
         Box(modifier = Modifier.background(BackgroundCream)) {
             WeightStep(
-                state = OnboardingState(currentStep = OnboardingStep.WEIGHT),
-                viewModel = viewModel()
+                weightKg = 60,
+                onWeightChange = {},
+                onContinue = {}
             )
         }
     }
@@ -960,8 +1128,9 @@ private fun HeightStepPreview() {
     PrimeraTheme {
         Box(modifier = Modifier.background(BackgroundCream)) {
             HeightStep(
-                state = OnboardingState(currentStep = OnboardingStep.HEIGHT),
-                viewModel = viewModel()
+                heightCm = 165,
+                onHeightChange = {},
+                onContinue = {}
             )
         }
     }
@@ -973,8 +1142,9 @@ private fun CycleRegularityStepPreview() {
     PrimeraTheme {
         Box(modifier = Modifier.background(BackgroundCream)) {
             CycleRegularityStep(
-                state = OnboardingState(currentStep = OnboardingStep.CYCLE_REGULARITY),
-                viewModel = viewModel()
+                isCycleRegular = true,
+                onIsCycleRegularChange = {},
+                onContinue = {}
             )
         }
     }
@@ -986,8 +1156,11 @@ private fun CycleVarianceStepPreview() {
     PrimeraTheme {
         Box(modifier = Modifier.background(BackgroundCream)) {
             CycleVarianceStep(
-                state = OnboardingState(currentStep = OnboardingStep.CYCLE_VARIANCE),
-                viewModel = viewModel()
+                shortestCycleDays = 28,
+                longestCycleDays = 32,
+                onShortestCycleChange = {},
+                onLongestCycleChange = {},
+                onContinue = {}
             )
         }
     }
@@ -999,8 +1172,9 @@ private fun HadUltrasoundStepPreview() {
     PrimeraTheme {
         Box(modifier = Modifier.background(BackgroundCream)) {
             HadUltrasoundStep(
-                state = OnboardingState(currentStep = OnboardingStep.HAD_ULTRASOUND),
-                viewModel = viewModel()
+                hasHadUltrasound = true,
+                onHasHadUltrasoundChange = {},
+                onContinue = {}
             )
         }
     }
@@ -1012,8 +1186,10 @@ private fun LmpStepPreview() {
     PrimeraTheme {
         Box(modifier = Modifier.background(BackgroundCream)) {
             LmpStep(
-                state = OnboardingState(currentStep = OnboardingStep.LMP),
-                viewModel = viewModel()
+                lmpDate = Date(),
+                onLmpDateChange = {},
+                onGoToUltrasound = {},
+                onContinue = {}
             )
         }
     }
@@ -1025,8 +1201,17 @@ private fun UltrasoundStepPreview() {
     PrimeraTheme {
         Box(modifier = Modifier.background(BackgroundCream)) {
             UltrasoundStep(
-                state = OnboardingState(currentStep = OnboardingStep.ULTRASOUND),
-                viewModel = viewModel()
+                scanDate = Date(),
+                isRevisedEdd = false,
+                scanWeeks = 8,
+                scanDays = 2,
+                eddDate = null,
+                onScanDateChange = {},
+                onIsRevisedEddChange = {},
+                onScanWeeksChange = {},
+                onScanDaysChange = {},
+                onEddDateChange = {},
+                onContinue = {}
             )
         }
     }
@@ -1038,8 +1223,12 @@ private fun EddStepPreview() {
     PrimeraTheme {
         Box(modifier = Modifier.background(BackgroundCream)) {
             EddStep(
-                state = OnboardingState(currentStep = OnboardingStep.EDD),
-                viewModel = viewModel()
+                isTentative = false,
+                positiveTestDate = null,
+                eddDate = Date(),
+                onPositiveTestDateChange = {},
+                onEddDateChange = {},
+                onContinue = {}
             )
         }
     }
@@ -1051,8 +1240,9 @@ private fun FirstPregnancyStepPreview() {
     PrimeraTheme {
         Box(modifier = Modifier.background(BackgroundCream)) {
             FirstPregnancyStep(
-                state = OnboardingState(currentStep = OnboardingStep.FIRST_PREGNANCY),
-                viewModel = viewModel()
+                isFirstPregnancy = false,
+                onIsFirstPregnancyChange = {},
+                onContinue = {}
             )
         }
     }
@@ -1065,7 +1255,17 @@ private fun PregnancyHistoryPreview() {
         Box(modifier = Modifier.background(BackgroundCream)) {
             PregnancyHistoryStep(
                 state = OnboardingState(currentStep = OnboardingStep.PREGNANCY_HISTORY),
-                viewModel = viewModel()
+                onSelectPregnancy = {},
+                onRemovePregnancy = {},
+                onAddPregnancy = {},
+                onDeliveryDateChange = {},
+                onDeliveryTypeChange = {},
+                onChildrenDeliveredChange = {},
+                onAreChildrenLivingChange = {},
+                onToggleStructuredComplication = {},
+                onToggleComplication = {},
+                onAdditionalComplicationsChange = {},
+                onContinue = {}
             )
         }
     }
@@ -1076,22 +1276,29 @@ private fun PregnancyHistoryPreview() {
 private fun PreparingStepPreview() {
     PrimeraTheme {
         Box(modifier = Modifier.background(BackgroundCream)) {
-            PreparingStep(
-                OnboardingState(
-                    currentStep = OnboardingStep.PREPARING,
-                    preparationProgress = 0.65f
-                )
-            )
+            PreparingStep(progress = 0.65f)
         }
     }
 }
 
-@Preview(widthDp = 393, heightDp = 852, showBackground = true, name = "Onboarding Host")
+@Preview(widthDp = 393, heightDp = 852, showBackground = true, name = "Onboarding Host Preview")
 @Composable
 private fun OnboardingScreenPreview() {
+    val sampleState = OnboardingState(
+        currentStep = OnboardingStep.BIRTHDAY,
+        birthday = null
+    )
     PrimeraTheme {
-        OnboardingHostScreen(
-            onOnboardingComplete = { }
+        OnboardingScaffoldLayout(
+            state = sampleState,
+            onBack = {},
+            stepContent = {
+                BirthdayStep(
+                    birthday = null,
+                    onBirthdayChange = {},
+                    onContinue = {}
+                )
+            }
         )
     }
 }

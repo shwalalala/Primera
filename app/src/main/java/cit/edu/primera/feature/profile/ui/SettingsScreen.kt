@@ -1,6 +1,5 @@
 package cit.edu.primera.feature.profile.ui
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,11 +11,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -34,6 +33,7 @@ import cit.edu.primera.core.di.ViewModelProvider
 import cit.edu.primera.core.theme.BackgroundCream
 import cit.edu.primera.core.theme.ErrorRed
 import cit.edu.primera.core.theme.PrimeraLilac
+import cit.edu.primera.core.theme.PrimeraTheme
 import cit.edu.primera.core.theme.SurfaceWhite
 import cit.edu.primera.core.theme.TextPrimary
 import cit.edu.primera.ui.components.FeatureTopBar
@@ -48,8 +48,37 @@ fun SettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
+    SettingsContent(
+        state = state,
+        onBack = onBack,
+        onLogout = {
+            viewModel.logout()
+            onLogout()
+        },
+        onNewEmailChange = viewModel::onNewEmailChange,
+        onUpdateEmail = viewModel::updateEmail,
+        onNewPasswordChange = viewModel::onNewPasswordChange,
+        onConfirmPasswordChange = viewModel::onConfirmPasswordChange,
+        onUpdatePassword = viewModel::updatePassword,
+        onClearMessages = viewModel::clearMessages
+    )
+}
+
+@Composable
+fun SettingsContent(
+    state: SettingsUiState,
+    onBack: () -> Unit,
+    onLogout: () -> Unit,
+    onNewEmailChange: (String) -> Unit,
+    onUpdateEmail: () -> Unit,
+    onNewPasswordChange: (String) -> Unit,
+    onConfirmPasswordChange: (String) -> Unit,
+    onUpdatePassword: () -> Unit,
+    onClearMessages: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(
                 brush = Brush.verticalGradient(
@@ -84,7 +113,7 @@ fun SettingsScreen(
                 SettingsCard(title = "Change Email") {
                     OutlinedTextField(
                         value = state.newEmail,
-                        onValueChange = viewModel::onNewEmailChange,
+                        onValueChange = onNewEmailChange,
                         label = { Text("New Email") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
@@ -92,7 +121,7 @@ fun SettingsScreen(
                     Spacer(Modifier.height(16.dp))
                     PrimeraGradientButton(
                         text = "Update Email",
-                        onClick = viewModel::updateEmail,
+                        onClick = onUpdateEmail,
                         isLoading = state.isLoading
                     )
                 }
@@ -103,7 +132,7 @@ fun SettingsScreen(
                 SettingsCard(title = "Change Password") {
                     OutlinedTextField(
                         value = state.newPassword,
-                        onValueChange = viewModel::onNewPasswordChange,
+                        onValueChange = onNewPasswordChange,
                         label = { Text("New Password") },
                         modifier = Modifier.fillMaxWidth(),
                         visualTransformation = PasswordVisualTransformation(),
@@ -112,7 +141,7 @@ fun SettingsScreen(
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = state.confirmPassword,
-                        onValueChange = viewModel::onConfirmPasswordChange,
+                        onValueChange = onConfirmPasswordChange,
                         label = { Text("Confirm New Password") },
                         modifier = Modifier.fillMaxWidth(),
                         visualTransformation = PasswordVisualTransformation(),
@@ -121,7 +150,7 @@ fun SettingsScreen(
                     Spacer(Modifier.height(16.dp))
                     PrimeraGradientButton(
                         text = "Update Password",
-                        onClick = viewModel::updatePassword,
+                        onClick = onUpdatePassword,
                         isLoading = state.isLoading
                     )
                 }
@@ -131,10 +160,7 @@ fun SettingsScreen(
                 // Logout Button
                 cit.edu.primera.ui.components.PrimeraOutlinedButton(
                     text = "Logout",
-                    onClick = {
-                        viewModel.logout()
-                        onLogout()
-                    },
+                    onClick = onLogout,
                     color = ErrorRed
                 )
             }
@@ -148,7 +174,7 @@ fun SettingsScreen(
         LaunchedEffect(state.error, state.successMessage) {
             if (state.error != null || state.successMessage != null) {
                 // In a real app we'd show a snackbar
-                viewModel.clearMessages()
+                onClearMessages()
             }
         }
     }
@@ -174,5 +200,27 @@ fun SettingsCard(
             Spacer(Modifier.height(16.dp))
             content()
         }
+    }
+}
+
+@Preview(name = "Compact Phone", device = Devices.PHONE)
+@Preview(name = "Small Phone", widthDp = 360, heightDp = 640)
+@Preview(name = "Large Phone", widthDp = 480, heightDp = 960)
+@Composable
+private fun SettingsScreenPreview() {
+    PrimeraTheme {
+        SettingsContent(
+            state = SettingsUiState(
+                newEmail = "sarah.miller@example.com"
+            ),
+            onBack = {},
+            onLogout = {},
+            onNewEmailChange = {},
+            onUpdateEmail = {},
+            onNewPasswordChange = {},
+            onConfirmPasswordChange = {},
+            onUpdatePassword = {},
+            onClearMessages = {}
+        )
     }
 }

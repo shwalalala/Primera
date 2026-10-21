@@ -147,52 +147,64 @@ fun ErrorContent(message: String) {
         Text(text = message, color = ErrorRed)
     }
 }
-
 @Preview(name = "Compact Phone", device = Devices.PHONE)
 @Preview(name = "Small Phone", widthDp = 360, heightDp = 640)
-@Preview(name = "Large Phone", widthDp = 480, heightDp = 960)
+@Preview(name = "Large Phone", widthDp = 480, heightDp = 1560)
 @Composable
 private fun DashboardScreenPreview() {
     PrimeraTheme {
-        DashboardContent(
-            state = DashboardUiModel(
-                userName = "Sarah",
-                timeOfDay = "Good morning",
-                trimester = "Third Trimester",
-                weekNumber = 28,
-                dayNumber = 3,
-                daysLeft = 88,
-                babySize = "Large eggplant",
-                babyEmoji = "🍆",
-                heartRateBpm = 0,
-                heartRateTrendingUp = false,
-                heartRateVsLastWeek = 0,
-                steps = 0,
-                stepsGoal = 8000,
-                sleepHours = 7,
-                sleepMinutes = 45,
-                sleepQuality = "Good quality",
-                spO2 = 98,
-                isWatchSynced = true,
-                isGestationalAgeTentative = false,
-                inaccuracyWarning = null,
-                recentLogs = emptyList(),
-                weekDays = listOf(
-                    DashboardWeekDayItem("S", 22, false),
-                    DashboardWeekDayItem("M", 23, true),
-                    DashboardWeekDayItem("T", 24, false),
-                    DashboardWeekDayItem("W", 25, false),
-                    DashboardWeekDayItem("T", 26, false),
-                    DashboardWeekDayItem("F", 27, false),
-                    DashboardWeekDayItem("S", 28, false)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            BackgroundCream,
+                            PrimeraLilac.copy(alpha = 0.45f)
+                        )
+                    )
                 )
-            ),
-            onViewAllLogs = {},
-            onAddLog = {},
-            onInputManually = {},
-            onLogClick = {},
-            onSyncWatch = {},
-            onProfileClick = {}
-        )
+        ) {
+            DashboardContent(
+                state = DashboardUiModel(
+                    userName = "Sarah",
+                    timeOfDay = "Good morning",
+                    trimester = "Third Trimester",
+                    weekNumber = 28,
+                    dayNumber = 3,
+                    daysLeft = 88,
+                    babySize = "Large eggplant",
+                    babyEmoji = "🍆",
+                    heartRateBpm = 0,
+                    heartRateTrendingUp = false,
+                    heartRateVsLastWeek = 0,
+                    steps = 0,
+                    stepsGoal = 8000,
+                    sleepHours = 7,
+                    sleepMinutes = 45,
+                    sleepQuality = "Good quality",
+                    spO2 = 98,
+                    isWatchSynced = true,
+                    isGestationalAgeTentative = false,
+                    inaccuracyWarning = null,
+                    recentLogs = emptyList(),
+                    weekDays = listOf(
+                        DashboardWeekDayItem("S", 22, false),
+                        DashboardWeekDayItem("M", 23, true),
+                        DashboardWeekDayItem("T", 24, false),
+                        DashboardWeekDayItem("W", 25, false),
+                        DashboardWeekDayItem("T", 26, false),
+                        DashboardWeekDayItem("F", 27, false),
+                        DashboardWeekDayItem("S", 28, false)
+                    )
+                ),
+                onViewAllLogs = {},
+                onAddLog = {},
+                onInputManually = {},
+                onLogClick = {},
+                onSyncWatch = {},
+                onProfileClick = {}
+            )
+        }
     }
 }
