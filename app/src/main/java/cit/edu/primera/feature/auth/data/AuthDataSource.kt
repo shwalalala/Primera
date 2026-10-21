@@ -95,6 +95,10 @@ class AuthDataSource {
         user.reauthenticate(credential).await()
     }
 
+    suspend fun updateEmail(newEmail: String) {
+        auth.currentUser?.verifyBeforeUpdateEmail(newEmail)?.await()
+    }
+
     suspend fun updateEmail(currentPassword: String, newEmail: String) {
         if (hasPasswordAuthProvider()) {
             reauthenticate(currentPassword)

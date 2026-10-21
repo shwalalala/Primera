@@ -4,7 +4,7 @@ import cit.edu.primera.feature.onboarding.domain.PregnancyHistory
 import java.util.Date
 
 enum class OnboardingStep {
-    BIRTHDAY, WEIGHT, HEIGHT, CYCLE_REGULARITY, CYCLE_VARIANCE, HAD_ULTRASOUND, LMP, ULTRASOUND, EDD, FIRST_PREGNANCY, PREGNANCY_HISTORY, PREPARING
+    BIRTHDAY, WEIGHT, HEIGHT, CYCLE_REGULARITY, CYCLE_VARIANCE, HAD_ULTRASOUND, LMP, ULTRASOUND, EDD, FIRST_PREGNANCY, PREGNANCY_HISTORY, REVIEW_SUMMARY, PREPARING
 }
 
 data class OnboardingState(
@@ -48,7 +48,7 @@ data class OnboardingState(
 
     fun canProceedToStep(step: OnboardingStep): Boolean {
         return when (step) {
-            OnboardingStep.PREPARING -> {
+            OnboardingStep.REVIEW_SUMMARY, OnboardingStep.PREPARING -> {
                 if (isFirstPregnancy == true) true
                 else pregnancyHistories.all { isPregnancyComplete(pregnancyHistories.indexOf(it)) }
             }

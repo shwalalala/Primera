@@ -50,6 +50,12 @@ class DashboardRepositoryImpl(
                         deliveryType = map["deliveryType"] as? String ?: "",
                         birthOutcome = map["birthOutcome"] as? String ?: "",
                         childrenDelivered = map["childrenDelivered"] as? String ?: "",
+                        areChildrenLiving = map["areChildrenLiving"] as? Boolean ?: true,
+                        hasGdm = map["hasGdm"] as? Boolean ?: false,
+                        hasDiabetes = map["hasDiabetes"] as? Boolean ?: false,
+                        hasPreeclampsia = map["hasPreeclampsia"] as? Boolean ?: false,
+                        hasPretermDelivery = map["hasPretermDelivery"] as? Boolean ?: false,
+                        additionalComplications = map["additionalComplications"] as? String ?: "",
                         complications = map["complications"] as? List<String> ?: emptyList()
                     )
                 } ?: emptyList(),

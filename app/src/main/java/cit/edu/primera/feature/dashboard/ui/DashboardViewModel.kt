@@ -187,10 +187,72 @@ class DashboardViewModel(
                     )
                 },
             weekDays = getCurrentWeekDays(),
+            upcomingReminders = getPrenatalReminders(week),
             milestones = info.milestones,
             symptoms = info.symptoms,
             articles = info.articles
         )
+    }
+
+    private fun getPrenatalReminders(week: Int): List<PrenatalReminderUiItem> {
+        val reminders = mutableListOf<PrenatalReminderUiItem>()
+        when {
+            week in 1..13 -> {
+                reminders.add(
+                    PrenatalReminderUiItem(
+                        title = "First-Trimester Prenatal Check-in",
+                        description = "Confirm gestational age, review blood tests, and discuss early symptoms with your clinician.",
+                        dueDateText = "Weeks 8 - 12",
+                        isUrgent = false
+                    )
+                )
+                reminders.add(
+                    PrenatalReminderUiItem(
+                        title = "Dating Ultrasound Scan",
+                        description = "Ultrasound to confirm EDD and check early fetal development.",
+                        dueDateText = "Recommended soon",
+                        isUrgent = true
+                    )
+                )
+            }
+            week in 14..27 -> {
+                reminders.add(
+                    PrenatalReminderUiItem(
+                        title = "Anatomy / Ultrasound Check-in",
+                        description = "Detailed anomaly scan to evaluate fetal growth, placenta, and anatomy.",
+                        dueDateText = "Weeks 18 - 22",
+                        isUrgent = false
+                    )
+                )
+                reminders.add(
+                    PrenatalReminderUiItem(
+                        title = "Glucose Screening (GDM Test)",
+                        description = "Screening for Gestational Diabetes Mellitus.",
+                        dueDateText = "Weeks 24 - 28",
+                        isUrgent = false
+                    )
+                )
+            }
+            else -> {
+                reminders.add(
+                    PrenatalReminderUiItem(
+                        title = "Third-Trimester Routine Check-in",
+                        description = "Monitor blood pressure, fetal heart rate, fundal height, and kick count trends.",
+                        dueDateText = "Bi-weekly / Weekly",
+                        isUrgent = false
+                    )
+                )
+                reminders.add(
+                    PrenatalReminderUiItem(
+                        title = "Group B Strep (GBS) Screening",
+                        description = "Routine swab test prior to delivery.",
+                        dueDateText = "Weeks 35 - 37",
+                        isUrgent = false
+                    )
+                )
+            }
+        }
+        return reminders
     }
 
     private fun isToday(date: Date): Boolean {

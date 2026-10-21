@@ -12,12 +12,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -67,13 +71,21 @@ fun DashboardSectionHeader(
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                            .border(1.dp, SectionHeaderBorder, CircleShape)
                         .minimumInteractiveComponentSize()
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .border(1.dp, SectionHeaderBorder, CircleShape)
                         .clickable { onAdd() }
                 ) {
-                    Text("+", fontSize = 14.sp, color = TextSecondary)
+                    Icon(
+                        imageVector = Icons.Rounded.Add,
+                        contentDescription = "Add",
+                        tint = TextSecondary,
+                        modifier = Modifier
+                            .size(18.dp)
+                            .graphicsLayer(scaleX = 1.2f, scaleY = 1.2f)
+
+                    )
                 }
             }
         }

@@ -76,6 +76,30 @@ fun ProfileScreen(
         if (state.isSaving) {
             FullScreenLoadingOverlay()
         }
+
+        state.error?.let { err ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+                    .statusBarsPadding(),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                Surface(
+                    color = ErrorRed,
+                    shape = RoundedCornerShape(12.dp),
+                    tonalElevation = 4.dp
+                ) {
+                    Text(
+                        text = err,
+                        color = Color.White,
+                        modifier = Modifier.padding(16.dp),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
     }
     
     // Success message handling
@@ -97,6 +121,7 @@ fun ProfileContent(
     var historyIndex by remember { mutableIntStateOf(-1) }
 
     if (datePickerType != null) {
+        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
         val initialDate = when (datePickerType) {
             "birthday" -> state.birthday
             "edd" -> state.eddDate
@@ -107,33 +132,60 @@ fun ProfileContent(
             else -> null
         } ?: Date()
 
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = initialDate.time
-        )
-        
-        DatePickerDialog(
-            onDismissRequest = { datePickerType = null },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let {
-                        val d = Date(it)
-                        when (datePickerType) {
-                            "birthday" -> viewModel.onBirthdayChange(d)
-                            "edd" -> viewModel.onEddDateChange(d)
-                            "lmp" -> viewModel.onLmpDateChange(d)
-                            "scan" -> viewModel.onScanDateChange(d)
-                            "test" -> viewModel.onPositiveTestDateChange(d)
-                            "history" -> viewModel.onHistoryDeliveryDateChange(historyIndex, d)
+        if (datePickerType == "history") {
+            AlertDialog(
+                onDismissRequest = { datePickerType = null },
+                confirmButton = {},
+                title = { Text("Select Delivery Date") },
+                text = {
+                    PrimeraDatePicker(
+                        selectedDate = initialDate,
+                        onDateSelected = { d ->
+                            viewModel.onHistoryDeliveryDateChange(historyIndex, d)
+                            datePickerType = null
+                        },
+                        yearRange = (currentYear - 20)..currentYear,
+                        selectableDates = object : SelectableDates {
+                            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                                return utcTimeMillis <= System.currentTimeMillis()
+                            }
+                            override fun isSelectableYear(year: Int): Boolean {
+                                return year in (currentYear - 20)..currentYear
+                            }
                         }
-                    }
-                    datePickerType = null
-                }) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { datePickerType = null }) { Text("Cancel") }
+                    )
+                },
+                containerColor = SurfaceWhite,
+                shape = RoundedCornerShape(24.dp)
+            )
+        } else {
+            val datePickerState = rememberDatePickerState(
+                initialSelectedDateMillis = initialDate.time
+            )
+            
+            DatePickerDialog(
+                onDismissRequest = { datePickerType = null },
+                confirmButton = {
+                    TextButton(onClick = {
+                        datePickerState.selectedDateMillis?.let {
+                            val d = Date(it)
+                            when (datePickerType) {
+                                "birthday" -> viewModel.onBirthdayChange(d)
+                                "edd" -> viewModel.onEddDateChange(d)
+                                "lmp" -> viewModel.onLmpDateChange(d)
+                                "scan" -> viewModel.onScanDateChange(d)
+                                "test" -> viewModel.onPositiveTestDateChange(d)
+                            }
+                        }
+                        datePickerType = null
+                    }) { Text("OK") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { datePickerType = null }) { Text("Cancel") }
+                }
+            ) {
+                DatePicker(state = datePickerState)
             }
-        ) {
-            DatePicker(state = datePickerState)
         }
     }
 
@@ -144,36 +196,17 @@ fun ProfileContent(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Edit Mode Toggle
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
-        ) {
-            TextButton(onClick = { 
-                if (state.isEditing) viewModel.saveProfile() else viewModel.toggleEdit() 
-            }) {
-                Icon(
-                    imageVector = if (state.isEditing) Icons.Default.Save else Icons.Default.Edit,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = PrimeraLogoStart
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = if (state.isEditing) "Save Changes" else "Edit Personal Information",
-                    color = PrimeraLogoStart,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
-                )
-            }
-        }
 
         // 1. Personal Information Section
         ProfileSectionCard(
             title = "Personal Information",
             icon = Icons.Default.Person,
             isExpanded = state.expandedSections.contains(ProfileSection.PERSONAL_INFO),
-            onToggle = { viewModel.toggleSection(ProfileSection.PERSONAL_INFO) }
+            onToggle = { viewModel.toggleSection(ProfileSection.PERSONAL_INFO) },
+            isEditable = true,
+            isEditing = state.isEditing,
+            onEditClick = viewModel::toggleEdit,
+            onSaveClick = viewModel::saveProfile
         ) {
             ProfileField(
                 label = "Email Address",
@@ -191,7 +224,7 @@ fun ProfileContent(
             )
             
             ProfileField(
-                label = "Weight (kg)",
+                label = "Pre-pregnancy Weight (kg)",
                 value = if (state.weightKg == 0) "" else state.weightKg.toString(),
                 isEditing = state.isEditing,
                 onValueChange = { viewModel.onWeightChange(it.toIntOrNull() ?: 0) },
@@ -213,78 +246,44 @@ fun ProfileContent(
             title = "Pregnancy Details",
             icon = Icons.Default.ChildCare,
             isExpanded = state.expandedSections.contains(ProfileSection.PREGNANCY_DETAILS),
-            onToggle = { viewModel.toggleSection(ProfileSection.PREGNANCY_DETAILS) }
+            onToggle = { viewModel.toggleSection(ProfileSection.PREGNANCY_DETAILS) },
+            isEditable = true,
+            isEditing = state.isEditing,
+            onEditClick = viewModel::toggleEdit,
+            onSaveClick = viewModel::saveProfile
         ) {
-            val eddStr = state.eddDate?.let { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(it) } ?: "Not set"
-            ProfileField(
-                label = "Expected Due Date",
-                value = eddStr,
-                isEditing = false,
-                modifier = Modifier.clickable(enabled = state.isEditing) { datePickerType = "edd" },
-                onValueChange = {}
-            )
+            val eddStr = state.eddDate?.let { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(it) } ?: "Not calculated"
+            val calculationSource = if (state.hasHadUltrasound == true && state.scanDate != null) " (Calculated from Ultrasound)"
+                                    else if (state.lmpDate != null) " (Calculated from LMP)"
+                                    else ""
             
-            /* Nina - Hiding this because doubtful this might change 9/7/2026
             ProfileField(
-                label = "First Pregnancy",
-                value = if (state.isFirstPregnancy) "Yes" else "No",
-                isEditing = false,
+                label = "Expected Due Date (EDD)$calculationSource",
+                value = eddStr,
+                isEditing = false, // Always view-only if calculated
                 onValueChange = {}
             )
-            */
 
-            /* Nina - Hiding this because doubtful this might change 9/7/2026
-            if (state.isEditing) {
-                Text("Cycle Regularity", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PrimeraOptionChip("Regular", state.isCycleRegular == true) { viewModel.onIsCycleRegularChange(true) }
-                    PrimeraOptionChip("Irregular", state.isCycleRegular == false) { viewModel.onIsCycleRegularChange(false) }
-                }
-            } else {
+            // Current Gestational Age (Calculated, View-Only)
+            state.eddDate?.let { edd ->
+                val weeks = cit.edu.primera.feature.dashboard.domain.DashboardBusinessLogic.getWeekNumber(edd)
+                val days = cit.edu.primera.feature.dashboard.domain.DashboardBusinessLogic.getDayNumber(edd)
                 ProfileField(
-                    label = "Cycle Regularity",
-                    value = when (state.isCycleRegular) {
-                        true -> "Regular"
-                        false -> "Irregular"
-                        else -> "Unknown"
-                    },
+                    label = "Gestational Age (Calculated)",
+                    value = "$weeks Weeks $days Days",
                     isEditing = false,
                     onValueChange = {}
                 )
             }
-            */
 
-            /* Nina - Hiding this because doubtful this might change 9/7/2026
-            if (state.isCycleRegular == false) {
-                ProfileField(
-                    label = "Shortest Cycle (days)",
-                    value = state.shortestCycleDays?.toString() ?: "",
-                    isEditing = state.isEditing,
-                    onValueChange = { viewModel.onShortestCycleChange(it.toIntOrNull() ?: 0) },
-                    keyboardType = KeyboardType.Number
-                )
-                ProfileField(
-                    label = "Longest Cycle (days)",
-                    value = state.longestCycleDays?.toString() ?: "",
-                    isEditing = state.isEditing,
-                    onValueChange = { viewModel.onLongestCycleChange(it.toIntOrNull() ?: 0) },
-                    keyboardType = KeyboardType.Number
-                )
-            }
-            */
-
-            /* Nina - Hiding this because doubtful this might change 9/7/2026
-            if (state.isCycleRegular == true) {
-                val lmpStr = state.lmpDate?.let { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(it) } ?: "Not set"
-                ProfileField(
-                    label = "Last Menstrual Period (LMP)",
-                    value = lmpStr,
-                    isEditing = false,
-                    modifier = Modifier.clickable(enabled = state.isEditing) { datePickerType = "lmp" },
-                    onValueChange = {}
-                )
-            }
-            */
+            val lmpStr = state.lmpDate?.let { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(it) } ?: "Not set"
+            ProfileField(
+                label = "Last Menstrual Period (LMP)",
+                value = lmpStr,
+                isEditing = false,
+                modifier = Modifier.clickable(enabled = state.isEditing) { datePickerType = "lmp" },
+                onValueChange = {}
+            )
 
             if (state.isEditing) {
                 Text("Dating Ultrasound", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
@@ -347,7 +346,11 @@ fun ProfileContent(
                 title = "Pregnancy History",
                 icon = Icons.Default.History,
                 isExpanded = state.expandedSections.contains(ProfileSection.PREGNANCY_HISTORY),
-                onToggle = { viewModel.toggleSection(ProfileSection.PREGNANCY_HISTORY) }
+                onToggle = { viewModel.toggleSection(ProfileSection.PREGNANCY_HISTORY) },
+                isEditable = true,
+                isEditing = state.isEditing,
+                onEditClick = viewModel::toggleEdit,
+                onSaveClick = viewModel::saveProfile
             ) {
                 if (state.pregnancyHistories.isEmpty()) {
                     Text(
@@ -387,11 +390,39 @@ fun ProfileContent(
                                     isEditing = true,
                                     onValueChange = { viewModel.onHistoryChildrenChange(index, it) }
                                 )
+
+                                Text("Living Children Status", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    PrimeraOptionChip("Living", history.areChildrenLiving == true) { viewModel.onHistoryLivingChildrenChange(index, true) }
+                                    PrimeraOptionChip("Deceased", history.areChildrenLiving == false) { viewModel.onHistoryLivingChildrenChange(index, false) }
+                                }
+
+                                Text("Complications", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    PrimeraOptionChip("GDM", history.hasGdm) { viewModel.onHistoryStructuredComplicationToggle(index, "GDM") }
+                                    PrimeraOptionChip("Diabetes", history.hasDiabetes) { viewModel.onHistoryStructuredComplicationToggle(index, "Diabetes") }
+                                    PrimeraOptionChip("Pre-eclampsia", history.hasPreeclampsia) { viewModel.onHistoryStructuredComplicationToggle(index, "Pre-eclampsia") }
+                                    PrimeraOptionChip("Preterm Delivery", history.hasPretermDelivery) { viewModel.onHistoryStructuredComplicationToggle(index, "Preterm delivery") }
+                                }
+
+                                ProfileField(
+                                    label = "Additional Complications",
+                                    value = history.additionalComplications,
+                                    isEditing = true,
+                                    onValueChange = { viewModel.onHistoryAdditionalComplicationsChange(index, it) }
+                                )
                             } else {
                                 Text("Delivered on $deliveryDate", fontSize = 13.sp, color = TextPrimary)
-                                Text("${history.childrenDelivered} delivery (${history.deliveryType})", fontSize = 13.sp, color = TextSecondary)
-                                if (history.complications.isNotEmpty()) {
-                                    Text("Complications: ${history.complications.joinToString()}", fontSize = 12.sp, color = ErrorRed)
+                                Text("${history.childrenDelivered} delivery (${history.deliveryType}) - Status: ${if (history.areChildrenLiving == true) "Living" else "Deceased/Loss"}", fontSize = 13.sp, color = TextSecondary)
+                                val structuredComps = listOfNotNull(
+                                    if (history.hasGdm) "GDM" else null,
+                                    if (history.hasDiabetes) "Diabetes" else null,
+                                    if (history.hasPreeclampsia) "Pre-eclampsia" else null,
+                                    if (history.hasPretermDelivery) "Preterm delivery" else null
+                                )
+                                val allComps = (structuredComps + history.complications + listOfNotNull(history.additionalComplications.takeIf { it.isNotBlank() })).joinToString()
+                                if (allComps.isNotBlank()) {
+                                    Text("Complications: $allComps", fontSize = 12.sp, color = ErrorRed)
                                 }
                             }
                             HorizontalDivider(modifier = Modifier.padding(top = 8.dp), color = InputBorder.copy(alpha = 0.3f))
@@ -407,7 +438,11 @@ fun ProfileContent(
             icon = Icons.Default.Emergency,
             isExpanded = state.expandedSections.contains(ProfileSection.ICE_CONTACT),
             onToggle = { viewModel.toggleSection(ProfileSection.ICE_CONTACT) },
-            headerColor = ErrorRed
+            headerColor = ErrorRed,
+            isEditable = true,
+            isEditing = state.isEditing,
+            onEditClick = viewModel::toggleEdit,
+            onSaveClick = viewModel::saveProfile
         ) {
             ProfileField(
                 label = "Contact Name",
@@ -477,7 +512,9 @@ fun ProfileContent(
             )
         }
 
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(16.dp))
+        MonitoringDisclaimerFooter()
+        Spacer(Modifier.height(24.dp))
     }
 }
 
@@ -488,6 +525,10 @@ fun ProfileSectionCard(
     isExpanded: Boolean,
     onToggle: () -> Unit,
     headerColor: Color = PrimeraLogoStart,
+    isEditable: Boolean = false,
+    isEditing: Boolean = false,
+    onEditClick: (() -> Unit)? = null,
+    onSaveClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
@@ -523,6 +564,29 @@ fun ProfileSectionCard(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
+
+                if (isEditable && isExpanded) {
+                    TextButton(
+                        onClick = {
+                            if (isEditing) onSaveClick?.invoke() else onEditClick?.invoke()
+                        },
+                        modifier = Modifier.padding(end = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isEditing) Icons.Default.Save else Icons.Default.Edit,
+                            contentDescription = null,
+                            tint = headerColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = if (isEditing) "Save" else "Edit",
+                            color = headerColor,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
                 
                 Icon(
                     imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
@@ -544,6 +608,34 @@ fun ProfileSectionCard(
                 ) {
                     HorizontalDivider(color = InputBorder.copy(alpha = 0.5f), modifier = Modifier.padding(bottom = 8.dp))
                     content()
+
+                    if (isEditable) {
+                        Spacer(Modifier.height(4.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(
+                                onClick = {
+                                    if (isEditing) onSaveClick?.invoke() else onEditClick?.invoke()
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = if (isEditing) Icons.Default.Save else Icons.Default.Edit,
+                                    contentDescription = null,
+                                    tint = headerColor,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = if (isEditing) "Save Changes" else "Edit Section",
+                                    color = headerColor,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

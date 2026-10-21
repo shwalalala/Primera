@@ -57,8 +57,8 @@ fun OfflineBanner() {
 fun StatusBadge(
     text: String,
     modifier: Modifier = Modifier,
-    backgroundColor: androidx.compose.ui.graphics.Color = DaysLeftBg,
-    textColor: androidx.compose.ui.graphics.Color = PrimeraViolet
+    backgroundColor: Color = DaysLeftBg,
+    textColor: Color = PrimeraViolet
 ) {
     androidx.compose.material3.Surface(
         shape = androidx.compose.foundation.shape.RoundedCornerShape(50),

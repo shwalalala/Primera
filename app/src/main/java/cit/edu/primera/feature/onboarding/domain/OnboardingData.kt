@@ -8,6 +8,12 @@ data class PregnancyHistory(
     val deliveryType: String = "",
     val birthOutcome: String = "",
     val childrenDelivered: String = "",
+    val areChildrenLiving: Boolean? = true,
+    val hasGdm: Boolean = false,
+    val hasDiabetes: Boolean = false,
+    val hasPreeclampsia: Boolean = false,
+    val hasPretermDelivery: Boolean = false,
+    val additionalComplications: String = "",
     val complications: List<String> = emptyList()
 )
 

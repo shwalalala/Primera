@@ -15,24 +15,54 @@ object DashboardBusinessLogic {
         }
     }
 
+    private fun getGestationalDays(dueDate: Date?): Int {
+        if (dueDate == null) return 280
+        val dueCal = Calendar.getInstance().apply {
+            time = dueDate
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val currentCal = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val diffMillis = dueCal.timeInMillis - currentCal.timeInMillis
+        val calculatedDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
+        val daysRemaining = calculatedDays.coerceIn(-14, 280)
+        return (280 - daysRemaining).coerceIn(0, 294)
+    }
+
     fun getWeekNumber(dueDate: Date?): Int {
-        if (dueDate == null) return 0
-        val diffInMillis = dueDate.time - System.currentTimeMillis()
-        val daysUntilDue = TimeUnit.MILLISECONDS.toDays(diffInMillis).toInt()
-        return ((280 - daysUntilDue) / 7).coerceIn(1, 42)
+        val totalDays = getGestationalDays(dueDate)
+        return (totalDays / 7).coerceIn(1, 42)
     }
 
     fun getDayNumber(dueDate: Date?): Int {
-        if (dueDate == null) return 0
-        val diffInMillis = dueDate.time - System.currentTimeMillis()
-        val daysUntilDue = TimeUnit.MILLISECONDS.toDays(diffInMillis).toInt()
-        return ((280 - daysUntilDue) % 7).coerceIn(0, 6)
+        val totalDays = getGestationalDays(dueDate)
+        return (totalDays % 7).coerceIn(0, 6)
     }
 
     fun getDaysLeft(dueDate: Date?): Int {
         if (dueDate == null) return 0
-        val diffInMillis = dueDate.time - System.currentTimeMillis()
-        return (TimeUnit.MILLISECONDS.toDays(diffInMillis).toInt()).coerceAtLeast(0)
+        val dueCal = Calendar.getInstance().apply {
+            time = dueDate
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val currentCal = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val diffMillis = dueCal.timeInMillis - currentCal.timeInMillis
+        return (diffMillis / (1000 * 60 * 60 * 24)).toInt()
     }
 
     fun getTrimester(week: Int): String {

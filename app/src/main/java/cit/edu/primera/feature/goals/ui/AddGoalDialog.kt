@@ -130,7 +130,7 @@ fun AddGoalDialog(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor(),
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = PrimeraViolet,
                             unfocusedBorderColor = Color.LightGray

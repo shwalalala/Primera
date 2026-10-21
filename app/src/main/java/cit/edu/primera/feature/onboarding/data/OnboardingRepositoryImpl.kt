@@ -42,6 +42,12 @@ class OnboardingRepositoryImpl : OnboardingRepository {
                         "deliveryType" to history.deliveryType,
                         "birthOutcome" to history.birthOutcome,
                         "childrenDelivered" to history.childrenDelivered,
+                        "areChildrenLiving" to history.areChildrenLiving,
+                        "hasGdm" to history.hasGdm,
+                        "hasDiabetes" to history.hasDiabetes,
+                        "hasPreeclampsia" to history.hasPreeclampsia,
+                        "hasPretermDelivery" to history.hasPretermDelivery,
+                        "additionalComplications" to history.additionalComplications,
                         "complications" to history.complications
                     )
                 },
