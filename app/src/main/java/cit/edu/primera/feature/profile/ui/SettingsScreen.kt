@@ -15,13 +15,16 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
@@ -47,6 +50,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel(factory = ViewModelProvider.Factory)
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -82,11 +86,24 @@ fun SettingsScreen(
 
                 // Update Email Section
                 SettingsCard(title = "Change Email") {
+                    if (state.hasPasswordAuthProvider) {
+                        OutlinedTextField(
+                            value = state.emailCurrentPassword,
+                            onValueChange = viewModel::onEmailCurrentPasswordChange,
+                            label = { Text("Current Password") },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !state.isLoading,
+                            visualTransformation = PasswordVisualTransformation(),
+                            singleLine = true
+                        )
+                        Spacer(Modifier.height(8.dp))
+                    }
                     OutlinedTextField(
                         value = state.newEmail,
                         onValueChange = viewModel::onNewEmailChange,
                         label = { Text("New Email") },
                         modifier = Modifier.fillMaxWidth(),
+                        enabled = !state.isLoading,
                         singleLine = true
                     )
                     Spacer(Modifier.height(16.dp))
@@ -101,11 +118,24 @@ fun SettingsScreen(
 
                 // Update Password Section
                 SettingsCard(title = "Change Password") {
+                    if (state.hasPasswordAuthProvider) {
+                        OutlinedTextField(
+                            value = state.passwordCurrentPassword,
+                            onValueChange = viewModel::onPasswordCurrentPasswordChange,
+                            label = { Text("Current Password") },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !state.isLoading,
+                            visualTransformation = PasswordVisualTransformation(),
+                            singleLine = true
+                        )
+                        Spacer(Modifier.height(8.dp))
+                    }
                     OutlinedTextField(
                         value = state.newPassword,
                         onValueChange = viewModel::onNewPasswordChange,
                         label = { Text("New Password") },
                         modifier = Modifier.fillMaxWidth(),
+                        enabled = !state.isLoading,
                         visualTransformation = PasswordVisualTransformation(),
                         singleLine = true
                     )
@@ -115,6 +145,7 @@ fun SettingsScreen(
                         onValueChange = viewModel::onConfirmPasswordChange,
                         label = { Text("Confirm New Password") },
                         modifier = Modifier.fillMaxWidth(),
+                        enabled = !state.isLoading,
                         visualTransformation = PasswordVisualTransformation(),
                         singleLine = true
                     )
@@ -131,10 +162,7 @@ fun SettingsScreen(
                 // Logout Button
                 cit.edu.primera.ui.components.PrimeraOutlinedButton(
                     text = "Logout",
-                    onClick = {
-                        viewModel.logout()
-                        onLogout()
-                    },
+                    onClick = { showLogoutDialog = true },
                     color = ErrorRed
                 )
             }
@@ -143,13 +171,51 @@ fun SettingsScreen(
         if (state.isLoading) {
             FullScreenLoadingOverlay()
         }
-        
-        // Error/Success handling
-        LaunchedEffect(state.error, state.successMessage) {
-            if (state.error != null || state.successMessage != null) {
-                // In a real app we'd show a snackbar
-                viewModel.clearMessages()
-            }
+
+        state.error?.let { error ->
+            Text(
+                text = error,
+                color = ErrorRed,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp)
+            )
+        }
+
+        state.successMessage?.let { message ->
+            Text(
+                text = message,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp)
+            )
+        }
+
+        if (showLogoutDialog) {
+            AlertDialog(
+                onDismissRequest = { showLogoutDialog = false },
+                title = { Text("Log out?") },
+                text = {
+                    Text("You will be signed out and local app data will be cleared from this device.")
+                },
+                confirmButton = {
+                    OutlinedButton(
+                        onClick = {
+                            showLogoutDialog = false
+                            onLogout()
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorRed)
+                    ) {
+                        Text("Log out")
+                    }
+                },
+                dismissButton = {
+                    OutlinedButton(onClick = { showLogoutDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }

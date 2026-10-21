@@ -11,7 +11,7 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "cit.edu.primera"
+        applicationId = "com.example.primera"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
@@ -80,4 +80,12 @@ dependencies {
 
     // Gemini AI
     implementation(libs.google.generativeai)
+
+    // Google Sign-In (Credential Manager)
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+
+    // Facebook Login
+    implementation("com.facebook.android:facebook-login:17.0.0")
 }

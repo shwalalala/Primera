@@ -29,6 +29,9 @@ fun LoginScreen(
     onForgotPasswordClicked: () -> Unit,
     onLoginClicked: () -> Unit,
     onTabSelected: (AuthTab) -> Unit,
+    onSocialLoginClicked: (String) -> Unit,
+    onFacebookLoginClicked: () -> Unit,
+    onGoogleLoginClicked: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -143,7 +146,12 @@ fun LoginScreen(
             
             Spacer(Modifier.height(24.dp))
             
-            SocialAuthRow()
+            SocialAuthRow(
+                onGoogleClick = onGoogleLoginClicked,
+                onFacebookClick = onFacebookLoginClicked,
+                onAppleClick = { onSocialLoginClicked("Apple") },
+                onPhoneClick = { onSocialLoginClicked("Phone") }
+            )
             
             Spacer(Modifier.height(40.dp))
         }
@@ -163,7 +171,9 @@ private fun LoginScreenPreview() {
             onRememberMeToggle = {},
             onForgotPasswordClicked = {},
             onLoginClicked = {},
-            onTabSelected = {}
+            onTabSelected = {},
+            onSocialLoginClicked = {},
+            onFacebookLoginClicked = {}
         )
     }
 }

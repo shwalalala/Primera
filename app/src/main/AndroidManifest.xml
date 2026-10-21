@@ -18,6 +18,9 @@
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
 
+        <!-- Facebook App for Express Login (Android 11+) -->
+        <package android:name="com.facebook.katana" />
+
         <intent>
             <action android:name="android.speech.RecognitionService" />
         </intent>
@@ -89,6 +92,32 @@
         <receiver
             android:name="cit.edu.primera.core.notification.ReminderReceiver"
             android:exported="false" />
+
+        <!-- Facebook Login Configuration -->
+        <meta-data
+            android:name="com.facebook.sdk.ApplicationId"
+            android:value="@string/facebook_app_id" />
+        <meta-data
+            android:name="com.facebook.sdk.ClientToken"
+            android:value="@string/facebook_client_token" />
+        <meta-data
+            android:name="com.facebook.sdk.IntentUriPackageTarget"
+            android:value="@string/facebook_login_intent_uri_package_target" />
+
+        <activity
+            android:name="com.facebook.FacebookActivity"
+            android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
+            android:label="@string/app_name" />
+        <activity
+            android:name="com.facebook.CustomTabActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="@string/fb_login_protocol_scheme" />
+            </intent-filter>
+        </activity>
 
     </application>
 

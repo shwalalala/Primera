@@ -21,6 +21,27 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.launch
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.facebook.CallbackManager
+import com.facebook.FacebookCallback
+import com.facebook.FacebookException
+import com.facebook.login.LoginManager
+import com.facebook.login.LoginResult
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -154,7 +175,7 @@ fun OrDivider(modifier: Modifier = Modifier) {
     ) {
         HorizontalDivider(modifier = Modifier.weight(1f), color = DividerColor)
         Text(
-            text = "  Or login with  ",
+            text = "  Or continue with  ",
             style = MaterialTheme.typography.labelSmall,
             color = TextSecondary
         )
@@ -243,3 +264,107 @@ private fun AuthComponentsPreview() {
 
 
 
+@Composable
+fun rememberFacebookLoginLauncher(
+    onAuthComplete: (String) -> Unit,
+    onAuthError: (Exception) -> Unit
+): () -> Unit {
+    val callbackManager = remember { CallbackManager.Factory.create() }
+    val loginManager = LoginManager.getInstance()
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = loginManager.createLogInActivityResultContract(callbackManager, null)
+    ) { _ ->
+        // The SDK handles the result internally, but we still need to process the callback
+    }
+
+    DisposableEffect(Unit) {
+        loginManager.registerCallback(callbackManager, object : FacebookCallback<LoginResult> {
+            override fun onSuccess(result: LoginResult) {
+                onAuthComplete(result.accessToken.token)
+            }
+
+            override fun onCancel() {
+                onAuthError(Exception("Facebook login canceled by user"))
+            }
+
+            override fun onError(error: FacebookException) {
+                onAuthError(error)
+            }
+        })
+        onDispose {
+            loginManager.unregisterCallback(callbackManager)
+        }
+    }
+
+    return {
+        launcher.launch(listOf("email", "public_profile"))
+    }
+}
+
+@Composable
+fun rememberGoogleLoginLauncher(
+    onAuthComplete: (String) -> Unit,
+    onAuthError: (Exception) -> Unit
+): () -> Unit {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val credentialManager = remember(context) { CredentialManager.create(context) }
+    val webClientId = androidx.compose.ui.res.stringResource(id = R.string.default_web_client_id)
+
+    return {
+        if (webClientId.isBlank() || webClientId == "YOUR_WEB_CLIENT_ID") {
+            onAuthError(Exception("Google Web Client ID is not configured. Please set default_web_client_id in strings.xml or update google-services.json."))
+        } else {
+            val googleIdOption = GetGoogleIdOption.Builder()
+                .setFilterByAuthorizedAccounts(false)
+                .setServerClientId(webClientId)
+                .setAutoSelectEnabled(false)
+                .build()
+
+            val request = GetCredentialRequest.Builder()
+                .addCredentialOption(googleIdOption)
+                .build()
+
+            scope.launch {
+                try {
+                    val result = try {
+                        credentialManager.getCredential(
+                            request = request,
+                            context = context
+                        )
+                    } catch (_: NoCredentialException) {
+                        val signInWithGoogleOption = GetSignInWithGoogleOption.Builder(webClientId)
+                            .build()
+                        val signInRequest = GetCredentialRequest.Builder()
+                            .addCredentialOption(signInWithGoogleOption)
+                            .build()
+                        credentialManager.getCredential(
+                            request = signInRequest,
+                            context = context
+                        )
+                    }
+                    val credential = result.credential
+                    if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                        val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                        onAuthComplete(googleIdTokenCredential.idToken)
+                    } else {
+                        onAuthError(Exception("Unexpected credential type returned: ${credential.type}"))
+                    }
+                } catch (e: GetCredentialCancellationException) {
+                    android.util.Log.w("GoogleLogin", "Google Sign-In canceled or dismissed: ${e.message}", e)
+                    val msg = e.message ?: ""
+                    if (msg.contains("16") || msg.contains("reauth", ignoreCase = true)) {
+                        onAuthError(Exception("Google Sign-In error [16]: SHA-1 fingerprint or package name mismatch in Firebase Console."))
+                    }
+                } catch (e: GetCredentialException) {
+                    android.util.Log.e("GoogleLogin", "CredentialException during Google sign-in: ${e.type} - ${e.message}", e)
+                    onAuthError(Exception("Google Sign-In failed (${e.type}). Verify Web Client ID and SHA-1 fingerprint in Firebase Console."))
+                } catch (e: Exception) {
+                    android.util.Log.e("GoogleLogin", "Exception during Google sign-in", e)
+                    onAuthError(e)
+                }
+            }
+        }
+    }
+}

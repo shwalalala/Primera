@@ -40,12 +40,26 @@ interface AppContainer {
     val healthConnectManager: HealthConnectManager
     val networkMonitor: NetworkMonitor
     val symptomExtractor: SymptomExtractor
+    val geminiContentRepository: cit.edu.primera.feature.dashboard.data.GeminiContentRepository
 }
 
 class AppContainerImpl(private val context: Context) : AppContainer {
     
     override val networkMonitor: NetworkMonitor by lazy {
         ConnectivityManagerNetworkMonitor(context)
+    }
+
+    override val geminiContentRepository: cit.edu.primera.feature.dashboard.data.GeminiContentRepository by lazy {
+        val geminiApiKey = cit.edu.primera.BuildConfig.GEMINI_API_KEY
+        if (geminiApiKey.isNotBlank()) {
+            val model = GenerativeModel(
+                modelName = "gemini-1.5-flash",
+                apiKey = geminiApiKey
+            )
+            cit.edu.primera.feature.dashboard.data.GeminiContentRepository(model)
+        } else {
+            cit.edu.primera.feature.dashboard.data.GeminiContentRepository(null)
+        }
     }
 
     override val symptomExtractor: SymptomExtractor by lazy {

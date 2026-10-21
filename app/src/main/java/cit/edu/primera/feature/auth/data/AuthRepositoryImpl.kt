@@ -8,10 +8,34 @@ class AuthRepositoryImpl(
 
     override fun getCurrentUserId(): String? = dataSource.getCurrentUserId()
 
+    override fun hasPasswordAuthProvider(): Boolean = dataSource.hasPasswordAuthProvider()
+
     override suspend fun login(email: String, password: String): Result<Unit> {
         return try {
             dataSource.login(email, password)
             dataSource.logActivity("Login", "User logged in: $email", dataSource.getCurrentUserId())
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun loginWithGoogle(idToken: String): Result<Unit> {
+        return try {
+            val userId = dataSource.loginWithGoogle(idToken)
+            // Note: In a real app, you might also want to check if the user document exists 
+            // and create it via `createUserDocument` if it's their first time logging in with Google.
+            dataSource.logActivity("Login", "User logged in with Google", userId)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun loginWithFacebook(accessToken: String): Result<Unit> {
+        return try {
+            val userId = dataSource.loginWithFacebook(accessToken)
+            dataSource.logActivity("Login", "User logged in with Facebook", userId)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -63,9 +87,9 @@ class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun updateEmail(newEmail: String): Result<Unit> {
+    override suspend fun updateEmail(currentPassword: String, newEmail: String): Result<Unit> {
         return try {
-            dataSource.updateEmail(newEmail)
+            dataSource.updateEmail(currentPassword, newEmail)
             dataSource.logActivity("Email Update", "Updated to: $newEmail", dataSource.getCurrentUserId())
             Result.success(Unit)
         } catch (e: Exception) {
@@ -73,9 +97,9 @@ class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun updatePassword(newPassword: String): Result<Unit> {
+    override suspend fun updatePassword(currentPassword: String, newPassword: String): Result<Unit> {
         return try {
-            dataSource.updatePassword(newPassword)
+            dataSource.updatePassword(currentPassword, newPassword)
             dataSource.logActivity("Password Update", "User updated password", dataSource.getCurrentUserId())
             Result.success(Unit)
         } catch (e: Exception) {
