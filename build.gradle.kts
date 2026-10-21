@@ -9,7 +9,7 @@ buildscript {
             // Resolves Alert #6: XML External Entity (XXE) Injection in JDOM
             force("org.jdom:jdom2:2.0.6.1")
             // Resolves Bouncy Castle vulnerabilities in AGP / Lint plugin classpath
-            force("org.bouncycastle:bcprov-jdk18on:1.85")
+            force("org.bouncycastle:bcprov-jdk18on:1.86")
         }
     }
 }

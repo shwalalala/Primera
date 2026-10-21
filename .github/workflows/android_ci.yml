@@ -29,6 +29,9 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Clean Gradle Build
+        run: ./gradlew clean --no-daemon
+
       - name: Run Checks & Build
         run: |
           ./gradlew lintDebug testDebugUnitTest assembleDebug \
