@@ -2,6 +2,7 @@ package cit.edu.primera.feature.profile.ui
 
 data class SettingsUiState(
     val hasPasswordAuthProvider: Boolean = false,
+    val authProviders: Set<String> = emptySet(),
     val email: String = "",
     val newEmail: String = "",
     val emailCurrentPassword: String = "",

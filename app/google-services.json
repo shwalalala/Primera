@@ -8,6 +8,35 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:520407937883:android:2503659c8fc383404f607e",
+        "android_client_info": {
+          "package_name": "cit.edu.primera"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "520407937883-np9ce4ebp6mjf35ucca62s299jjdah62.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC43I0hlVxv7pFU3YeVYv5H7MgiT2OHjy4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "520407937883-np9ce4ebp6mjf35ucca62s299jjdah62.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:520407937883:android:4edda193e05245d94f607e",
         "android_client_info": {
           "package_name": "com.example.primera"
@@ -18,7 +47,7 @@
           "client_id": "520407937883-hf0rh7b2ohmijmrnsp9f5ghj2afgfoi9.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "cit.edu.primera",
+            "package_name": "com.example.primera",
             "certificate_hash": "6046768dd5305cc4167210b35ddd300cc20bf1e1"
           }
         },

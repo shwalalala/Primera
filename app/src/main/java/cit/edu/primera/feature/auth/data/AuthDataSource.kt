@@ -1,8 +1,10 @@
 package cit.edu.primera.feature.auth.data
 
 import com.google.firebase.auth.FacebookAuthProvider
+import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -24,21 +26,56 @@ class AuthDataSource {
             ?: false
     }
 
+    fun getAuthProviders(): Set<String> {
+        return auth.currentUser?.providerData
+            ?.map { it.providerId }
+            ?.toSet()
+            ?: emptySet()
+    }
+
     suspend fun login(email: String, password: String) {
-        auth.signInWithEmailAndPassword(email, password).await()
+        val normalizedEmail = normalizeEmail(email)
+        val result = auth.signInWithEmailAndPassword(normalizedEmail, password).await()
+        val user = result.user
+        if (user != null) {
+            try {
+                syncUserDocument(
+                    user = user,
+                    fallbackUsername = normalizedEmail.substringBefore("@"),
+                    lastLoginProvider = EmailAuthProvider.PROVIDER_ID
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "Login profile sync failed", e)
+            }
+        }
     }
 
     suspend fun signUp(email: String, password: String): String {
-        val result = auth.createUserWithEmailAndPassword(email, password).await()
-        return result.user?.uid ?: throw Exception("User creation failed")
+        val normalizedEmail = normalizeEmail(email)
+        val result = auth.createUserWithEmailAndPassword(normalizedEmail, password).await()
+        val user = result.user ?: throw Exception("User creation failed")
+        try {
+            syncUserDocument(
+                user = user,
+                fallbackUsername = normalizedEmail.substringBefore("@"),
+                lastLoginProvider = EmailAuthProvider.PROVIDER_ID
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "SignUp profile sync failed", e)
+        }
+        return user.uid
     }
 
     suspend fun loginWithGoogle(idToken: String): String {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
-        val result = auth.signInWithCredential(credential).await()
-        val user = result.user ?: throw Exception("Google login failed")
+        val user = linkOrSignIn(credential, GoogleAuthProvider.PROVIDER_ID, "Google")
+
         try {
-            ensureSocialUserDocument(user.uid, user.displayName, user.email, "Google User")
+            syncUserDocument(
+                user = user,
+                fallbackUsername = "Google User",
+                lastLoginProvider = GoogleAuthProvider.PROVIDER_ID
+            )
         } catch (e: Exception) {
             Log.e(TAG, "Google authentication succeeded, but profile sync failed", e)
         }
@@ -47,37 +84,71 @@ class AuthDataSource {
 
     suspend fun loginWithFacebook(accessToken: String): String {
         val credential = FacebookAuthProvider.getCredential(accessToken)
-        val result = auth.signInWithCredential(credential).await()
-        val user = result.user ?: throw Exception("Facebook login failed")
+        val user = linkOrSignIn(credential, FacebookAuthProvider.PROVIDER_ID, "Facebook")
+
         try {
-            ensureSocialUserDocument(user.uid, user.displayName, user.email, "Facebook User")
+            syncUserDocument(
+                user = user,
+                fallbackUsername = "Facebook User",
+                lastLoginProvider = FacebookAuthProvider.PROVIDER_ID
+            )
         } catch (e: Exception) {
             Log.e(TAG, "Facebook authentication succeeded, but profile sync failed", e)
         }
         return user.uid
     }
 
-    private suspend fun ensureSocialUserDocument(
-        userId: String,
-        displayName: String?,
-        email: String?,
-        fallbackUsername: String
+    private suspend fun linkOrSignIn(
+        credential: AuthCredential,
+        providerId: String,
+        providerName: String
+    ): com.google.firebase.auth.FirebaseUser {
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            if (currentUser.providerData.any { it.providerId == providerId }) {
+                return currentUser
+            }
+            return currentUser.linkWithCredential(credential).await().user
+                ?: throw Exception("$providerName account linking failed")
+        }
+
+        return auth.signInWithCredential(credential).await().user
+            ?: throw Exception("$providerName login failed")
+    }
+
+    private suspend fun syncUserDocument(
+        user: FirebaseUser,
+        fallbackUsername: String,
+        lastLoginProvider: String
     ) {
-        val userDocument = firestore.collection("users").document(userId)
-            .get()
-            .await()
-        if (userDocument.exists()) return
+        val userRef = firestore.collection("users").document(user.uid)
+        val userDoc = userRef.get().await()
 
-        val username = displayName?.takeIf { it.isNotBlank() } ?: fallbackUsername
-        val userData = hashMapOf<String, Any>(
-            "username" to username,
-            "email" to (email ?: ""),
-            "role" to "patient"
-        )
+        val updateData = hashMapOf<String, Any>()
+        if (userDoc.exists() && userDoc.data != null) {
+            updateData.putAll(userDoc.data!!)
+        }
 
-        userDocument.reference
-            .set(userData, SetOptions.merge())
-            .await()
+        val cleanEmail = user.email?.let(::normalizeEmail)
+        if (!cleanEmail.isNullOrBlank()) {
+            updateData["email"] = cleanEmail
+        }
+
+        val currentUsername = (userDoc.get("username") as? String)?.takeIf { it.isNotBlank() }
+            ?: user.displayName?.takeIf { it.isNotBlank() }
+            ?: fallbackUsername
+
+        updateData["username"] = currentUsername
+        updateData["authProviders"] = user.providerData
+            .map { it.providerId }
+            .distinct()
+            .sorted()
+        updateData["lastLoginProvider"] = lastLoginProvider
+        if (!updateData.containsKey("role")) {
+            updateData["role"] = "patient"
+        }
+
+        userRef.set(updateData, SetOptions.merge()).await()
     }
 
     suspend fun logout() {
@@ -96,7 +167,7 @@ class AuthDataSource {
     }
 
     suspend fun updateEmail(newEmail: String) {
-        auth.currentUser?.verifyBeforeUpdateEmail(newEmail)?.await()
+        auth.currentUser?.verifyBeforeUpdateEmail(normalizeEmail(newEmail))?.await()
     }
 
     suspend fun updateEmail(currentPassword: String, newEmail: String) {
@@ -104,9 +175,10 @@ class AuthDataSource {
             reauthenticate(currentPassword)
         }
         val user = auth.currentUser ?: throw Exception("User is not authenticated")
-        user.updateEmail(newEmail).await()
+        val normalizedEmail = normalizeEmail(newEmail)
+        user.updateEmail(normalizedEmail).await()
         firestore.collection("users").document(user.uid)
-            .set(mapOf("email" to newEmail), SetOptions.merge())
+            .set(mapOf("email" to normalizedEmail), SetOptions.merge())
             .await()
     }
 
@@ -125,11 +197,11 @@ class AuthDataSource {
     ) {
         val userData = hashMapOf(
             "username" to username,
-            "email" to email,
+            "email" to normalizeEmail(email),
             "role" to "patient",
             "createdAt" to Date()
         )
-        firestore.collection("users").document(userId).set(userData).await()
+        firestore.collection("users").document(userId).set(userData, SetOptions.merge()).await()
     }
 
     suspend fun logActivity(type: String, message: String, userId: String?) {
@@ -148,5 +220,7 @@ class AuthDataSource {
 
     private companion object {
         const val TAG = "AuthDataSource"
+
+        fun normalizeEmail(email: String): String = email.trim().lowercase(Locale.ROOT)
     }
 }
