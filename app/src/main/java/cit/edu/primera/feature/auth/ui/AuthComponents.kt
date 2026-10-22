@@ -6,28 +6,45 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.platform.LocalContext
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.launch
+import androidx.activity.compose.rememberLauncherForActivityResult
+import com.facebook.CallbackManager
+import com.facebook.FacebookCallback
+import com.facebook.FacebookException
+import com.facebook.login.LoginManager
+import com.facebook.login.LoginResult
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
@@ -39,58 +56,11 @@ import cit.edu.primera.R
 import cit.edu.primera.core.theme.DividerColor
 import cit.edu.primera.core.theme.InputBorder
 import cit.edu.primera.core.theme.PrimeraTheme
+import cit.edu.primera.core.theme.PrimeraViolet
 import cit.edu.primera.core.theme.SurfaceWhite
 import cit.edu.primera.core.theme.TextPrimary
 import cit.edu.primera.core.theme.TextSecondary
 import cit.edu.primera.core.theme.ToggleTrack
-
-@Composable
-fun ArchedAuthCard(
-    modifier: Modifier = Modifier,
-    logo: @Composable (Modifier) -> Unit,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 80.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp)
-                .drawBehind {
-                    drawArc(
-                        color = SurfaceWhite,
-                        startAngle = 180f,
-                        sweepAngle = 180f,
-                        useCenter = true,
-                        topLeft = Offset(size.width * 0.2f, -size.width * 0.3f),
-                        size = Size(size.width * 0.6f, size.width * 0.6f)
-                    )
-                }
-        )
-
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.TopCenter
-        ) {
-            val archRadius = maxWidth * 0.3f
-            logo(Modifier.offset(y = -(archRadius / 2) - 35.dp))
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp))
-                .background(SurfaceWhite)
-                .padding(horizontal = 24.dp, vertical = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            content()
-        }
-    }
-}
 
 enum class AuthTab(val label: String) {
     LOGIN("Log In"),
@@ -154,7 +124,7 @@ fun OrDivider(modifier: Modifier = Modifier) {
     ) {
         HorizontalDivider(modifier = Modifier.weight(1f), color = DividerColor)
         Text(
-            text = "  Or login with  ",
+            text = "  Or continue with  ",
             style = MaterialTheme.typography.labelSmall,
             color = TextSecondary
         )
@@ -172,7 +142,7 @@ fun SocialIconButton(
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .size(width = 80.dp, height = 56.dp)
+            .height(52.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(SurfaceWhite)
             .border(BorderStroke(1.dp, InputBorder.copy(alpha = 0.5f)), RoundedCornerShape(16.dp))
@@ -192,34 +162,55 @@ fun SocialAuthRow(
     modifier: Modifier = Modifier,
     onGoogleClick: () -> Unit = {},
     onFacebookClick: () -> Unit = {},
-    onAppleClick: () -> Unit = {},
-    onPhoneClick: () -> Unit = {},
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         SocialIconButton(
             icon = painterResource(id = R.drawable.google),
-            contentDescription = "Google",
-            onClick = onGoogleClick
+            contentDescription = "Sign in with Google",
+            onClick = onGoogleClick,
+            modifier = Modifier.weight(1f)
         )
         SocialIconButton(
             icon = painterResource(id = R.drawable.facebook),
-            contentDescription = "Facebook",
-            onClick = onFacebookClick
-        )
-        SocialIconButton(
-            icon = painterResource(id = R.drawable.apple),
-            contentDescription = "Apple",
-            onClick = onAppleClick
-        )
-        SocialIconButton(
-            icon = painterResource(id = R.drawable.mobile),
-            contentDescription = "Phone",
-            onClick = onPhoneClick
+            contentDescription = "Sign in with Facebook",
+            onClick = onFacebookClick,
+            modifier = Modifier.weight(1f)
         )
     }
+}
+
+@Composable
+fun AccountLinkingDialog(
+    providerName: String?,
+    onDismiss: () -> Unit
+) {
+    val name = providerName ?: "another provider"
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Account Already Exists",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+        },
+        text = {
+            Text(
+                text = "An account with this email address already exists. Please log in with your primary password or $name account to link your credentials.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Got It", color = PrimeraViolet, fontWeight = FontWeight.Bold)
+            }
+        }
+    )
 }
 
 @Preview(showBackground = true, backgroundColor = 0xFFF5F1FB)
@@ -237,9 +228,117 @@ private fun AuthComponentsPreview() {
     }
 }
 
+@Composable
+fun rememberFacebookLoginLauncher(
+    onAuthComplete: (String) -> Unit,
+    onAuthError: (Exception) -> Unit
+): () -> Unit {
+    val currentOnAuthComplete = rememberUpdatedState(onAuthComplete)
+    val currentOnAuthError = rememberUpdatedState(onAuthError)
 
+    val callbackManager = remember { CallbackManager.Factory.create() }
+    val loginManager = remember { LoginManager.getInstance() }
 
+    val launcher = rememberLauncherForActivityResult(
+        contract = loginManager.createLogInActivityResultContract(callbackManager, null)
+    ) { _ ->
+        // The SDK handles the result internally via callbackManager
+    }
 
+    DisposableEffect(callbackManager, loginManager) {
+        val callback = object : FacebookCallback<LoginResult> {
+            override fun onSuccess(result: LoginResult) {
+                currentOnAuthComplete.value(result.accessToken.token)
+            }
 
+            override fun onCancel() {
+                currentOnAuthError.value(Exception("Facebook login canceled by user"))
+            }
 
+            override fun onError(error: FacebookException) {
+                currentOnAuthError.value(error)
+            }
+        }
+        loginManager.registerCallback(callbackManager, callback)
+        onDispose {
+            loginManager.unregisterCallback(callbackManager)
+        }
+    }
 
+    return remember(launcher) {
+        {
+            try {
+                launcher.launch(listOf("email", "public_profile"))
+            } catch (e: Exception) {
+                currentOnAuthError.value(e)
+            }
+        }
+    }
+}
+
+@Composable
+fun rememberGoogleLoginLauncher(
+    onAuthComplete: (String) -> Unit,
+    onAuthError: (Exception) -> Unit
+): () -> Unit {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val credentialManager = remember(context) { CredentialManager.create(context) }
+    val webClientId = androidx.compose.ui.res.stringResource(id = R.string.default_web_client_id)
+
+    return {
+        if (webClientId.isBlank() || webClientId == "YOUR_WEB_CLIENT_ID") {
+            onAuthError(Exception("Google Web Client ID is not configured. Please set default_web_client_id in strings.xml or update google-services.json."))
+        } else {
+            val googleIdOption = GetGoogleIdOption.Builder()
+                .setFilterByAuthorizedAccounts(false)
+                .setServerClientId(webClientId)
+                .setAutoSelectEnabled(false)
+                .build()
+
+            val request = GetCredentialRequest.Builder()
+                .addCredentialOption(googleIdOption)
+                .build()
+
+            scope.launch {
+                try {
+                    val result = try {
+                        credentialManager.getCredential(
+                            request = request,
+                            context = context
+                        )
+                    } catch (_: NoCredentialException) {
+                        val signInWithGoogleOption = GetSignInWithGoogleOption.Builder(webClientId)
+                            .build()
+                        val signInRequest = GetCredentialRequest.Builder()
+                            .addCredentialOption(signInWithGoogleOption)
+                            .build()
+                        credentialManager.getCredential(
+                            request = signInRequest,
+                            context = context
+                        )
+                    }
+                    val credential = result.credential
+                    if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                        val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                        onAuthComplete(googleIdTokenCredential.idToken)
+                    } else {
+                        onAuthError(Exception("Unexpected credential type returned: ${credential.type}"))
+                    }
+                } catch (e: GetCredentialCancellationException) {
+                    android.util.Log.w("GoogleLogin", "Google Sign-In canceled or dismissed: ${e.message}", e)
+                    val msg = e.message ?: ""
+                    if (msg.contains("16") || msg.contains("reauth", ignoreCase = true)) {
+                        onAuthError(Exception("Google Sign-In error [16]: SHA-1 fingerprint or package name mismatch in Firebase Console."))
+                    }
+                } catch (e: GetCredentialException) {
+                    android.util.Log.e("GoogleLogin", "CredentialException during Google sign-in: ${e.type} - ${e.message}", e)
+                    onAuthError(Exception("Google Sign-In failed (${e.type}). Verify Web Client ID and SHA-1 fingerprint in Firebase Console."))
+                } catch (e: Exception) {
+                    android.util.Log.e("GoogleLogin", "Exception during Google sign-in", e)
+                    onAuthError(e)
+                }
+            }
+        }
+    }
+}

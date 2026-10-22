@@ -1,5 +1,6 @@
 package cit.edu.primera.feature.profile.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,20 +12,23 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Devices
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -33,9 +37,10 @@ import cit.edu.primera.core.di.ViewModelProvider
 import cit.edu.primera.core.theme.BackgroundCream
 import cit.edu.primera.core.theme.ErrorRed
 import cit.edu.primera.core.theme.PrimeraLilac
-import cit.edu.primera.core.theme.PrimeraTheme
 import cit.edu.primera.core.theme.SurfaceWhite
 import cit.edu.primera.core.theme.TextPrimary
+import cit.edu.primera.feature.auth.ui.rememberFacebookLoginLauncher
+import cit.edu.primera.feature.auth.ui.rememberGoogleLoginLauncher
 import cit.edu.primera.ui.components.FeatureTopBar
 import cit.edu.primera.ui.components.FullScreenLoadingOverlay
 import cit.edu.primera.ui.components.PrimeraGradientButton
@@ -47,38 +52,22 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel(factory = ViewModelProvider.Factory)
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-
-    SettingsContent(
-        state = state,
-        onBack = onBack,
-        onLogout = {
-            viewModel.logout()
-            onLogout()
-        },
-        onNewEmailChange = viewModel::onNewEmailChange,
-        onUpdateEmail = viewModel::updateEmail,
-        onNewPasswordChange = viewModel::onNewPasswordChange,
-        onConfirmPasswordChange = viewModel::onConfirmPasswordChange,
-        onUpdatePassword = viewModel::updatePassword,
-        onClearMessages = viewModel::clearMessages
+    var showLogoutDialog by remember { mutableStateOf(false) }
+    val launchFacebookLogin = rememberFacebookLoginLauncher(
+        onAuthComplete = viewModel::linkFacebookAccount,
+        onAuthError = { error ->
+            viewModel.showError(error.message ?: "Facebook sign-in failed")
+        }
     )
-}
+    val launchGoogleLogin = rememberGoogleLoginLauncher(
+        onAuthComplete = viewModel::linkGoogleAccount,
+        onAuthError = { error ->
+            viewModel.showError(error.message ?: "Google sign-in failed")
+        }
+    )
 
-@Composable
-fun SettingsContent(
-    state: SettingsUiState,
-    onBack: () -> Unit,
-    onLogout: () -> Unit,
-    onNewEmailChange: (String) -> Unit,
-    onUpdateEmail: () -> Unit,
-    onNewPasswordChange: (String) -> Unit,
-    onConfirmPasswordChange: (String) -> Unit,
-    onUpdatePassword: () -> Unit,
-    onClearMessages: () -> Unit,
-    modifier: Modifier = Modifier
-) {
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(
                 brush = Brush.verticalGradient(
@@ -109,19 +98,66 @@ fun SettingsContent(
                 
                 Spacer(Modifier.height(16.dp))
 
+                SettingsCard(title = "Link Account") {
+                    Text(
+                        text = "Add another sign-in method to access this account.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextPrimary
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    if ("google.com" in state.authProviders) {
+                        Text("Google account linked", color = MaterialTheme.colorScheme.primary)
+                    } else {
+                        OutlinedButton(
+                            onClick = launchGoogleLogin,
+                            enabled = !state.isLoading,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Link Google account")
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    if ("facebook.com" in state.authProviders) {
+                        Text("Facebook account linked", color = MaterialTheme.colorScheme.primary)
+                    } else {
+                        OutlinedButton(
+                            onClick = launchFacebookLogin,
+                            enabled = !state.isLoading,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Link Facebook account")
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+
                 // Update Email Section
                 SettingsCard(title = "Change Email") {
+                    if (state.hasPasswordAuthProvider) {
+                        OutlinedTextField(
+                            value = state.emailCurrentPassword,
+                            onValueChange = viewModel::onEmailCurrentPasswordChange,
+                            label = { Text("Current Password") },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !state.isLoading,
+                            visualTransformation = PasswordVisualTransformation(),
+                            singleLine = true
+                        )
+                        Spacer(Modifier.height(8.dp))
+                    }
                     OutlinedTextField(
                         value = state.newEmail,
-                        onValueChange = onNewEmailChange,
+                        onValueChange = viewModel::onNewEmailChange,
                         label = { Text("New Email") },
                         modifier = Modifier.fillMaxWidth(),
+                        enabled = !state.isLoading,
                         singleLine = true
                     )
                     Spacer(Modifier.height(16.dp))
                     PrimeraGradientButton(
                         text = "Update Email",
-                        onClick = onUpdateEmail,
+                        onClick = viewModel::updateEmail,
                         isLoading = state.isLoading
                     )
                 }
@@ -130,27 +166,41 @@ fun SettingsContent(
 
                 // Update Password Section
                 SettingsCard(title = "Change Password") {
+                    if (state.hasPasswordAuthProvider) {
+                        OutlinedTextField(
+                            value = state.passwordCurrentPassword,
+                            onValueChange = viewModel::onPasswordCurrentPasswordChange,
+                            label = { Text("Current Password") },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !state.isLoading,
+                            visualTransformation = PasswordVisualTransformation(),
+                            singleLine = true
+                        )
+                        Spacer(Modifier.height(8.dp))
+                    }
                     OutlinedTextField(
                         value = state.newPassword,
-                        onValueChange = onNewPasswordChange,
+                        onValueChange = viewModel::onNewPasswordChange,
                         label = { Text("New Password") },
                         modifier = Modifier.fillMaxWidth(),
+                        enabled = !state.isLoading,
                         visualTransformation = PasswordVisualTransformation(),
                         singleLine = true
                     )
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = state.confirmPassword,
-                        onValueChange = onConfirmPasswordChange,
+                        onValueChange = viewModel::onConfirmPasswordChange,
                         label = { Text("Confirm New Password") },
                         modifier = Modifier.fillMaxWidth(),
+                        enabled = !state.isLoading,
                         visualTransformation = PasswordVisualTransformation(),
                         singleLine = true
                     )
                     Spacer(Modifier.height(16.dp))
                     PrimeraGradientButton(
                         text = "Update Password",
-                        onClick = onUpdatePassword,
+                        onClick = viewModel::updatePassword,
                         isLoading = state.isLoading
                     )
                 }
@@ -160,7 +210,7 @@ fun SettingsContent(
                 // Logout Button
                 cit.edu.primera.ui.components.PrimeraOutlinedButton(
                     text = "Logout",
-                    onClick = onLogout,
+                    onClick = { showLogoutDialog = true },
                     color = ErrorRed
                 )
             }
@@ -169,13 +219,51 @@ fun SettingsContent(
         if (state.isLoading) {
             FullScreenLoadingOverlay()
         }
-        
-        // Error/Success handling
-        LaunchedEffect(state.error, state.successMessage) {
-            if (state.error != null || state.successMessage != null) {
-                // In a real app we'd show a snackbar
-                onClearMessages()
-            }
+
+        state.error?.let { error ->
+            Text(
+                text = error,
+                color = ErrorRed,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp)
+            )
+        }
+
+        state.successMessage?.let { message ->
+            Text(
+                text = message,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp)
+            )
+        }
+
+        if (showLogoutDialog) {
+            AlertDialog(
+                onDismissRequest = { showLogoutDialog = false },
+                title = { Text("Log out?") },
+                text = {
+                    Text("You will be signed out and local app data will be cleared from this device.")
+                },
+                confirmButton = {
+                    OutlinedButton(
+                        onClick = {
+                            showLogoutDialog = false
+                            onLogout()
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorRed)
+                    ) {
+                        Text("Log out")
+                    }
+                },
+                dismissButton = {
+                    OutlinedButton(onClick = { showLogoutDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }
@@ -200,27 +288,5 @@ fun SettingsCard(
             Spacer(Modifier.height(16.dp))
             content()
         }
-    }
-}
-
-@Preview(name = "Compact Phone", device = Devices.PHONE)
-@Preview(name = "Small Phone", widthDp = 360, heightDp = 640)
-@Preview(name = "Large Phone", widthDp = 480, heightDp = 960)
-@Composable
-private fun SettingsScreenPreview() {
-    PrimeraTheme {
-        SettingsContent(
-            state = SettingsUiState(
-                newEmail = "sarah.miller@example.com"
-            ),
-            onBack = {},
-            onLogout = {},
-            onNewEmailChange = {},
-            onUpdateEmail = {},
-            onNewPasswordChange = {},
-            onConfirmPasswordChange = {},
-            onUpdatePassword = {},
-            onClearMessages = {}
-        )
     }
 }

@@ -12,6 +12,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -25,6 +28,7 @@ import cit.edu.primera.core.theme.BackgroundCream
 import cit.edu.primera.core.theme.ErrorRed
 import cit.edu.primera.core.theme.PrimeraLilac
 import cit.edu.primera.core.theme.PrimeraTheme
+import cit.edu.primera.feature.dashboard.domain.ArticleInfo
 import cit.edu.primera.ui.components.FullScreenLoadingOverlay
 import cit.edu.primera.ui.components.OfflineBanner
 
@@ -91,6 +95,8 @@ fun DashboardContent(
     onProfileClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var selectedArticle by remember { mutableStateOf<ArticleInfo?>(null) }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -134,10 +140,20 @@ fun DashboardContent(
         Spacer(Modifier.height(16.dp))
         BabyDevelopmentSection(state.milestones, state.symptoms)
         Spacer(Modifier.height(8.dp))
-        EducationalArticlesSection(state.articles)
+        EducationalArticlesSection(
+            articles = state.articles,
+            onArticleClick = { selectedArticle = it }
+        )
         Spacer(Modifier.height(12.dp))
         cit.edu.primera.ui.components.MonitoringDisclaimerFooter()
         Spacer(Modifier.height(8.dp))
+    }
+
+    selectedArticle?.let { article ->
+        ArticleDetailDialog(
+            article = article,
+            onDismiss = { selectedArticle = null }
+        )
     }
 }
 

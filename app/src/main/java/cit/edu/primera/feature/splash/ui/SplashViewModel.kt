@@ -3,6 +3,8 @@ package cit.edu.primera.feature.splash.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cit.edu.primera.core.data.PreferenceRepository
+import cit.edu.primera.feature.welcome.ui.WelcomeSessionState
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -30,19 +32,19 @@ class SplashViewModel(
         viewModelScope.launch {
             delay(2500)  // 2.5 second splash duration
             _uiState.update { SplashUiState.Complete }
-            
-            val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+
+            val currentUser = FirebaseAuth.getInstance().currentUser
             if (currentUser != null) {
-                // If already logged in, check if onboarding is completed
+                preferenceRepository.setHasEverLoggedIn(true)
                 if (preferenceRepository.shouldShowOnboarding(currentUser.uid)) {
                     _effect.send(SplashEffect.NavigateToOnboarding)
                 } else {
                     _effect.send(SplashEffect.NavigateToDashboard)
                 }
             } else {
-                // Not logged in, check if we should show Welcome walkthrough
-                // (using any valid ID for the general check, or just default to true if never seen)
-                if (preferenceRepository.shouldShowOnboarding("guest")) {
+                if (preferenceRepository.hasEverLoggedIn()) {
+                    _effect.send(SplashEffect.NavigateToAuth)
+                } else if (!WelcomeSessionState.wasShown()) {
                     _effect.send(SplashEffect.Navigate)
                 } else {
                     _effect.send(SplashEffect.NavigateToAuth)

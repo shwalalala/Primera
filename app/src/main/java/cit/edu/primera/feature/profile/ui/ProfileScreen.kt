@@ -214,6 +214,7 @@ fun ProfileContent(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+
         // 1. Personal Information Section
         ProfileSectionCard(
             title = "Personal Information",

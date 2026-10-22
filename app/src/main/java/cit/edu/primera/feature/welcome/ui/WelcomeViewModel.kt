@@ -2,7 +2,6 @@ package cit.edu.primera.feature.welcome.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import cit.edu.primera.core.data.PreferenceRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,14 +11,16 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class WelcomeViewModel(
-    private val preferenceRepository: PreferenceRepository
-) : ViewModel() {
+class WelcomeViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(WelcomeUiState())
     val uiState: StateFlow<WelcomeUiState> = _uiState.asStateFlow()
 
     private val _effect = Channel<WelcomeEffect>(Channel.BUFFERED)
     val effect: Flow<WelcomeEffect> = _effect.receiveAsFlow()
+
+    init {
+        WelcomeSessionState.markShown()
+    }
 
     fun nextPage() {
         val currentState = _uiState.value
@@ -37,9 +38,13 @@ class WelcomeViewModel(
 
     fun onGetStarted() {
         viewModelScope.launch {
-            // Mark the intro walkthrough as completed so it's not shown again
-            preferenceRepository.setOnboardingCompleted("guest")
-            _effect.send(WelcomeEffect.NavigateToAuth)
+            _effect.send(WelcomeEffect.NavigateToRegister)
+        }
+    }
+
+    fun onLoginClicked() {
+        viewModelScope.launch {
+            _effect.send(WelcomeEffect.NavigateToLogin)
         }
     }
 

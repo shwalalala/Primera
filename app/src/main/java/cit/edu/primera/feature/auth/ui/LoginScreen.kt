@@ -1,8 +1,11 @@
 package cit.edu.primera.feature.auth.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -11,6 +14,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -29,6 +34,11 @@ fun LoginScreen(
     onForgotPasswordClicked: () -> Unit,
     onLoginClicked: () -> Unit,
     onTabSelected: (AuthTab) -> Unit,
+    onSocialLoginClicked: (String) -> Unit,
+    onFacebookLoginClicked: () -> Unit,
+    onGoogleLoginClicked: () -> Unit = {},
+    onNavigateToRegister: () -> Unit = {},
+    onDismissAccountLinkingDialog: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -37,7 +47,7 @@ fun LoginScreen(
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        (BackgroundCream),
+                        BackgroundCream,
                         PrimeraLilac.copy(alpha = 0.45f)
                     )
                 )
@@ -48,20 +58,14 @@ fun LoginScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(28.dp))
             PrimeraLogoBubble()
-            Spacer(Modifier.height(40.dp))
-            
-            AuthTabToggle(
-                selectedTab = state.activeTab,
-                onTabSelected = onTabSelected
-            )
-            
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(24.dp))
             
             Text(
                 text = "Welcome Back",
@@ -78,12 +82,14 @@ fun LoginScreen(
                 textAlign = TextAlign.Center
             )
             
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(24.dp))
             
             PrimeraTextField(
                 value = state.email,
                 onValueChange = onEmailChange,
                 placeholder = "Email",
+                keyboardType = KeyboardType.Email,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                 isError = state.emailError != null,
                 errorMessage = state.emailError
             )
@@ -95,6 +101,9 @@ fun LoginScreen(
                 onValueChange = onPasswordChange,
                 placeholder = "Password",
                 isPassword = true,
+                keyboardType = KeyboardType.Password,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { onLoginClicked() }),
                 isError = state.passwordError != null,
                 errorMessage = state.passwordError
             )
@@ -119,10 +128,10 @@ fun LoginScreen(
                 )
             }
             
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(28.dp))
             
             PrimeraGradientButton(
-                text = "Login",
+                text = if (state.cooldownSeconds > 0) "Wait (${state.cooldownSeconds}s)" else "Login",
                 onClick = onLoginClicked,
                 isLoading = state.isLoading
             )
@@ -137,15 +146,42 @@ fun LoginScreen(
                 )
             }
             
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(20.dp))
             
             OrDivider()
             
+            Spacer(Modifier.height(20.dp))
+            
+            SocialAuthRow(
+                onGoogleClick = onGoogleLoginClicked,
+                onFacebookClick = onFacebookLoginClicked
+            )
+            
             Spacer(Modifier.height(24.dp))
-            
-            SocialAuthRow()
-            
-            Spacer(Modifier.height(40.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 24.dp)
+            ) {
+                Text(
+                    text = "Don't have an account? ",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+                Text(
+                    text = "Sign Up",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = PrimeraViolet,
+                    modifier = Modifier.clickable { onNavigateToRegister() }
+                )
+            }
+        }
+
+        if (state.showAccountLinkingDialog) {
+            AccountLinkingDialog(
+                providerName = state.pendingSocialProvider,
+                onDismiss = onDismissAccountLinkingDialog
+            )
         }
     }
 }
@@ -163,7 +199,9 @@ private fun LoginScreenPreview() {
             onRememberMeToggle = {},
             onForgotPasswordClicked = {},
             onLoginClicked = {},
-            onTabSelected = {}
+            onTabSelected = {},
+            onSocialLoginClicked = {},
+            onFacebookLoginClicked = {}
         )
     }
 }

@@ -14,5 +14,7 @@ data class WelcomePageData(
 )
 
 sealed class WelcomeEffect {
+    object NavigateToRegister : WelcomeEffect()
+    object NavigateToLogin : WelcomeEffect()
     object NavigateToAuth : WelcomeEffect()
 }

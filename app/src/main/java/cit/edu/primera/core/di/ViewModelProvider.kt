@@ -34,14 +34,15 @@ object ViewModelProvider {
                     container.goalsRepository,
                     container.healthConnectManager,
                     container.preferenceRepository,
-                    container.networkMonitor
+                    container.networkMonitor,
+                    container.geminiContentRepository
                 )
                 OnboardingViewModel::class.java -> OnboardingViewModel(
                     container.onboardingRepository,
                     container.preferenceRepository
                 )
                 SplashViewModel::class.java -> SplashViewModel(container.preferenceRepository)
-                WelcomeViewModel::class.java -> WelcomeViewModel(container.preferenceRepository)
+                WelcomeViewModel::class.java -> WelcomeViewModel()
                 CheckinsViewModel::class.java -> CheckinsViewModel(
                     container.checkinsRepository,
                     container.symptomExtractor
