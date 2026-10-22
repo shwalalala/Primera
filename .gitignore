@@ -18,3 +18,10 @@ local.properties
 # --- OS System Files ---
 .DS_Store
 Thumbs.db
+
+# --- Continue / AI assistant logs & local cache ---
+.continue/
+.cursor/
+.cursorrules
+*.log
+.prompt/
