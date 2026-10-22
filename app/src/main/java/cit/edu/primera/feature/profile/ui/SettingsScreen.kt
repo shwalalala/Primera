@@ -39,6 +39,8 @@ import cit.edu.primera.core.theme.ErrorRed
 import cit.edu.primera.core.theme.PrimeraLilac
 import cit.edu.primera.core.theme.SurfaceWhite
 import cit.edu.primera.core.theme.TextPrimary
+import cit.edu.primera.feature.auth.ui.rememberFacebookLoginLauncher
+import cit.edu.primera.feature.auth.ui.rememberGoogleLoginLauncher
 import cit.edu.primera.ui.components.FeatureTopBar
 import cit.edu.primera.ui.components.FullScreenLoadingOverlay
 import cit.edu.primera.ui.components.PrimeraGradientButton
@@ -51,6 +53,18 @@ fun SettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showLogoutDialog by remember { mutableStateOf(false) }
+    val launchFacebookLogin = rememberFacebookLoginLauncher(
+        onAuthComplete = viewModel::linkFacebookAccount,
+        onAuthError = { error ->
+            viewModel.showError(error.message ?: "Facebook sign-in failed")
+        }
+    )
+    val launchGoogleLogin = rememberGoogleLoginLauncher(
+        onAuthComplete = viewModel::linkGoogleAccount,
+        onAuthError = { error ->
+            viewModel.showError(error.message ?: "Google sign-in failed")
+        }
+    )
 
     Box(
         modifier = Modifier
@@ -83,6 +97,40 @@ fun SettingsScreen(
                 )
                 
                 Spacer(Modifier.height(16.dp))
+
+                SettingsCard(title = "Link Account") {
+                    Text(
+                        text = "Add another sign-in method to access this account.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextPrimary
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    if ("google.com" in state.authProviders) {
+                        Text("Google account linked", color = MaterialTheme.colorScheme.primary)
+                    } else {
+                        OutlinedButton(
+                            onClick = launchGoogleLogin,
+                            enabled = !state.isLoading,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Link Google account")
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    if ("facebook.com" in state.authProviders) {
+                        Text("Facebook account linked", color = MaterialTheme.colorScheme.primary)
+                    } else {
+                        OutlinedButton(
+                            onClick = launchFacebookLogin,
+                            enabled = !state.isLoading,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Link Facebook account")
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
 
                 // Update Email Section
                 SettingsCard(title = "Change Email") {

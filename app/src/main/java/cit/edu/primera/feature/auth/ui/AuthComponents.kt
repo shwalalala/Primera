@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
@@ -258,47 +259,51 @@ private fun AuthComponentsPreview() {
     }
 }
 
-
-
-
-
-
-
 @Composable
 fun rememberFacebookLoginLauncher(
     onAuthComplete: (String) -> Unit,
     onAuthError: (Exception) -> Unit
 ): () -> Unit {
+    val currentOnAuthComplete = rememberUpdatedState(onAuthComplete)
+    val currentOnAuthError = rememberUpdatedState(onAuthError)
+
     val callbackManager = remember { CallbackManager.Factory.create() }
-    val loginManager = LoginManager.getInstance()
+    val loginManager = remember { LoginManager.getInstance() }
 
     val launcher = rememberLauncherForActivityResult(
         contract = loginManager.createLogInActivityResultContract(callbackManager, null)
     ) { _ ->
-        // The SDK handles the result internally, but we still need to process the callback
+        // The SDK handles the result internally via callbackManager
     }
 
-    DisposableEffect(Unit) {
-        loginManager.registerCallback(callbackManager, object : FacebookCallback<LoginResult> {
+    DisposableEffect(callbackManager, loginManager) {
+        val callback = object : FacebookCallback<LoginResult> {
             override fun onSuccess(result: LoginResult) {
-                onAuthComplete(result.accessToken.token)
+                currentOnAuthComplete.value(result.accessToken.token)
             }
 
             override fun onCancel() {
-                onAuthError(Exception("Facebook login canceled by user"))
+                currentOnAuthError.value(Exception("Facebook login canceled by user"))
             }
 
             override fun onError(error: FacebookException) {
-                onAuthError(error)
+                currentOnAuthError.value(error)
             }
-        })
+        }
+        loginManager.registerCallback(callbackManager, callback)
         onDispose {
             loginManager.unregisterCallback(callbackManager)
         }
     }
 
-    return {
-        launcher.launch(listOf("email", "public_profile"))
+    return remember(launcher) {
+        {
+            try {
+                launcher.launch(listOf("email", "public_profile"))
+            } catch (e: Exception) {
+                currentOnAuthError.value(e)
+            }
+        }
     }
 }
 

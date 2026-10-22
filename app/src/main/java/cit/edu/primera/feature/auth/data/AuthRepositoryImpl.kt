@@ -10,6 +10,8 @@ class AuthRepositoryImpl(
 
     override fun hasPasswordAuthProvider(): Boolean = dataSource.hasPasswordAuthProvider()
 
+    override fun getAuthProviders(): Set<String> = dataSource.getAuthProviders()
+
     override suspend fun login(email: String, password: String): Result<Unit> {
         return try {
             dataSource.login(email, password)

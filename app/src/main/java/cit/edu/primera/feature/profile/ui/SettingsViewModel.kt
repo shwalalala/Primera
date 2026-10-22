@@ -14,7 +14,10 @@ class SettingsViewModel(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
-        SettingsUiState(hasPasswordAuthProvider = authRepository.hasPasswordAuthProvider())
+        SettingsUiState(
+            hasPasswordAuthProvider = authRepository.hasPasswordAuthProvider(),
+            authProviders = authRepository.getAuthProviders()
+        )
     )
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
@@ -25,6 +28,46 @@ class SettingsViewModel(
         _uiState.update { it.copy(passwordCurrentPassword = value) }
     fun onNewPasswordChange(value: String) = _uiState.update { it.copy(newPassword = value) }
     fun onConfirmPasswordChange(value: String) = _uiState.update { it.copy(confirmPassword = value) }
+
+    fun linkGoogleAccount(idToken: String) {
+        linkAccount(
+            providerName = "Google",
+            action = { authRepository.loginWithGoogle(idToken) }
+        )
+    }
+
+    fun linkFacebookAccount(accessToken: String) {
+        linkAccount(
+            providerName = "Facebook",
+            action = { authRepository.loginWithFacebook(accessToken) }
+        )
+    }
+
+    private fun linkAccount(providerName: String, action: suspend () -> Result<Unit>) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null, successMessage = null) }
+            action().fold(
+                onSuccess = {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            authProviders = authRepository.getAuthProviders(),
+                            hasPasswordAuthProvider = authRepository.hasPasswordAuthProvider(),
+                            successMessage = "$providerName account linked successfully"
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    val message = if (error is com.google.firebase.auth.FirebaseAuthUserCollisionException) {
+                        "This $providerName account is already linked to another user."
+                    } else {
+                        error.message ?: "Unable to link $providerName account"
+                    }
+                    _uiState.update { it.copy(isLoading = false, error = message) }
+                }
+            )
+        }
+    }
 
     fun updateEmail() {
         val currentPassword = _uiState.value.emailCurrentPassword
@@ -91,5 +134,9 @@ class SettingsViewModel(
 
     fun clearMessages() {
         _uiState.update { it.copy(error = null, successMessage = null) }
+    }
+
+    fun showError(message: String) {
+        _uiState.update { it.copy(isLoading = false, error = message) }
     }
 }

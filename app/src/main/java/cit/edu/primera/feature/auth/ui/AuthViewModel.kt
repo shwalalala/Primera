@@ -191,6 +191,7 @@ class AuthViewModel(
     fun onFacebookLoginSuccess(accessToken: String) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
+            if (!signInWithEnteredEmailIfNeeded()) return@launch
             val result = authRepository.loginWithFacebook(accessToken)
             
             result.fold(
@@ -206,20 +207,26 @@ class AuthViewModel(
                         _effect.send(AuthEffect.NavigateToDashboard)
                     }
                 },
-                onFailure = { 
-                    _state.update { it.copy(isLoading = false, errorMessage = "Facebook login failed. Please try again.") } 
+                onFailure = { error ->
+                    android.util.Log.e("AuthViewModel", "Facebook Firebase authentication failed", error)
+                    val displayError = if (error is com.google.firebase.auth.FirebaseAuthUserCollisionException) {
+                        "An account with this email already exists. Please log in with your password or primary provider first to link Facebook."
+                    } else {
+                        "Unable to sign in with Facebook. Please try again later."
+                    }
+                    _state.update { it.copy(isLoading = false, errorMessage = displayError) }
                 }
             )
         }
     }
     
     fun onFacebookLoginError(error: Exception) {
-        android.util.Log.e("AuthViewModel", "Facebook login error", error)
+        android.util.Log.e("AuthViewModel", "Facebook SDK login error", error)
         val msg = error.message ?: ""
         val displayError = if (msg.contains("canceled", ignoreCase = true) || msg.contains("cancelled", ignoreCase = true)) {
-            "Facebook login was cancelled."
+            "Facebook sign-in was cancelled."
         } else {
-            "Facebook login failed. Please verify Facebook App setup."
+            "Unable to sign in with Facebook. Please try again later."
         }
         _state.update { it.copy(isLoading = false, errorMessage = displayError) }
     }
@@ -227,6 +234,7 @@ class AuthViewModel(
     fun onGoogleLoginSuccess(idToken: String) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
+            if (!signInWithEnteredEmailIfNeeded()) return@launch
             val result = authRepository.loginWithGoogle(idToken)
 
             result.fold(
@@ -242,8 +250,14 @@ class AuthViewModel(
                         _effect.send(AuthEffect.NavigateToDashboard)
                     }
                 },
-                onFailure = {
-                    _state.update { it.copy(isLoading = false, errorMessage = "Google login failed. Please try again.") }
+                onFailure = { error ->
+                    android.util.Log.e("AuthViewModel", "Google Firebase authentication failed", error)
+                    val displayError = if (error is com.google.firebase.auth.FirebaseAuthUserCollisionException) {
+                        "An account with this email already exists. Please log in with your password or primary provider first to link Google."
+                    } else {
+                        "Google login failed. Please try again."
+                    }
+                    _state.update { it.copy(isLoading = false, errorMessage = displayError) }
                 }
             )
         }
@@ -289,6 +303,31 @@ class AuthViewModel(
                 }
             }
         }
+    }
+
+    private suspend fun signInWithEnteredEmailIfNeeded(): Boolean {
+        val currentState = _state.value
+        if (authRepository.isUserAuthenticated()
+            || currentState.activeTab != AuthTab.LOGIN
+            || currentState.email.isBlank()
+            || currentState.password.isBlank()
+        ) {
+            return true
+        }
+
+        val result = authRepository.login(
+            currentState.email.trim(),
+            currentState.password
+        )
+        if (result.isSuccess) return true
+
+        _state.update {
+            it.copy(
+                isLoading = false,
+                errorMessage = "Enter the email password for this account before linking a social login."
+            )
+        }
+        return false
     }
 
     private fun calculatePasswordStrength(password: String): PasswordStrength {

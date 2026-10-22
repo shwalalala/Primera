@@ -4,6 +4,7 @@ interface AuthRepository {
     fun isUserAuthenticated(): Boolean
     fun getCurrentUserId(): String?
     fun hasPasswordAuthProvider(): Boolean
+    fun getAuthProviders(): Set<String>
     suspend fun login(email: String, password: String): Result<Unit>
     suspend fun loginWithGoogle(idToken: String): Result<Unit>
     suspend fun loginWithFacebook(accessToken: String): Result<Unit>
