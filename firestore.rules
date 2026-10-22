@@ -56,8 +56,9 @@ service cloud.firestore {
 
     // Transcriptions Collection
     match /transcriptions/{transcriptionId} {
-      allow read, write: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
     }
 
     // Default deny for all unhandled paths
