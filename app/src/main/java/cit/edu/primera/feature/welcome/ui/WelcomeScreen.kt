@@ -2,6 +2,7 @@ package cit.edu.primera.feature.welcome.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -34,7 +35,9 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun WelcomeScreen(
-    onNavigateToAuth: () -> Unit,
+    onNavigateToRegister: () -> Unit = {},
+    onNavigateToLogin: () -> Unit = {},
+    onNavigateToAuth: () -> Unit = onNavigateToRegister,
     viewModel: WelcomeViewModel = viewModel(factory = ViewModelProvider.Factory)
 ) {
     val pagerState = rememberPagerState(pageCount = { 3 })
@@ -44,6 +47,8 @@ fun WelcomeScreen(
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
+                is WelcomeEffect.NavigateToRegister -> onNavigateToRegister()
+                is WelcomeEffect.NavigateToLogin -> onNavigateToLogin()
                 is WelcomeEffect.NavigateToAuth -> onNavigateToAuth()
             }
         }
@@ -97,7 +102,7 @@ fun WelcomeScreen(
             // Page Indicators
             Row(
                 Modifier
-                    .height(50.dp)
+                    .height(30.dp)
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
@@ -113,7 +118,7 @@ fun WelcomeScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Navigation Button
             PrimeraGradientButton(
@@ -129,12 +134,30 @@ fun WelcomeScreen(
                     }
                 },
                 modifier = Modifier
-                    .fillMaxWidth(0.8f)
-                    .padding(bottom = 64.dp)
+                    .fillMaxWidth(0.85f)
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 32.dp)
+            ) {
+                Text(
+                    text = "Already have an account? ",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+                Text(
+                    text = "Log In",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = PrimeraViolet,
+                    modifier = Modifier.clickable { viewModel.onLoginClicked() }
+                )
+            }
         }
 
-        // Skip Button - Placed after Column to be on top of the Pager
+        // Skip Button
         if (pagerState.currentPage < 2) {
             TextButton(
                 onClick = { viewModel.onSkip() },
@@ -165,12 +188,12 @@ fun OnboardingPage(data: OnboardingPageData) {
             painter = painterResource(id = data.imageRes),
             contentDescription = null,
             modifier = Modifier
-                .fillMaxWidth(0.9f)
+                .fillMaxWidth(0.85f)
                 .aspectRatio(1f),
             contentScale = ContentScale.Fit
         )
 
-        Spacer(modifier = Modifier.height(68.dp))
+        Spacer(modifier = Modifier.height(40.dp))
 
         Text(
             text = data.title,
@@ -204,6 +227,6 @@ data class OnboardingPageData(
 @Composable
 private fun WelcomeScreenPreview1() {
     PrimeraTheme {
-        WelcomeScreen(onNavigateToAuth = {})
+        WelcomeScreen()
     }
 }

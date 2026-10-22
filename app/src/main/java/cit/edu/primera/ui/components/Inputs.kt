@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -46,6 +47,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -91,7 +95,6 @@ fun PrimeraDatePicker(
         }
     }
 
-    // Custom Header with Dropdowns
     val displayedMonthCalendar = remember(datePickerState.displayedMonthMillis) {
         Calendar.getInstance().apply { timeInMillis = datePickerState.displayedMonthMillis }
     }
@@ -114,9 +117,8 @@ fun PrimeraDatePicker(
                 color = Color(0xFFEAEAEA),
                 shape = RoundedCornerShape(24.dp)
             )
-            .padding(bottom = 16.dp) // Extra padding to prevent Sunday/bottom being cut off
+            .padding(bottom = 16.dp)
     ) {
-        // Custom Month/Year Dropdown Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -162,8 +164,8 @@ fun PrimeraDatePicker(
                 todayDateBorderColor = PrimeraViolet,
                 containerColor = Color.White,
                 navigationContentColor = TextPrimary,
-                weekdayContentColor = TextPrimary, // Ensure Sunday/Weekdays are TextPrimary
-                dayContentColor = TextPrimary // Ensure dates are TextPrimary
+                weekdayContentColor = TextPrimary,
+                dayContentColor = TextPrimary
             ),
             modifier = Modifier.fillMaxWidth()
         )
@@ -268,6 +270,8 @@ fun PrimeraTextField(
     modifier: Modifier = Modifier,
     isPassword: Boolean = false,
     keyboardType: KeyboardType = KeyboardType.Text,
+    keyboardOptions: KeyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     isError: Boolean = false,
     errorMessage: String? = null
 ) {
@@ -293,13 +297,14 @@ fun PrimeraTextField(
             } else {
                 VisualTransformation.None
             },
-            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
             trailingIcon = if (isPassword) {
                 {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
                             imageVector = if (passwordVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
-                            contentDescription = if (passwordVisible) "Toggle password visibility" else null,
+                            contentDescription = if (passwordVisible) "Hide password" else "Show password",
                             tint = IconTint,
                             modifier = Modifier.size(20.dp)
                         )
@@ -327,7 +332,9 @@ fun PrimeraTextField(
                     fontSize = 11.sp,
                     fontFamily = NunitoSans
                 ),
-                modifier = Modifier.padding(start = 16.dp, top = 2.dp)
+                modifier = Modifier
+                    .padding(start = 16.dp, top = 2.dp)
+                    .semantics { liveRegion = LiveRegionMode.Polite }
             )
         }
     }
@@ -342,6 +349,8 @@ fun LabeledField(
     modifier: Modifier = Modifier,
     isPassword: Boolean = false,
     keyboardType: KeyboardType = KeyboardType.Text,
+    keyboardOptions: KeyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     isError: Boolean = false,
     errorMessage: String? = null
 ) {
@@ -358,6 +367,8 @@ fun LabeledField(
             placeholder = placeholder,
             isPassword = isPassword,
             keyboardType = keyboardType,
+            keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
             isError = isError,
             errorMessage = errorMessage
         )
