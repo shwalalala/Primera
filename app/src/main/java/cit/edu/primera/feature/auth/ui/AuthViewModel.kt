@@ -4,7 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cit.edu.primera.core.data.PreferenceRepository
 import cit.edu.primera.feature.auth.data.AuthRepository
+import cit.edu.primera.feature.auth.domain.PasswordRuleViolation
+import cit.edu.primera.feature.auth.domain.PasswordValidator
+import com.google.firebase.auth.AuthCredential
+import com.google.firebase.auth.FacebookAuthProvider
+import com.google.firebase.auth.FirebaseAuthException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.GoogleAuthProvider
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -19,11 +28,42 @@ class AuthViewModel(
     private val _effect = Channel<AuthEffect>(Channel.BUFFERED)
     val effect: Flow<AuthEffect> = _effect.receiveAsFlow()
 
+    private var pendingCredential: AuthCredential? = null
+    private var cooldownJob: Job? = null
+
     init {
+        loadSavedPreferences()
         checkSession()
     }
 
+    private fun loadSavedPreferences() {
+        val savedEmail = preferenceRepository.getSavedEmail()
+        if (!savedEmail.isNullOrBlank()) {
+            _state.update {
+                it.copy(
+                    email = savedEmail,
+                    rememberMe = true
+                )
+            }
+        }
+    }
+
+    fun onNavigateToRegisterClicked() {
+        wipeSensitiveState()
+        viewModelScope.launch {
+            _effect.send(AuthEffect.NavigateToRegister)
+        }
+    }
+
+    fun onNavigateToLoginClicked() {
+        wipeSensitiveState()
+        viewModelScope.launch {
+            _effect.send(AuthEffect.NavigateToLogin)
+        }
+    }
+
     fun onTabSelected(tab: AuthTab) {
+        wipeSensitiveState()
         _state.update {
             it.copy(
                 activeTab = tab,
@@ -47,7 +87,8 @@ class AuthViewModel(
     }
 
     fun onPasswordChange(value: String) {
-        val strength = calculatePasswordStrength(value)
+        val strength = PasswordValidator.calculateStrength(value)
+        val validation = PasswordValidator.validate(value)
         _state.update {
             val confirmErr = if (it.confirmPassword.isNotBlank() && it.confirmPassword != value) {
                 "Passwords do not match"
@@ -55,6 +96,7 @@ class AuthViewModel(
             it.copy(
                 password = value,
                 passwordStrength = strength,
+                passwordRuleViolations = validation.violations,
                 passwordError = null,
                 confirmPasswordError = confirmErr
             )
@@ -75,6 +117,9 @@ class AuthViewModel(
 
     fun onRememberMeToggle(checked: Boolean) {
         _state.update { it.copy(rememberMe = checked) }
+        if (!checked) {
+            preferenceRepository.setSavedEmail(null)
+        }
     }
 
     fun onAgreedToTermsToggle(checked: Boolean) {
@@ -89,39 +134,40 @@ class AuthViewModel(
         _state.update { it.copy(showTermsDialog = false) }
     }
 
+    fun onDismissAccountLinkingDialog() {
+        pendingCredential = null
+        _state.update {
+            it.copy(
+                showAccountLinkingDialog = false,
+                pendingSocialProvider = null
+            )
+        }
+    }
+
     fun onLoginClicked() {
         val currentState = _state.value
+        if (currentState.isLoading || currentState.cooldownSeconds > 0) return
         val trimmedEmail = currentState.email.trim()
         if (!validateLoginForm()) return
-        
+
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
             val result = authRepository.login(trimmedEmail, currentState.password)
-            
+
             result.fold(
                 onSuccess = {
-                    val userId = authRepository.getCurrentUserId() ?: ""
-                    _state.update { it.copy(
-                        isLoading = false,
-                        isAuthenticated = true,
-                        username = "",
-                        email = "",
-                        password = "",
-                        confirmPassword = ""
-                    ) }
-                    if (preferenceRepository.shouldShowOnboarding(userId)) {
-                        _effect.send(AuthEffect.NavigateToOnboarding)
-                    } else {
-                        _effect.send(AuthEffect.NavigateToDashboard)
-                    }
+                    handleSuccessfulAuthentication(trimmedEmail, currentState.rememberMe)
                 },
-                onFailure = { _state.update { it.copy(isLoading = false, errorMessage = "Invalid email or password") } }
+                onFailure = { error ->
+                    handleAuthenticationFailure(error, "Invalid email or password")
+                }
             )
         }
     }
 
     fun onSignUpClicked() {
         val currentState = _state.value
+        if (currentState.isLoading || currentState.cooldownSeconds > 0) return
         val trimmedUsername = currentState.username.trim()
         val trimmedEmail = currentState.email.trim()
         if (!validateRegisterForm()) return
@@ -136,17 +182,11 @@ class AuthViewModel(
 
             result.fold(
                 onSuccess = {
-                    _state.update { it.copy(
-                        isLoading = false,
-                        isAuthenticated = true,
-                        username = "",
-                        email = "",
-                        password = "",
-                        confirmPassword = ""
-                    ) }
-                    _effect.send(AuthEffect.NavigateToOnboarding)
+                    handleSuccessfulAuthentication(trimmedEmail, false)
                 },
-                onFailure = { _state.update { it.copy(isLoading = false, errorMessage = "Registration failed. Please check your details.") } }
+                onFailure = { error ->
+                    handleAuthenticationFailure(error, "Registration failed. Please check your details.")
+                }
             )
         }
     }
@@ -159,7 +199,9 @@ class AuthViewModel(
     }
 
     fun onResetPasswordClicked() {
-        val email = _state.value.email.trim()
+        val currentState = _state.value
+        if (currentState.isLoading || currentState.cooldownSeconds > 0) return
+        val email = currentState.email.trim()
         if (email.isBlank()) {
             _state.update { it.copy(emailError = "Email is required to reset password") }
             return
@@ -172,13 +214,17 @@ class AuthViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null, resetEmailSent = false) }
             val result = authRepository.sendPasswordResetEmail(email)
-            // Always set resetEmailSent = true to prevent user enumeration attacks.
             result.fold(
                 onSuccess = {
                     _state.update { it.copy(isLoading = false, resetEmailSent = true) }
                 },
-                onFailure = {
-                    _state.update { it.copy(isLoading = false, resetEmailSent = true) }
+                onFailure = { error ->
+                    if (isTooManyRequestsError(error)) {
+                        startRateLimitCooldown()
+                    } else {
+                        // Always set resetEmailSent = true to prevent user enumeration attacks
+                        _state.update { it.copy(isLoading = false, resetEmailSent = true) }
+                    }
                 }
             )
         }
@@ -189,37 +235,36 @@ class AuthViewModel(
     }
 
     fun onFacebookLoginSuccess(accessToken: String) {
+        val currentState = _state.value
+        if (currentState.isLoading || currentState.cooldownSeconds > 0) return
+
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
-            if (!signInWithEnteredEmailIfNeeded()) return@launch
+            val credential = FacebookAuthProvider.getCredential(accessToken)
             val result = authRepository.loginWithFacebook(accessToken)
-            
+
             result.fold(
                 onSuccess = {
-                    val userId = authRepository.getCurrentUserId() ?: ""
-                    _state.update { it.copy(
-                        isLoading = false,
-                        isAuthenticated = true
-                    ) }
-                    if (preferenceRepository.shouldShowOnboarding(userId)) {
-                        _effect.send(AuthEffect.NavigateToOnboarding)
-                    } else {
-                        _effect.send(AuthEffect.NavigateToDashboard)
-                    }
+                    handleSuccessfulAuthentication(_state.value.email, currentState.rememberMe)
                 },
                 onFailure = { error ->
-                    android.util.Log.e("AuthViewModel", "Facebook Firebase authentication failed", error)
-                    val displayError = if (error is com.google.firebase.auth.FirebaseAuthUserCollisionException) {
-                        "An account with this email already exists. Please log in with your password or primary provider first to link Facebook."
+                    if (error is FirebaseAuthUserCollisionException) {
+                        pendingCredential = credential
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                showAccountLinkingDialog = true,
+                                pendingSocialProvider = "Facebook"
+                            )
+                        }
                     } else {
-                        "Unable to sign in with Facebook. Please try again later."
+                        handleAuthenticationFailure(error, "Unable to sign in with Facebook. Please try again later.")
                     }
-                    _state.update { it.copy(isLoading = false, errorMessage = displayError) }
                 }
             )
         }
     }
-    
+
     fun onFacebookLoginError(error: Exception) {
         android.util.Log.e("AuthViewModel", "Facebook SDK login error", error)
         val msg = error.message ?: ""
@@ -232,32 +277,31 @@ class AuthViewModel(
     }
 
     fun onGoogleLoginSuccess(idToken: String) {
+        val currentState = _state.value
+        if (currentState.isLoading || currentState.cooldownSeconds > 0) return
+
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
-            if (!signInWithEnteredEmailIfNeeded()) return@launch
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
             val result = authRepository.loginWithGoogle(idToken)
 
             result.fold(
                 onSuccess = {
-                    val userId = authRepository.getCurrentUserId() ?: ""
-                    _state.update { it.copy(
-                        isLoading = false,
-                        isAuthenticated = true
-                    ) }
-                    if (preferenceRepository.shouldShowOnboarding(userId)) {
-                        _effect.send(AuthEffect.NavigateToOnboarding)
-                    } else {
-                        _effect.send(AuthEffect.NavigateToDashboard)
-                    }
+                    handleSuccessfulAuthentication(_state.value.email, currentState.rememberMe)
                 },
                 onFailure = { error ->
-                    android.util.Log.e("AuthViewModel", "Google Firebase authentication failed", error)
-                    val displayError = if (error is com.google.firebase.auth.FirebaseAuthUserCollisionException) {
-                        "An account with this email already exists. Please log in with your password or primary provider first to link Google."
+                    if (error is FirebaseAuthUserCollisionException) {
+                        pendingCredential = credential
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                showAccountLinkingDialog = true,
+                                pendingSocialProvider = "Google"
+                            )
+                        }
                     } else {
-                        "Google login failed. Please try again."
+                        handleAuthenticationFailure(error, "Google login failed. Please try again.")
                     }
-                    _state.update { it.copy(isLoading = false, errorMessage = displayError) }
                 }
             )
         }
@@ -266,12 +310,10 @@ class AuthViewModel(
     fun onGoogleLoginError(error: Exception) {
         android.util.Log.e("AuthViewModel", "Google login error", error)
         val msg = error.message ?: ""
-        val displayError = if (msg.contains("SHA-1", ignoreCase = true) || msg.contains("Web Client ID", ignoreCase = true)) {
-            "Google login requires SHA-1 fingerprint configuration in Firebase Console."
-        } else if (msg.contains("canceled", ignoreCase = true) || msg.contains("cancelled", ignoreCase = true)) {
+        val displayError = if (msg.contains("canceled", ignoreCase = true) || msg.contains("cancelled", ignoreCase = true)) {
             "Google login was cancelled."
         } else {
-            "Google login was cancelled or failed. Please try again."
+            "Google login failed. Please try again."
         }
         _state.update { it.copy(isLoading = false, errorMessage = displayError) }
     }
@@ -279,22 +321,97 @@ class AuthViewModel(
     fun logout() {
         viewModelScope.launch {
             authRepository.logout()
-            preferenceRepository.clearLocalData()
+            wipeSensitiveState()
             _state.update { it.copy(
                 isAuthenticated = false,
                 username = "",
-                email = "",
-                password = "",
-                confirmPassword = ""
+                email = preferenceRepository.getSavedEmail() ?: ""
             ) }
             _effect.send(AuthEffect.NavigateToLogin)
         }
     }
 
+    private fun handleSuccessfulAuthentication(email: String, rememberMe: Boolean) {
+        preferenceRepository.setHasEverLoggedIn(true)
+        if (rememberMe && email.isNotBlank()) {
+            preferenceRepository.setSavedEmail(email)
+        } else {
+            preferenceRepository.setSavedEmail(null)
+        }
+
+        val pending = pendingCredential
+        val userId = authRepository.getCurrentUserId() ?: ""
+
+        viewModelScope.launch {
+            if (pending != null) {
+                authRepository.linkCredential(pending)
+                pendingCredential = null
+            }
+
+            wipeSensitiveState()
+            _state.update {
+                it.copy(
+                    isLoading = false,
+                    isAuthenticated = true,
+                    showAccountLinkingDialog = false,
+                    pendingSocialProvider = null,
+                    linkedProviders = authRepository.getAuthProviders()
+                )
+            }
+
+            if (preferenceRepository.shouldShowOnboarding(userId)) {
+                _effect.send(AuthEffect.NavigateToOnboarding)
+            } else {
+                _effect.send(AuthEffect.NavigateToDashboard)
+            }
+        }
+    }
+
+    private fun handleAuthenticationFailure(error: Throwable, defaultMessage: String) {
+        android.util.Log.e("AuthViewModel", "Authentication operation failed", error)
+        if (isTooManyRequestsError(error)) {
+            startRateLimitCooldown()
+        } else {
+            _state.update { it.copy(isLoading = false, errorMessage = defaultMessage) }
+        }
+    }
+
+    private fun isTooManyRequestsError(error: Throwable): Boolean {
+        if (error is FirebaseAuthException) {
+            return error.errorCode == "ERROR_TOO_MANY_REQUESTS" || (error.message?.contains("TOO_MANY_REQUESTS", ignoreCase = true) == true)
+        }
+        val msg = error.message ?: ""
+        return msg.contains("TOO_MANY_REQUESTS", ignoreCase = true) || msg.contains("too many", ignoreCase = true)
+    }
+
+    private fun startRateLimitCooldown() {
+        cooldownJob?.cancel()
+        _state.update {
+            it.copy(
+                isLoading = false,
+                cooldownSeconds = 30,
+                errorMessage = "Please wait a moment before trying again."
+            )
+        }
+        cooldownJob = viewModelScope.launch {
+            for (i in 30 downTo 1) {
+                _state.update { it.copy(cooldownSeconds = i) }
+                delay(1000)
+            }
+            _state.update { it.copy(cooldownSeconds = 0, errorMessage = null) }
+        }
+    }
+
     private fun checkSession() {
         if (authRepository.isUserAuthenticated()) {
+            preferenceRepository.setHasEverLoggedIn(true)
             val userId = authRepository.getCurrentUserId() ?: ""
-            _state.update { it.copy(isAuthenticated = true) }
+            _state.update {
+                it.copy(
+                    isAuthenticated = true,
+                    linkedProviders = authRepository.getAuthProviders()
+                )
+            }
             viewModelScope.launch {
                 if (preferenceRepository.shouldShowOnboarding(userId)) {
                     _effect.send(AuthEffect.NavigateToOnboarding)
@@ -305,45 +422,18 @@ class AuthViewModel(
         }
     }
 
-    private suspend fun signInWithEnteredEmailIfNeeded(): Boolean {
-        val currentState = _state.value
-        if (authRepository.isUserAuthenticated()
-            || currentState.activeTab != AuthTab.LOGIN
-            || currentState.email.isBlank()
-            || currentState.password.isBlank()
-        ) {
-            return true
-        }
-
-        val result = authRepository.login(
-            currentState.email.trim(),
-            currentState.password
-        )
-        if (result.isSuccess) return true
-
+    private fun wipeSensitiveState() {
+        pendingCredential = null
         _state.update {
             it.copy(
-                isLoading = false,
-                errorMessage = "Enter the email password for this account before linking a social login."
+                password = "",
+                confirmPassword = "",
+                passwordError = null,
+                confirmPasswordError = null,
+                errorMessage = null,
+                showAccountLinkingDialog = false,
+                pendingSocialProvider = null
             )
-        }
-        return false
-    }
-
-    private fun calculatePasswordStrength(password: String): PasswordStrength {
-        if (password.isEmpty()) return PasswordStrength.NONE
-        if (password.length < 6) return PasswordStrength.WEAK
-
-        var score = 0
-        if (password.length >= 8) score++
-        if (password.any { it.isUpperCase() } && password.any { it.isLowerCase() }) score++
-        if (password.any { it.isDigit() }) score++
-        if (password.any { !it.isLetterOrDigit() }) score++
-
-        return when {
-            score >= 3 && password.length >= 8 -> PasswordStrength.STRONG
-            score >= 2 -> PasswordStrength.FAIR
-            else -> PasswordStrength.WEAK
         }
     }
 
@@ -359,7 +449,7 @@ class AuthViewModel(
             _state.update { it.copy(emailError = "Invalid email format") }
             isValid = false
         }
-        
+
         if (password.isBlank()) {
             _state.update { it.copy(passwordError = "Password is required") }
             isValid = false
@@ -386,18 +476,15 @@ class AuthViewModel(
             _state.update { it.copy(emailError = "Invalid email format") }
             isValid = false
         }
-        
-        if (password.isBlank()) {
-            _state.update { it.copy(passwordError = "Password is required") }
-            isValid = false
-        } else if (password.length < 8) {
-            _state.update { it.copy(passwordError = "Password must be at least 8 characters") }
-            isValid = false
-        } else if (!password.any { it.isDigit() || !it.isLetterOrDigit() } || !password.any { it.isLetter() }) {
-            _state.update { it.copy(passwordError = "Password must contain letters and numbers/symbols") }
-            isValid = false
-        } else if (calculatePasswordStrength(password) == PasswordStrength.WEAK) {
-            _state.update { it.copy(passwordError = "Password is too weak. Please include uppercase, lowercase, numbers or symbols.") }
+
+        val validation = PasswordValidator.validate(password)
+        if (!validation.isValid) {
+            val msg = when {
+                validation.violations.contains(PasswordRuleViolation.TOO_SHORT) -> "Password must be at least 8 characters"
+                validation.violations.contains(PasswordRuleViolation.MISSING_LETTER) -> "Password must contain letters"
+                else -> "Password must contain letters and numbers/symbols"
+            }
+            _state.update { it.copy(passwordError = msg) }
             isValid = false
         }
 
@@ -408,11 +495,16 @@ class AuthViewModel(
             _state.update { it.copy(confirmPasswordError = "Passwords do not match") }
             isValid = false
         }
-        
+
         if (!agreed) {
             _state.update { it.copy(termsError = "You must agree to terms") }
             isValid = false
         }
         return isValid
+    }
+
+    override fun onCleared() {
+        wipeSensitiveState()
+        cooldownJob?.cancel()
     }
 }

@@ -38,7 +38,13 @@ class WelcomeViewModel : ViewModel() {
 
     fun onGetStarted() {
         viewModelScope.launch {
-            _effect.send(WelcomeEffect.NavigateToAuth)
+            _effect.send(WelcomeEffect.NavigateToRegister)
+        }
+    }
+
+    fun onLoginClicked() {
+        viewModelScope.launch {
+            _effect.send(WelcomeEffect.NavigateToLogin)
         }
     }
 

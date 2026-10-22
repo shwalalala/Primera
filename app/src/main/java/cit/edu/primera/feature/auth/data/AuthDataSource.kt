@@ -29,6 +29,7 @@ class AuthDataSource {
     fun getAuthProviders(): Set<String> {
         return auth.currentUser?.providerData
             ?.map { it.providerId }
+            ?.filter { it != "firebase" }
             ?.toSet()
             ?: emptySet()
     }
@@ -98,6 +99,22 @@ class AuthDataSource {
         return user.uid
     }
 
+    suspend fun linkCredential(credential: AuthCredential) {
+        val user = auth.currentUser ?: throw Exception("User is not authenticated")
+        user.linkWithCredential(credential).await()
+    }
+
+    suspend fun unlinkProvider(providerId: String) {
+        val user = auth.currentUser ?: throw Exception("User is not authenticated")
+        val validProviders = user.providerData
+            .map { it.providerId }
+            .filter { it != "firebase" }
+        if (validProviders.size <= 1) {
+            throw Exception("Cannot unlink sole remaining authentication provider")
+        }
+        user.unlink(providerId).await()
+    }
+
     private suspend fun linkOrSignIn(
         credential: AuthCredential,
         providerId: String,
@@ -141,6 +158,7 @@ class AuthDataSource {
         updateData["username"] = currentUsername
         updateData["authProviders"] = user.providerData
             .map { it.providerId }
+            .filter { it != "firebase" }
             .distinct()
             .sorted()
         updateData["lastLoginProvider"] = lastLoginProvider
@@ -156,7 +174,7 @@ class AuthDataSource {
     }
 
     suspend fun sendPasswordResetEmail(email: String) {
-        auth.sendPasswordResetEmail(email).await()
+        auth.sendPasswordResetEmail(normalizeEmail(email)).await()
     }
 
     private suspend fun reauthenticate(currentPassword: String) {
@@ -205,9 +223,11 @@ class AuthDataSource {
     }
 
     suspend fun logActivity(type: String, message: String, userId: String?) {
+        // Redact PII (emails) from log messages to protect user privacy
+        val sanitizedMessage = message.replace(Regex("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"), "[REDACTED_EMAIL]")
         val logData = hashMapOf(
             "type" to type,
-            "message" to message,
+            "message" to sanitizedMessage,
             "userId" to userId,
             "timestamp" to Date()
         )
@@ -218,8 +238,8 @@ class AuthDataSource {
         }
     }
 
-    private companion object {
-        const val TAG = "AuthDataSource"
+    companion object {
+        private const val TAG = "AuthDataSource"
 
         fun normalizeEmail(email: String): String = email.trim().lowercase(Locale.ROOT)
     }

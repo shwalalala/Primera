@@ -34,7 +34,6 @@ import cit.edu.primera.core.theme.TextPrimary
 import cit.edu.primera.core.theme.TextSecondary
 import cit.edu.primera.feature.auth.ui.AuthEffect
 import cit.edu.primera.feature.auth.ui.AuthTab
-import cit.edu.primera.feature.auth.ui.AuthUiState
 import cit.edu.primera.feature.auth.ui.AuthViewModel
 import cit.edu.primera.feature.auth.ui.ForgotPasswordScreen
 import cit.edu.primera.feature.auth.ui.LoginScreen
@@ -89,8 +88,18 @@ fun AppNavGraph(
                 }
 
                 is AuthEffect.NavigateToLogin -> {
-                    navController.navigate(Routes.AUTH_SCREEN) {
-                        popUpTo(0) { inclusive = true }
+                    val target = currentRoute ?: Routes.LOGIN
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(target) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+
+                is AuthEffect.NavigateToRegister -> {
+                    val target = currentRoute ?: Routes.REGISTER
+                    navController.navigate(Routes.REGISTER) {
+                        popUpTo(target) { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
 
@@ -145,7 +154,7 @@ fun AppNavGraph(
                         }
                     },
                     onNavigateToAuth = {
-                        navController.navigate(Routes.AUTH_SCREEN) {
+                        navController.navigate(Routes.LOGIN) {
                             popUpTo(Routes.SPLASH) {
                                 inclusive = true
                             }
@@ -170,8 +179,15 @@ fun AppNavGraph(
 
             composable(Routes.WELCOME) {
                 WelcomeScreen(
-                    onNavigateToAuth = {
-                        navController.navigate(Routes.AUTH_SCREEN) {
+                    onNavigateToRegister = {
+                        navController.navigate(Routes.REGISTER) {
+                            popUpTo(Routes.WELCOME) {
+                                inclusive = true
+                            }
+                        }
+                    },
+                    onNavigateToLogin = {
+                        navController.navigate(Routes.LOGIN) {
                             popUpTo(Routes.WELCOME) {
                                 inclusive = true
                             }
@@ -180,12 +196,64 @@ fun AppNavGraph(
                 )
             }
 
-            composable(Routes.AUTH_SCREEN) {
+            composable(Routes.LOGIN) {
                 val state by authViewModel.uiState.collectAsStateWithLifecycle()
+                val launchFacebook = rememberFacebookLoginLauncher(
+                    onAuthComplete = authViewModel::onFacebookLoginSuccess,
+                    onAuthError = authViewModel::onFacebookLoginError
+                )
+                val launchGoogle = rememberGoogleLoginLauncher(
+                    onAuthComplete = authViewModel::onGoogleLoginSuccess,
+                    onAuthError = authViewModel::onGoogleLoginError
+                )
 
-                AuthScreenHost(
+                LoginScreen(
                     state = state,
-                    authViewModel = authViewModel
+                    onEmailChange = authViewModel::onEmailChange,
+                    onPasswordChange = authViewModel::onPasswordChange,
+                    onRememberMeToggle = authViewModel::onRememberMeToggle,
+                    onForgotPasswordClicked = authViewModel::onForgotPasswordClicked,
+                    onLoginClicked = authViewModel::onLoginClicked,
+                    onTabSelected = { tab ->
+                        if (tab == AuthTab.SIGNUP) authViewModel.onNavigateToRegisterClicked()
+                    },
+                    onSocialLoginClicked = authViewModel::onSocialLoginClicked,
+                    onFacebookLoginClicked = { launchFacebook() },
+                    onGoogleLoginClicked = { launchGoogle() },
+                    onNavigateToRegister = authViewModel::onNavigateToRegisterClicked,
+                    onDismissAccountLinkingDialog = authViewModel::onDismissAccountLinkingDialog
+                )
+            }
+
+            composable(Routes.REGISTER) {
+                val state by authViewModel.uiState.collectAsStateWithLifecycle()
+                val launchFacebook = rememberFacebookLoginLauncher(
+                    onAuthComplete = authViewModel::onFacebookLoginSuccess,
+                    onAuthError = authViewModel::onFacebookLoginError
+                )
+                val launchGoogle = rememberGoogleLoginLauncher(
+                    onAuthComplete = authViewModel::onGoogleLoginSuccess,
+                    onAuthError = authViewModel::onGoogleLoginError
+                )
+
+                RegisterScreen(
+                    state = state,
+                    onUsernameChange = authViewModel::onUsernameChange,
+                    onEmailChange = authViewModel::onEmailChange,
+                    onPasswordChange = authViewModel::onPasswordChange,
+                    onConfirmPasswordChange = authViewModel::onConfirmPasswordChange,
+                    onAgreedToTermsToggle = authViewModel::onAgreedToTermsToggle,
+                    onTermsClicked = authViewModel::onTermsClicked,
+                    onDismissTermsDialog = authViewModel::onDismissTermsDialog,
+                    onSignUpClicked = authViewModel::onSignUpClicked,
+                    onTabSelected = { tab ->
+                        if (tab == AuthTab.LOGIN) authViewModel.onNavigateToLoginClicked()
+                    },
+                    onSocialLoginClicked = authViewModel::onSocialLoginClicked,
+                    onFacebookLoginClicked = { launchFacebook() },
+                    onGoogleLoginClicked = { launchGoogle() },
+                    onNavigateToLogin = authViewModel::onNavigateToLoginClicked,
+                    onDismissAccountLinkingDialog = authViewModel::onDismissAccountLinkingDialog
                 )
             }
 
@@ -199,7 +267,7 @@ fun AppNavGraph(
                         }
                     },
                     onBack = {
-                        navController.navigate(Routes.AUTH_SCREEN) {
+                        navController.navigate(Routes.LOGIN) {
                             popUpTo(Routes.ONBOARDING) {
                                 inclusive = true
                             }
@@ -406,56 +474,6 @@ fun PlaceholderScreen(name: String) {
                 text = "Coming soon...",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
-            )
-        }
-    }
-}
-
-@Composable
-fun AuthScreenHost(
-    state: AuthUiState,
-    authViewModel: AuthViewModel
-) {
-    val launchFacebookLogin = rememberFacebookLoginLauncher(
-        onAuthComplete = authViewModel::onFacebookLoginSuccess,
-        onAuthError = authViewModel::onFacebookLoginError
-    )
-    val launchGoogleLogin = rememberGoogleLoginLauncher(
-        onAuthComplete = authViewModel::onGoogleLoginSuccess,
-        onAuthError = authViewModel::onGoogleLoginError
-    )
-
-    when (state.activeTab) {
-        AuthTab.LOGIN -> {
-            LoginScreen(
-                state = state,
-                onEmailChange = authViewModel::onEmailChange,
-                onPasswordChange = authViewModel::onPasswordChange,
-                onRememberMeToggle = authViewModel::onRememberMeToggle,
-                onForgotPasswordClicked = authViewModel::onForgotPasswordClicked,
-                onLoginClicked = authViewModel::onLoginClicked,
-                onTabSelected = authViewModel::onTabSelected,
-                onSocialLoginClicked = authViewModel::onSocialLoginClicked,
-                onFacebookLoginClicked = { launchFacebookLogin() },
-                onGoogleLoginClicked = { launchGoogleLogin() }
-            )
-        }
-
-        AuthTab.SIGNUP -> {
-            RegisterScreen(
-                state = state,
-                onUsernameChange = authViewModel::onUsernameChange,
-                onEmailChange = authViewModel::onEmailChange,
-                onPasswordChange = authViewModel::onPasswordChange,
-                onConfirmPasswordChange = authViewModel::onConfirmPasswordChange,
-                onAgreedToTermsToggle = authViewModel::onAgreedToTermsToggle,
-                onTermsClicked = authViewModel::onTermsClicked,
-                onDismissTermsDialog = authViewModel::onDismissTermsDialog,
-                onSignUpClicked = authViewModel::onSignUpClicked,
-                onTabSelected = authViewModel::onTabSelected,
-                onSocialLoginClicked = authViewModel::onSocialLoginClicked,
-                onFacebookLoginClicked = { launchFacebookLogin() },
-                onGoogleLoginClicked = { launchGoogleLogin() }
             )
         }
     }
