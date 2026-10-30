@@ -6,15 +6,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cit.edu.primera.R
 
 @Composable
-fun PrimeraLogoBubble(modifier: Modifier = Modifier) {
+fun PrimeraLogoBubble(
+    modifier: Modifier = Modifier,
+    size: Dp = 90.dp
+) {
     Image(
         painter = painterResource(id = R.drawable.primera_logo),
         contentDescription = "Primera Logo",
-        modifier = modifier.size(120.dp)
+        modifier = modifier.size(size)
     )
 }
 
@@ -23,4 +27,3 @@ fun PrimeraLogoBubble(modifier: Modifier = Modifier) {
 private fun BrandingPreview() {
     PrimeraLogoBubble()
 }
-
