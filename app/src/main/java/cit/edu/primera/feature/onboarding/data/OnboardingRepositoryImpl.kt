@@ -5,7 +5,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.tasks.await
-import java.util.*
+import java.util.Date
 
 class OnboardingRepositoryImpl : OnboardingRepository {
     private val auth = FirebaseAuth.getInstance()
@@ -15,8 +15,10 @@ class OnboardingRepositoryImpl : OnboardingRepository {
         return try {
             val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
 
+            val userEmail = profile.email?.takeIf { it.isNotBlank() } ?: auth.currentUser?.email
+
             val profileData = hashMapOf<String, Any?>(
-                "email" to profile.email,
+                "email" to userEmail,
                 "birthday" to profile.birthday,
                 "weightKg" to profile.weightKg,
                 "heightCm" to profile.heightCm,
