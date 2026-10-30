@@ -90,8 +90,8 @@ dependencies {
     // Google Sign-In (Credential Manager)
     implementation("androidx.credentials:credentials:1.3.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
-    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.2.1")
 
     // Facebook Login
-    implementation("com.facebook.android:facebook-login:17.0.0")
+    implementation("com.facebook.android:facebook-login:19.0.0")
 }
