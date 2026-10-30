@@ -26,7 +26,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import cit.edu.primera.PrimeraApplication
 import cit.edu.primera.core.di.ViewModelProvider
 import cit.edu.primera.core.theme.BackgroundCream
 import cit.edu.primera.core.theme.PrimeraLilac
@@ -310,14 +309,10 @@ fun AppNavGraph(
             }
 
             composable(Routes.INSIGHT) {
-                val application = androidx.compose.ui.platform.LocalContext.current.applicationContext
-                        as PrimeraApplication
-
                 InsightsScreen(
                     onBack = {
                         navController.popBackStack()
-                    },
-                    goalsRepository = application.container.goalsRepository
+                    }
                 )
             }
 

@@ -34,6 +34,12 @@ class GoalsRepositoryImpl : GoalsRepository {
                 }
                 val goals = snapshot?.documents?.mapNotNull { doc ->
                     try {
+                        val timestamp = when (val rawTimestamp = doc.get("timestamp")) {
+                            is com.google.firebase.Timestamp -> rawTimestamp.toDate()
+                            is Date -> rawTimestamp
+                            is Long -> Date(rawTimestamp)
+                            else -> Date()
+                        }
                         GoalDto(
                             id = doc.id,
                             userId = doc.getString("userId"),
@@ -45,7 +51,7 @@ class GoalsRepositoryImpl : GoalsRepository {
                             category = doc.getString("category"),
                             period = doc.getString("period") ?: "Weekly",
                             accentColorHex = doc.getString("accentColorHex"),
-                            timestamp = doc.getTimestamp("timestamp")?.toDate(),
+                            timestamp = timestamp,
                         )
                     } catch (_: Exception) {
                         null
@@ -66,9 +72,9 @@ class GoalsRepositoryImpl : GoalsRepository {
                 "currentValue" to goal.currentValue,
                 "targetValue" to goal.targetValue,
                 "unit" to goal.unit,
-                "category" to goal.category,
-                "period" to goal.period,
-                "accentColorHex" to goal.accentColorHex,
+                "category" to (goal.category ?: "Wellness"),
+                "period" to (goal.period ?: "Daily"),
+                "accentColorHex" to (goal.accentColorHex ?: "#64B5F6"),
                 "timestamp" to (goal.timestamp ?: Date())
             )
             firestore.collection("goals").add(goalData).await()
@@ -98,7 +104,9 @@ class GoalsRepositoryImpl : GoalsRepository {
                 "targetValue" to goal.targetValue,
                 "currentValue" to goal.currentValue,
                 "unit" to goal.unit,
-                "accentColorHex" to goal.accentColorHex
+                "accentColorHex" to goal.accentColorHex,
+                "period" to goal.period,
+                "category" to goal.category
             )
             firestore.collection("goals").document(goalId).update(goalData).await()
             Result.success(Unit)

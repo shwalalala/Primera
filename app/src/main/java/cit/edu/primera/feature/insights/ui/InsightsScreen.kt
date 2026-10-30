@@ -2,19 +2,40 @@ package cit.edu.primera.feature.insights.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -22,26 +43,40 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cit.edu.primera.core.di.ViewModelProvider
-import cit.edu.primera.core.theme.*
-import cit.edu.primera.feature.goals.data.GoalsRepository
+import cit.edu.primera.core.theme.BackgroundCream
+import cit.edu.primera.core.theme.ErrorRed
+import cit.edu.primera.core.theme.Good
+import cit.edu.primera.core.theme.HeartRateBg
+import cit.edu.primera.core.theme.PrimeraLilac
+import cit.edu.primera.core.theme.PrimeraTheme
+import cit.edu.primera.core.theme.PrimeraViolet
+import cit.edu.primera.core.theme.SleepBg
+import cit.edu.primera.core.theme.SurfaceWhite
+import cit.edu.primera.core.theme.TextPrimary
+import cit.edu.primera.core.theme.TextSecondary
 import cit.edu.primera.feature.goals.data.GoalDto
 import cit.edu.primera.feature.goals.ui.AddGoalDialog
-import androidx.compose.ui.platform.LocalContext
-import cit.edu.primera.ui.components.*
-import kotlinx.coroutines.launch
+import cit.edu.primera.ui.components.ChartContainer
+import cit.edu.primera.ui.components.DashboardSectionHeader
+import cit.edu.primera.ui.components.FeatureTopBar
+import cit.edu.primera.ui.components.FullScreenLoadingOverlay
+import cit.edu.primera.ui.components.GoalItemCard
+import cit.edu.primera.ui.components.InsightTipCard
+import cit.edu.primera.ui.components.MonitoringDisclaimerFooter
+import cit.edu.primera.ui.components.MoodLineChart
+import cit.edu.primera.ui.components.OfflineBanner
+import cit.edu.primera.ui.components.SimpleBarChart
 
 @Composable
 fun InsightsScreen(
     onBack: () -> Unit,
-    viewModel: InsightsViewModel = viewModel(factory = ViewModelProvider.Factory),
-    goalsRepository: GoalsRepository? = null 
+    viewModel: InsightsViewModel = viewModel(factory = ViewModelProvider.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val activePeriod by viewModel.activePeriod.collectAsStateWithLifecycle()
     val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
     var showAddGoal by remember { mutableStateOf(value = false) }
     var editingGoal by remember { mutableStateOf<GoalDto?>(null) }
-    val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
     InsightsScreenContent(
@@ -65,15 +100,9 @@ fun InsightsScreen(
             editingGoal = null
         },
         onSaveGoal = { goal ->
-            scope.launch {
-                if (goal.id != null) {
-                    goalsRepository?.updateGoal(goal)
-                } else {
-                    goalsRepository?.addGoal(goal)
-                }
-                showAddGoal = false
-                editingGoal = null
-            }
+            viewModel.saveGoal(goal)
+            showAddGoal = false
+            editingGoal = null
         },
         onWeightPrevious = viewModel::onWeightPrevious,
         onWeightNext = viewModel::onWeightNext,
@@ -202,6 +231,7 @@ fun InsightsScreenContent(
             AddGoalDialog(
                 onDismiss = onDismissGoalDialog,
                 editingGoal = editingGoal,
+                initialPeriod = activePeriod,
                 onConfirm = onSaveGoal
             )
         }
@@ -359,7 +389,10 @@ fun InsightsContent(
                 Spacer(Modifier.height(6.dp))
                 LinearProgressIndicator(
                     progress = { data.pregnancyProgress },
-                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
                     color = PrimeraViolet,
                     trackColor = PrimeraLilac.copy(alpha = 0.3f)
                 )
@@ -378,7 +411,10 @@ fun InsightsContent(
                 Spacer(Modifier.height(6.dp))
                 LinearProgressIndicator(
                     progress = { data.goalCompletionRatio },
-                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
                     color = Good,
                     trackColor = Good.copy(alpha = 0.15f)
                 )
@@ -415,18 +451,36 @@ fun InsightsContent(
                 
                 Spacer(Modifier.height(12.dp))
 
-                data.wellnessGoals.forEach { goal ->
-                    GoalItemCard(
-                        icon = goal.icon,
-                        title = goal.title,
-                        currentValue = goal.current,
-                        targetValue = goal.target,
-                        progress = goal.progress,
-                        accentColor = goal.color,
-                        onClick = { onGoalClick(goal.id) },
-                        onDelete = if (goal.isDeletable) { { onDeleteGoal(goal.id) } } else null
-                    )
-                    Spacer(Modifier.height(8.dp))
+                if (data.wellnessGoals.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No wellness goals set for $activePeriod. Tap + to add one!",
+                            fontSize = 13.sp,
+                            color = TextSecondary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                } else {
+                    data.wellnessGoals.forEach { goal ->
+                        GoalItemCard(
+                            icon = goal.icon,
+                            title = goal.title,
+                            currentValue = goal.current,
+                            targetValue = goal.target,
+                            progress = goal.progress,
+                            accentColor = goal.color,
+                            onClick = { onGoalClick(goal.id) },
+                            onDelete = if (goal.isDeletable) {
+                                { onDeleteGoal(goal.id) }
+                            } else null
+                        )
+                        Spacer(Modifier.height(8.dp))
+                    }
                 }
             }
         }

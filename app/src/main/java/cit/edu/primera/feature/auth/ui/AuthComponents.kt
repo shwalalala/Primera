@@ -1,5 +1,6 @@
 package cit.edu.primera.feature.auth.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,34 +25,24 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.platform.LocalContext
-import androidx.credentials.CredentialManager
-import androidx.credentials.CustomCredential
-import androidx.credentials.GetCredentialRequest
-import androidx.credentials.exceptions.GetCredentialCancellationException
-import androidx.credentials.exceptions.GetCredentialException
-import androidx.credentials.exceptions.NoCredentialException
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
-import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import kotlinx.coroutines.launch
-import androidx.activity.compose.rememberLauncherForActivityResult
-import com.facebook.CallbackManager
-import com.facebook.FacebookCallback
-import com.facebook.FacebookException
-import com.facebook.login.LoginManager
-import com.facebook.login.LoginResult
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
 import cit.edu.primera.R
 import cit.edu.primera.core.theme.DividerColor
 import cit.edu.primera.core.theme.InputBorder
@@ -61,6 +52,15 @@ import cit.edu.primera.core.theme.SurfaceWhite
 import cit.edu.primera.core.theme.TextPrimary
 import cit.edu.primera.core.theme.TextSecondary
 import cit.edu.primera.core.theme.ToggleTrack
+import com.facebook.CallbackManager
+import com.facebook.FacebookCallback
+import com.facebook.FacebookException
+import com.facebook.login.LoginManager
+import com.facebook.login.LoginResult
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.launch
 
 enum class AuthTab(val label: String) {
     LOGIN("Log In"),
@@ -76,15 +76,15 @@ fun AuthTabToggle(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(52.dp)
-            .clip(RoundedCornerShape(32.dp))
+            .height(46.dp)
+            .clip(RoundedCornerShape(24.dp))
             .background(ToggleTrack),
         contentAlignment = Alignment.Center
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(4.dp),
+                .padding(3.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AuthTab.entries.forEach { tab ->
@@ -93,21 +93,21 @@ fun AuthTabToggle(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp)
-                        .clip(RoundedCornerShape(28.dp))
+                        .height(40.dp)
+                        .clip(RoundedCornerShape(20.dp))
                         .background(if (isSelected) SurfaceWhite else Color.Transparent)
                         .then(
                             if (isSelected) Modifier.shadow(
-                                elevation = 4.dp,
-                                shape = RoundedCornerShape(28.dp)
+                                elevation = 2.dp,
+                                shape = RoundedCornerShape(20.dp)
                             ) else Modifier
                         )
                         .clickable { onTabSelected(tab) }
                 ) {
                     Text(
                         text = tab.label,
-                        fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
-                        fontSize = 15.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        fontSize = 14.sp,
                         color = if (isSelected) TextPrimary else TextSecondary
                     )
                 }
@@ -125,7 +125,7 @@ fun OrDivider(modifier: Modifier = Modifier) {
         HorizontalDivider(modifier = Modifier.weight(1f), color = DividerColor)
         Text(
             text = "  Or continue with  ",
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp),
             color = TextSecondary
         )
         HorizontalDivider(modifier = Modifier.weight(1f), color = DividerColor)
@@ -142,7 +142,7 @@ fun SocialIconButton(
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .height(52.dp)
+            .height(48.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(SurfaceWhite)
             .border(BorderStroke(1.dp, InputBorder.copy(alpha = 0.5f)), RoundedCornerShape(16.dp))
@@ -151,7 +151,7 @@ fun SocialIconButton(
         Icon(
             painter = icon,
             contentDescription = contentDescription,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(22.dp),
             tint = Color.Unspecified
         )
     }

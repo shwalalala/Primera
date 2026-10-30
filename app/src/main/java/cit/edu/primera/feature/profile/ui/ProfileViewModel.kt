@@ -77,39 +77,51 @@ class ProfileViewModel(
     fun onIsCycleRegularChange(isRegular: Boolean) = _uiState.update { it.copy(isCycleRegular = isRegular) }
     fun onShortestCycleChange(days: Int) = _uiState.update { it.copy(shortestCycleDays = days) }
     fun onLongestCycleChange(days: Int) = _uiState.update { it.copy(longestCycleDays = days) }
-    fun onHasHadUltrasoundChange(hasHad: Boolean) = _uiState.update { it.copy(hasHadUltrasound = hasHad) }
+    fun onHasHadUltrasoundChange(hasHad: Boolean) {
+        _uiState.update { it.copy(hasHadUltrasound = hasHad, error = null) }
+        if (hasHad) {
+            if (_uiState.value.scanDate != null) {
+                calculateEddFromUltrasound()
+            }
+        } else {
+            _uiState.update { it.copy(scanDate = null, scanWeeks = null, scanDays = null) }
+            calculateEddFromLmp()
+        }
+    }
+
     fun onScanDateChange(date: Date) {
         _uiState.update { it.copy(scanDate = date, error = null) }
         calculateEddFromUltrasound()
     }
+
     fun onScanWeeksChange(weeks: Int) {
-        _uiState.update { it.copy(scanWeeks = weeks) }
-        if (_uiState.value.scanDate == null) {
-            _uiState.update { it.copy(error = "Please select an Ultrasound Scan Date") }
-        } else {
+        _uiState.update { it.copy(scanWeeks = weeks, error = null) }
+        if (_uiState.value.scanDate != null) {
             calculateEddFromUltrasound()
         }
     }
+
     fun onScanDaysChange(days: Int) {
-        _uiState.update { it.copy(scanDays = days) }
-        if (_uiState.value.scanDate == null) {
-            _uiState.update { it.copy(error = "Please select an Ultrasound Scan Date") }
-        } else {
+        _uiState.update { it.copy(scanDays = days, error = null) }
+        if (_uiState.value.scanDate != null) {
             calculateEddFromUltrasound()
         }
     }
+
     fun onPositiveTestDateChange(date: Date) = _uiState.update { it.copy(positiveTestDate = date) }
 
     private fun calculateEddFromUltrasound() {
         val s = _uiState.value
-        val scanDate = s.scanDate 
-        if (scanDate == null) {
-            _uiState.update { it.copy(error = "Please select an Ultrasound Scan Date") }
+        val scanDate = s.scanDate
+        if (scanDate == null || s.hasHadUltrasound != true) {
+            calculateEddFromLmp()
             return
         }
         
         // EDD = Scan Date + (280 days - (weeks * 7 + days))
-        val gestationalDaysAtScan = ((s.scanWeeks ?: 0) * 7) + (s.scanDays ?: 0)
+        val weeks = s.scanWeeks ?: 0
+        val days = s.scanDays ?: 0
+        val gestationalDaysAtScan = (weeks * 7) + days
         val daysToRemaining = 280 - gestationalDaysAtScan
         
         val calendar = Calendar.getInstance().apply {
@@ -251,9 +263,13 @@ class ProfileViewModel(
     fun saveProfile() {
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
-            
+
+            val currentUserEmail =
+                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.email
+            val emailToSave = _uiState.value.email.ifBlank { currentUserEmail ?: "" }
+
             val profile = OnboardingProfile(
-                email = _uiState.value.email,
+                email = emailToSave,
                 birthday = _uiState.value.birthday ?: Date(),
                 weightKg = _uiState.value.weightKg,
                 heightCm = _uiState.value.heightCm,

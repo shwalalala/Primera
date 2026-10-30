@@ -12,7 +12,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.*
+import java.util.Calendar
+import java.util.Date
 
 class OnboardingViewModel(
     private val repository: OnboardingRepository,
@@ -303,8 +304,12 @@ class OnboardingViewModel(
             
             // BUG-003 Fix: Use a sensible default (25 years ago) if birthday is missing
             val defaultBirthday = Calendar.getInstance().apply { add(Calendar.YEAR, -25) }.time
-            
+
+            val currentUserEmail =
+                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.email
+
             val profile = OnboardingProfile(
+                email = currentUserEmail,
                 birthday = s.birthday ?: defaultBirthday,
                 weightKg = s.weightKg,
                 heightCm = s.heightCm,

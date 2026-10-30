@@ -24,12 +24,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import cit.edu.primera.R
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cit.edu.primera.R
 import cit.edu.primera.core.theme.PrimeraTheme
 import cit.edu.primera.core.theme.PrimeraViolet
 import cit.edu.primera.core.theme.SurfaceWhite
@@ -42,37 +42,37 @@ fun GoalIcon(
     modifier: Modifier = Modifier,
     tint: Color = PrimeraViolet
 ) {
-    if (icon.startsWith("R.drawable.")) {
-        val resName = icon.substringAfter("R.drawable.")
-        val resId = when(resName) {
-            "water" -> R.drawable.water
-            "steps" -> R.drawable.steps
-            "heart" -> R.drawable.heart
-            "sleep" -> R.drawable.sleep
-            "sp02" -> R.drawable.sp02
-            else -> 0
-        }
-        
-        if (resId != 0) {
-            Icon(
-                painter = painterResource(id = resId),
-                contentDescription = null,
-                modifier = modifier,
-                tint = tint
-            )
-        } else {
-            Icon(
-                imageVector = Icons.Default.Favorite,
-                contentDescription = null,
-                modifier = modifier,
-                tint = tint
-            )
-        }
-    } else {
+    val cleanIcon = icon.substringAfter("R.drawable.")
+    val resId = when (cleanIcon) {
+        "water" -> R.drawable.water
+        "steps" -> R.drawable.steps
+        "heart" -> R.drawable.heart
+        "sleep" -> R.drawable.sleep
+        "sp02" -> R.drawable.sp02
+        "apple" -> R.drawable.apple
+        "log" -> R.drawable.log
+        else -> 0
+    }
+
+    if (resId != 0) {
+        Icon(
+            painter = painterResource(id = resId),
+            contentDescription = null,
+            modifier = modifier,
+            tint = tint
+        )
+    } else if (icon.length <= 4 && !icon.startsWith("R.")) {
         Text(
             text = icon,
             fontSize = 20.sp,
             modifier = modifier
+        )
+    } else {
+        Icon(
+            imageVector = Icons.Default.Favorite,
+            contentDescription = null,
+            modifier = modifier,
+            tint = tint
         )
     }
 }
@@ -156,7 +156,9 @@ fun GoalItemCard(
                     if (onDelete != null) {
                         IconButton(
                             onClick = onDelete,
-                            modifier = Modifier.size(24.dp).padding(start = 4.dp)
+                            modifier = Modifier
+                                .size(24.dp)
+                                .padding(start = 4.dp)
                         ) {
                             Icon(
                                 Icons.Default.Delete,

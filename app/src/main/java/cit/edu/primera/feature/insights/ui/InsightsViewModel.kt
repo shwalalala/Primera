@@ -1,18 +1,26 @@
 package cit.edu.primera.feature.insights.ui
 
+import android.content.Context
 import androidx.compose.ui.graphics.Color
+import androidx.core.graphics.toColorInt
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.core.graphics.toColorInt
-import android.content.Context
 import cit.edu.primera.core.util.DataExportHelper
 import cit.edu.primera.feature.checkins.data.CheckinsRepository
 import cit.edu.primera.feature.dashboard.data.DashboardRepository
 import cit.edu.primera.feature.goals.data.GoalsRepository
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import kotlin.math.abs
 
 class InsightsViewModel(
@@ -606,6 +614,16 @@ class InsightsViewModel(
     fun onSpO2Previous() { _spO2Offset.value -= 1 }
     fun onSpO2Next() { _spO2Offset.value += 1 }
     fun onSpO2BarClick(index: Int) { _highlightedSpO2Index.value = index }
+
+    fun saveGoal(goal: cit.edu.primera.feature.goals.data.GoalDto) {
+        viewModelScope.launch {
+            if (goal.id.isNullOrBlank()) {
+                goalsRepository.addGoal(goal)
+            } else {
+                goalsRepository.updateGoal(goal)
+            }
+        }
+    }
 
     fun deleteGoal(goalId: String) {
         viewModelScope.launch {

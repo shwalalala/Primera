@@ -63,10 +63,10 @@ fun RegisterScreen(
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onConfirmPasswordChange: (String) -> Unit = {},
-    onAgreedToTermsToggle: (Boolean) -> Unit,
-    onTermsClicked: () -> Unit,
+    onAgreedToTermsToggle: (Boolean) -> Unit = {},
+    onTermsClicked: () -> Unit = {},
     onDismissTermsDialog: () -> Unit = {},
-    onSignUpClicked: () -> Unit,
+    onSignUpClicked: () -> Unit = {},
     onTabSelected: (AuthTab) -> Unit = {},
     onSocialLoginClicked: (String) -> Unit = {},
     onFacebookLoginClicked: () -> Unit = {},
@@ -94,30 +94,39 @@ fun RegisterScreen(
                 .navigationBarsPadding()
                 .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 24.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(28.dp))
-            PrimeraLogoBubble()
-            Spacer(Modifier.height(24.dp))
-            
+            Spacer(Modifier.height(8.dp))
+            PrimeraLogoBubble(size = 76.dp)
+            Spacer(Modifier.height(14.dp))
+
+            AuthTabToggle(
+                selectedTab = AuthTab.SIGNUP,
+                onTabSelected = onTabSelected,
+                modifier = Modifier.padding(horizontal = 12.dp)
+            )
+
+            Spacer(Modifier.height(18.dp))
+
             Text(
                 text = "Create Account",
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontSize = 30.sp,
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.Bold
                 ),
                 color = TextPrimary
             )
+            Spacer(Modifier.height(4.dp))
             Text(
                 text = "Sign up to start your journey",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
                 color = TextSecondary,
                 textAlign = TextAlign.Center
             )
-            
-            Spacer(Modifier.height(24.dp))
-            
+
+            Spacer(Modifier.height(18.dp))
+
             PrimeraTextField(
                 value = state.username,
                 onValueChange = onUsernameChange,
@@ -126,9 +135,9 @@ fun RegisterScreen(
                 isError = state.usernameError != null,
                 errorMessage = state.usernameError
             )
-            
-            Spacer(Modifier.height(16.dp))
-            
+
+            Spacer(Modifier.height(12.dp))
+
             PrimeraTextField(
                 value = state.email,
                 onValueChange = onEmailChange,
@@ -138,9 +147,9 @@ fun RegisterScreen(
                 isError = state.emailError != null,
                 errorMessage = state.emailError
             )
-            
-            Spacer(Modifier.height(16.dp))
-            
+
+            Spacer(Modifier.height(12.dp))
+
             PrimeraTextField(
                 value = state.password,
                 onValueChange = onPasswordChange,
@@ -159,15 +168,15 @@ fun RegisterScreen(
             if (state.passwordError == null) {
                 Text(
                     text = "Password must be at least 8 characters with letters & numbers",
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                     color = TextSecondary,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 16.dp, top = 4.dp)
+                        .padding(start = 12.dp, top = 2.dp)
                 )
             }
-            
-            Spacer(Modifier.height(16.dp))
+
+            Spacer(Modifier.height(12.dp))
 
             PrimeraTextField(
                 value = state.confirmPassword,
@@ -180,9 +189,9 @@ fun RegisterScreen(
                 isError = state.confirmPasswordError != null,
                 errorMessage = state.confirmPasswordError
             )
-            
-            Spacer(Modifier.height(12.dp))
-            
+
+            Spacer(Modifier.height(10.dp))
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -204,70 +213,78 @@ fun RegisterScreen(
                 )
                 Text(
                     text = "I agree to the ",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
                     color = TextSecondary
                 )
                 Text(
                     text = "Terms & Conditions",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
                     color = PrimeraViolet,
-                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.clickableNoRipple { onTermsClicked() }
                 )
             }
-            
+
             if (state.termsError != null) {
                 Text(
                     text = state.termsError,
                     color = ErrorRed,
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                    modifier = Modifier.padding(start = 12.dp, top = 2.dp)
                 )
             }
-            
-            Spacer(Modifier.height(28.dp))
-            
+
+            Spacer(Modifier.height(20.dp))
+
             PrimeraGradientButton(
                 text = if (state.cooldownSeconds > 0) "Wait (${state.cooldownSeconds}s)" else "Sign Up",
                 onClick = onSignUpClicked,
                 isLoading = state.isLoading
             )
-            
+
             if (state.errorMessage != null) {
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(12.dp))
                 Text(
                     text = state.errorMessage,
                     color = ErrorRed,
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium),
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    ),
                     textAlign = TextAlign.Center
                 )
             }
-            
-            Spacer(Modifier.height(20.dp))
-            
+
+            Spacer(Modifier.height(16.dp))
+
             OrDivider()
-            
-            Spacer(Modifier.height(20.dp))
-            
+
+            Spacer(Modifier.height(16.dp))
+
             SocialAuthRow(
                 onGoogleClick = onGoogleLoginClicked,
                 onFacebookClick = onFacebookLoginClicked
             )
-            
-            Spacer(Modifier.height(24.dp))
+
+            Spacer(Modifier.height(20.dp))
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 24.dp)
+                modifier = Modifier.padding(bottom = 16.dp)
             ) {
                 Text(
                     text = "Already have an account? ",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
                     color = TextSecondary
                 )
                 Text(
                     text = "Log In",
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
                     color = PrimeraViolet,
                     modifier = Modifier.clickable { onNavigateToLogin() }
                 )
@@ -307,27 +324,27 @@ fun PasswordStrengthBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .padding(horizontal = 12.dp, vertical = 2.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(6.dp)
-                .clip(RoundedCornerShape(3.dp))
+                .height(4.dp)
+                .clip(RoundedCornerShape(2.dp))
                 .background(Color.LightGray.copy(alpha = 0.4f))
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
                     .fillMaxWidth(flexWeight)
-                    .clip(RoundedCornerShape(3.dp))
+                    .clip(RoundedCornerShape(2.dp))
                     .background(barColor)
             )
         }
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(2.dp))
         Text(
             text = "Password Strength: ${strength.label}",
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
             color = barColor,
             fontWeight = FontWeight.Medium
         )
@@ -382,8 +399,8 @@ fun TermsAndConditionsDialog(
     )
 }
 
+@Preview(name = "Small Phone (360x640)", widthDp = 360, heightDp = 640)
 @Preview(name = "Compact Phone", device = Devices.PHONE)
-@Preview(name = "Small Phone", widthDp = 360, heightDp = 640)
 @Preview(name = "Large Phone", widthDp = 480, heightDp = 960)
 @Composable
 private fun RegisterScreenPreview() {
