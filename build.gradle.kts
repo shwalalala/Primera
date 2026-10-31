@@ -9,9 +9,9 @@ buildscript {
             // Resolves Alert #6: XML External Entity (XXE) Injection in JDOM
             force("org.jdom:jdom2:2.0.6.1")
             // Resolves Bouncy Castle version mismatch in AGP / Lint plugin signing classpath
-            force("org.bouncycastle:bcprov-jdk18on:1.80")
-            force("org.bouncycastle:bcpkix-jdk18on:1.80")
-            force("org.bouncycastle:bcutil-jdk18on:1.80")
+            force("org.bouncycastle:bcprov-jdk18on:1.86")
+            force("org.bouncycastle:bcpkix-jdk18on:1.86")
+            force("org.bouncycastle:bcutil-jdk18on:1.86")
         }
     }
 }
@@ -48,9 +48,9 @@ allprojects {
             force("io.netty:netty-codec:4.2.19.Final")
 
             // Resolves Alerts #12, #11, #41: Bouncy Castle vulnerabilities while keeping bcprov, bcpkix, and bcutil in lockstep (prevents NoSuchFieldError in AGP keystore generator)
-            force("org.bouncycastle:bcprov-jdk18on:1.80")
-            force("org.bouncycastle:bcpkix-jdk18on:1.80")
-            force("org.bouncycastle:bcutil-jdk18on:1.80")
+            force("org.bouncycastle:bcprov-jdk18on:1.86")
+            force("org.bouncycastle:bcpkix-jdk18on:1.86")
+            force("org.bouncycastle:bcutil-jdk18on:1.86")
 
             // Resolves Alert #7: jose4j Denial-of-Service via compressed JWE content (zip bomb)
             force("org.bitbucket.b_c:jose4j:0.9.7")
