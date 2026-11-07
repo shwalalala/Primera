@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,24 +38,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cit.edu.primera.core.theme.MenuButtonBg
 import cit.edu.primera.core.theme.MenuButtonBorder
 import cit.edu.primera.core.theme.PrimeraTheme
 import cit.edu.primera.core.theme.PrimeraViolet
 import cit.edu.primera.core.theme.SurfaceWhite
 import cit.edu.primera.core.theme.TextPrimary
-import cit.edu.primera.core.theme.TextSecondary
 
 @Composable
-fun FeatureTopBar(
+fun MainTopBar(
     title: String,
-    onBack: () -> Unit,
+    onOpenDrawer: () -> Unit,
+    onPrintQrClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     selectedPeriod: String? = null,
-    onPeriodSelected: ((String) -> Unit)? = null,
-    onExport: (() -> Unit)? = null,
-    onSettings: (() -> Unit)? = null,
-    onPrintQrClick: (() -> Unit)? = null
+    onPeriodSelected: ((String) -> Unit)? = null
 ) {
     var showPeriodMenu by remember { mutableStateOf(false) }
 
@@ -70,20 +67,29 @@ fun FeatureTopBar(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(MenuButtonBg)
+                .background(SurfaceWhite)
                 .border(1.dp, MenuButtonBorder, CircleShape)
                 .minimumInteractiveComponentSize()
-                .clickable { onBack() },
+                .clickable { onOpenDrawer() },
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBackIos,
-                contentDescription = "Back",
-                tint = TextSecondary,
-                modifier = Modifier
-                    .size(16.dp)
-                    .padding(start = 4.dp)
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Box(
+                    Modifier
+                        .size(width = 16.dp, height = 2.dp)
+                        .background(PrimeraViolet)
+                )
+                Box(
+                    Modifier
+                        .size(width = 16.dp, height = 2.dp)
+                        .background(PrimeraViolet)
+                )
+                Box(
+                    Modifier
+                        .size(width = 10.dp, height = 2.dp)
+                        .background(PrimeraViolet)
+                )
+            }
         }
 
         Text(
@@ -103,6 +109,7 @@ fun FeatureTopBar(
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))
                             .background(SurfaceWhite)
+                            .border(1.dp, MenuButtonBorder, RoundedCornerShape(20.dp))
                             .clickable { showPeriodMenu = true }
                             .padding(horizontal = 12.dp, vertical = 6.dp),
                         contentAlignment = Alignment.Center
@@ -118,7 +125,142 @@ fun FeatureTopBar(
                             Icon(
                                 imageVector = Icons.Default.ArrowDropDown,
                                 contentDescription = "Select Period",
-                                tint = TextSecondary,
+                                tint = PrimeraViolet,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = showPeriodMenu,
+                        onDismissRequest = { showPeriodMenu = false },
+                        modifier = Modifier
+                            .background(SurfaceWhite)
+                            .border(1.dp, MenuButtonBorder, RoundedCornerShape(12.dp))
+                    ) {
+                        listOf("Daily", "Weekly", "Monthly", "Yearly").forEach { period ->
+                            DropdownMenuItem(
+                                text = { 
+                                    Text(
+                                        text = period, 
+                                        fontSize = 14.sp,
+                                        color = TextPrimary
+                                    ) 
+                                },
+                                onClick = {
+                                    onPeriodSelected(period)
+                                    showPeriodMenu = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (onPrintQrClick != null) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(SurfaceWhite)
+                        .border(1.dp, MenuButtonBorder, CircleShape)
+                        .minimumInteractiveComponentSize()
+                        .clickable { onPrintQrClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.QrCode,
+                        contentDescription = "Print Summary QR",
+                        tint = PrimeraViolet,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            } else {
+                Spacer(Modifier.size(40.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun FeatureTopBar(
+    title: String,
+    onBack: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+    selectedPeriod: String? = null,
+    onPeriodSelected: ((String) -> Unit)? = null,
+    onExport: (() -> Unit)? = null,
+    onSettings: (() -> Unit)? = null,
+    onPrintQrClick: (() -> Unit)? = null
+) {
+    var showPeriodMenu by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (onBack != null) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(SurfaceWhite)
+                    .border(1.dp, MenuButtonBorder, CircleShape)
+                    .minimumInteractiveComponentSize()
+                    .clickable { onBack() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBackIos,
+                    contentDescription = "Back",
+                    tint = PrimeraViolet,
+                    modifier = Modifier
+                        .size(16.dp)
+                        .padding(start = 4.dp)
+                )
+            }
+        } else {
+            Spacer(Modifier.size(40.dp))
+        }
+
+        Text(
+            text = title,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextPrimary
+        )
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (selectedPeriod != null && onPeriodSelected != null) {
+                Box {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(SurfaceWhite)
+                            .border(1.dp, MenuButtonBorder, RoundedCornerShape(20.dp))
+                            .clickable { showPeriodMenu = true }
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = selectedPeriod,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = PrimeraViolet
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Select Period",
+                                tint = PrimeraViolet,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -155,7 +297,7 @@ fun FeatureTopBar(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(MenuButtonBg)
+                        .background(SurfaceWhite)
                         .border(1.dp, MenuButtonBorder, CircleShape)
                         .minimumInteractiveComponentSize()
                         .clickable { onExport() },
@@ -164,7 +306,7 @@ fun FeatureTopBar(
                     Icon(
                         imageVector = Icons.Default.Share,
                         contentDescription = "Export",
-                        tint = TextSecondary,
+                        tint = PrimeraViolet,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -174,7 +316,7 @@ fun FeatureTopBar(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(MenuButtonBg)
+                        .background(SurfaceWhite)
                         .border(1.dp, MenuButtonBorder, CircleShape)
                         .minimumInteractiveComponentSize()
                         .clickable { onSettings() },
@@ -183,7 +325,7 @@ fun FeatureTopBar(
                     Icon(
                         imageVector = Icons.Default.Settings,
                         contentDescription = "Settings",
-                        tint = TextSecondary,
+                        tint = PrimeraViolet,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -193,7 +335,7 @@ fun FeatureTopBar(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(MenuButtonBg)
+                        .background(SurfaceWhite)
                         .border(1.dp, MenuButtonBorder, CircleShape)
                         .minimumInteractiveComponentSize()
                         .clickable { onPrintQrClick() },
@@ -208,7 +350,7 @@ fun FeatureTopBar(
                 }
             }
             if (onExport == null && onSettings == null && selectedPeriod == null && onPrintQrClick == null) {
-                Box(modifier = Modifier.size(40.dp))
+                Spacer(Modifier.size(40.dp))
             }
         }
     }

@@ -1,28 +1,31 @@
 package cit.edu.primera.feature.dashboard.ui
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,18 +33,18 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cit.edu.primera.core.di.ViewModelProvider
-import cit.edu.primera.core.navigation.Routes
 import cit.edu.primera.core.theme.BackgroundCream
 import cit.edu.primera.core.theme.ErrorRed
 import cit.edu.primera.core.theme.PrimeraLilac
 import cit.edu.primera.core.theme.PrimeraTheme
-import cit.edu.primera.ui.components.AppSidebar
+import cit.edu.primera.core.theme.PrimeraViolet
 import cit.edu.primera.ui.components.FullScreenLoadingOverlay
 import cit.edu.primera.ui.components.OfflineBanner
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 @Composable
 fun DashboardScreen(
+    onOpenDrawer: () -> Unit,
     modifier: Modifier = Modifier,
     onLogout: () -> Unit,
     onNavigate: (String) -> Unit,
@@ -54,81 +57,39 @@ fun DashboardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
-
-    val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        uri?.let { viewModel.onPhotoUriSelected(it.toString()) }
-    }
 
     when (val state = uiState) {
         is DashboardUiState.Loading -> FullScreenLoadingOverlay()
         is DashboardUiState.Error -> ErrorContent(state.message)
         is DashboardUiState.Success -> {
-            ModalNavigationDrawer(
-                drawerState = drawerState,
-                scrimColor = Color.Black.copy(alpha = 0.6f),
-                drawerContent = {
-                    AppSidebar(
-                        userName = state.data.userName,
-                        email = state.data.email,
-                        photoUri = state.data.photoUri,
-                        currentRoute = Routes.DASHBOARD,
-                        onNavigate = { route ->
-                            coroutineScope.launch { drawerState.close() }
-                            onNavigate(route)
-                        },
-                        onClose = {
-                            coroutineScope.launch { drawerState.close() }
-                        },
-                        onEditProfilePicture = {
-                            photoPickerLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            Box(
+                modifier = modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                BackgroundCream,
+                                PrimeraLilac.copy(alpha = 0.45f)
                             )
-                        },
-                        onNotificationClick = {
-                            coroutineScope.launch { drawerState.close() }
-                        },
-                        onLogoutClick = {
-                            coroutineScope.launch { drawerState.close() }
-                            onLogout()
-                        }
+                        )
                     )
-                }
             ) {
-                Box(
-                    modifier = modifier
-                        .fillMaxSize()
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    BackgroundCream,
-                                    PrimeraLilac.copy(alpha = 0.45f)
-                                )
-                            )
-                        )
-                ) {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        DashboardTopBar(
-                            onOpenDrawer = {
-                                coroutineScope.launch { drawerState.open() }
-                            },
-                            onPrintQrClick = { viewModel.onExportSummaryPdf(context) }
-                        )
+                Column(modifier = Modifier.fillMaxSize()) {
+                    DashboardTopBar(
+                        onOpenDrawer = onOpenDrawer,
+                        onPrintQrClick = { viewModel.onExportSummaryPdf(context) }
+                    )
 
-                        if (!isOnline) {
-                            OfflineBanner()
-                        }
-
-                        DashboardContent(
-                            state = state.data,
-                            onInputManually = onInputManually,
-                            onSyncWatch = { viewModel.onSyncWatch() }
-                        )
+                    if (!isOnline) {
+                        OfflineBanner()
                     }
+
+                    DashboardContent(
+                        state = state.data,
+                        onInputManually = onInputManually,
+                        onSyncWatch = { viewModel.onSyncWatch() }
+                    )
                 }
             }
         }
@@ -142,6 +103,19 @@ fun DashboardContent(
     onSyncWatch: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val pagerState = rememberPagerState(pageCount = { 2 })
+
+    LaunchedEffect(pagerState) {
+        while (true) {
+            delay(4000L)
+            val nextPage = (pagerState.currentPage + 1) % 2
+            pagerState.animateScrollToPage(
+                page = nextPage,
+                animationSpec = tween(durationMillis = 700, easing = FastOutSlowInEasing)
+            )
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -163,21 +137,59 @@ fun DashboardContent(
             trimesterText = "You're in your ${state.trimester}",
             inaccuracyWarning = null
         )
-        Spacer(Modifier.height(4.dp))
-        BabyRingCard(
-            weekNumber = state.weekNumber,
-            dayNumber = state.dayNumber,
-            daysLeft = state.daysLeft,
-            babySize = state.babySize,
-            babyEmoji = state.babyEmoji,
-            babyIllustration = state.babyIllustration
-        )
-        Spacer(Modifier.height(20.dp))
-        StatsGrid(
-            state = state,
-            onInputManually = onInputManually,
-            onSyncWatch = onSyncWatch
-        )
+        Spacer(Modifier.height(8.dp))
+
+        // Two-page auto-switching Carousel for Baby Progress & User Health Stats
+        Column(modifier = Modifier.fillMaxWidth()) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxWidth()
+            ) { page ->
+                when (page) {
+                    0 -> {
+                        BabyRingCard(
+                            weekNumber = state.weekNumber,
+                            dayNumber = state.dayNumber,
+                            daysLeft = state.daysLeft,
+                            babySize = state.babySize,
+                            babyEmoji = state.babyEmoji,
+                            babyIllustration = state.babyIllustration
+                        )
+                    }
+
+                    1 -> {
+                        StatsGrid(
+                            state = state,
+                            onInputManually = onInputManually,
+                            onSyncWatch = onSyncWatch
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
+
+            // Carousel Pager Indicator Dots
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                repeat(2) { index ->
+                    val isSelected = pagerState.currentPage == index
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 4.dp)
+                            .size(if (isSelected) 10.dp else 7.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (isSelected) PrimeraViolet else PrimeraLilac.copy(alpha = 0.6f)
+                            )
+                    )
+                }
+            }
+        }
+
         Spacer(Modifier.height(24.dp))
         cit.edu.primera.ui.components.MonitoringDisclaimerFooter()
         Spacer(Modifier.height(8.dp))
@@ -190,6 +202,7 @@ fun ErrorContent(message: String) {
         Text(text = message, color = ErrorRed)
     }
 }
+
 @Preview(name = "Compact Phone", device = Devices.PHONE)
 @Preview(name = "Small Phone", widthDp = 360, heightDp = 640)
 @Preview(name = "Large Phone", widthDp = 480, heightDp = 1560)

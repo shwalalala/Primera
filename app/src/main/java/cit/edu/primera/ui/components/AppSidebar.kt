@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -25,14 +25,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.MedicalServices
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Watch
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -82,10 +78,6 @@ fun AppSidebar(
 
         SidebarEntry.Header("HEALTH & TRACKING"),
         SidebarEntry.Item(Routes.DASHBOARD, "Home", Icons.Default.Home),
-        SidebarEntry.Item(Routes.DEVICE, "Smartwatch", Icons.Default.Watch),
-        SidebarEntry.Item(Routes.INSIGHT, "Insights", Icons.Default.Analytics),
-        SidebarEntry.Item(Routes.CHECKIN, "Health Logs", Icons.Default.MedicalServices),
-        SidebarEntry.Item(Routes.TRANSCRIPTION, "Voice Recorder", Icons.Default.Mic),
 
         SidebarEntry.Header("CONTENT"),
         @Suppress("DEPRECATION")
@@ -96,216 +88,226 @@ fun AppSidebar(
         )
     )
 
-    Box(
+    Surface(
         modifier = modifier
             .fillMaxHeight()
-            .width(316.dp)
+            .width(300.dp)
+            .clip(RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp)),
+        color = SurfaceWhite,
+        tonalElevation = 8.dp
     ) {
-        Surface(
+        Column(
             modifier = Modifier
                 .fillMaxHeight()
-                .width(300.dp)
-                .clip(RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp)),
-            color = SurfaceWhite,
-            tonalElevation = 8.dp
+                .background(BackgroundCream)
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(vertical = 16.dp, horizontal = 16.dp)
         ) {
-            Column(
+            // Top Bar: Back Button
+            Row(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .background(BackgroundCream)
-                    .statusBarsPadding()
-                    .padding(vertical = 20.dp, horizontal = 16.dp)
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Header: User Icon (editable), Name/Email, Notification Icon
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    color = SurfaceWhite,
-                    border = BorderStroke(1.dp, MenuButtonBorder),
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            ProfileAvatar(
-                                userName = userName,
-                                photoUri = photoUri,
-                                size = 48.dp,
-                                showEditBadge = true,
-                                onEditClick = onEditProfilePicture
-                            )
-
-                            Spacer(Modifier.width(10.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = userName.ifBlank { "User" },
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextPrimary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                if (!email.isNullOrBlank()) {
-                                    Text(
-                                        text = email,
-                                        fontSize = 11.sp,
-                                        color = TextSecondary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(PrimeraViolet.copy(alpha = 0.1f))
-                                .clickable { onNotificationClick() },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Notifications,
-                                contentDescription = "Notifications",
-                                tint = PrimeraViolet,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                HorizontalDivider(
-                    color = MenuButtonBorder,
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(horizontal = 4.dp)
-                )
-
-                Spacer(Modifier.height(12.dp))
-
-                // Navigation Entries List with category headers
-                Column(
+                Box(
                     modifier = Modifier
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(SurfaceWhite)
+                        .border(1.dp, MenuButtonBorder, CircleShape)
+                        .clickable { onClose() },
+                    contentAlignment = Alignment.Center
                 ) {
-                    entries.forEach { entry ->
-                        when (entry) {
-                            is SidebarEntry.Header -> {
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    text = entry.title,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = PrimeraViolet.copy(alpha = 0.75f),
-                                    modifier = Modifier.padding(
-                                        horizontal = 16.dp,
-                                        vertical = 4.dp
-                                    ),
-                                    letterSpacing = 1.sp
-                                )
-                                Spacer(Modifier.height(2.dp))
-                            }
-
-                            is SidebarEntry.Item -> {
-                                val isSelected = currentRoute == entry.route
-
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(
-                                            if (isSelected) PrimeraViolet.copy(alpha = 0.15f)
-                                            else Color.Transparent
-                                        )
-                                        .clickable { onNavigate(entry.route) }
-                                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = entry.icon,
-                                        contentDescription = entry.label,
-                                        tint = if (isSelected) PrimeraViolet else TextSecondary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(Modifier.width(16.dp))
-                                    Text(
-                                        text = entry.label,
-                                        fontSize = 14.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) PrimeraViolet else TextPrimary
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBackIos,
+                        contentDescription = "Close Sidebar",
+                        tint = PrimeraViolet,
+                        modifier = Modifier
+                            .size(14.dp)
+                            .padding(start = 3.dp)
+                    )
                 }
 
-                // Bottom Logout button
-                HorizontalDivider(
-                    color = MenuButtonBorder,
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                Text(
+                    text = "Menu",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
                 )
 
+                Spacer(modifier = Modifier.size(36.dp))
+            }
+
+            // Header: User Icon (editable), Name/Email, Notification Icon
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                color = SurfaceWhite,
+                border = BorderStroke(1.dp, MenuButtonBorder),
+                tonalElevation = 2.dp
+            ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color.Transparent)
-                        .clickable { onLogoutClick() }
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Logout,
-                        contentDescription = "Log Out",
-                        tint = cit.edu.primera.core.theme.ErrorRed,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(16.dp))
-                    Text(
-                        text = "Log Out",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = cit.edu.primera.core.theme.ErrorRed
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        ProfileAvatar(
+                            userName = userName,
+                            photoUri = photoUri,
+                            size = 48.dp,
+                            showEditBadge = true,
+                            onEditClick = onEditProfilePicture
+                        )
+
+                        Spacer(Modifier.width(10.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = userName.ifBlank { "User" },
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (!email.isNullOrBlank()) {
+                                Text(
+                                    text = email,
+                                    fontSize = 11.sp,
+                                    color = TextSecondary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(PrimeraViolet.copy(alpha = 0.1f))
+                            .clickable { onNotificationClick() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = "Notifications",
+                            tint = PrimeraViolet,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
-        }
 
-        // Half-circle back button tab at the top in line with name & notifs (seamless to sidebar)
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .align(Alignment.TopEnd)
-                .offset(x = 18.dp, y = 44.dp)
-                .clip(CircleShape)
-                .background(SurfaceWhite)
-                .border(1.5.dp, MenuButtonBorder, CircleShape)
-                .clickable { onClose() },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBackIos,
-                contentDescription = "Close Sidebar",
-                tint = PrimeraViolet,
-                modifier = Modifier
-                    .size(14.dp)
-                    .padding(start = 2.dp)
+            Spacer(Modifier.height(16.dp))
+
+            HorizontalDivider(
+                color = MenuButtonBorder,
+                thickness = 1.dp,
+                modifier = Modifier.padding(horizontal = 4.dp)
             )
+
+            Spacer(Modifier.height(12.dp))
+
+            // Navigation Entries List with category headers
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                entries.forEach { entry ->
+                    when (entry) {
+                        is SidebarEntry.Header -> {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = entry.title,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PrimeraViolet.copy(alpha = 0.75f),
+                                modifier = Modifier.padding(
+                                    horizontal = 16.dp,
+                                    vertical = 4.dp
+                                ),
+                                letterSpacing = 1.sp
+                            )
+                            Spacer(Modifier.height(2.dp))
+                        }
+
+                        is SidebarEntry.Item -> {
+                            val isSelected = currentRoute == entry.route
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(
+                                        if (isSelected) PrimeraViolet.copy(alpha = 0.15f)
+                                        else Color.Transparent
+                                    )
+                                    .clickable { onNavigate(entry.route) }
+                                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = entry.icon,
+                                    contentDescription = entry.label,
+                                    tint = if (isSelected) PrimeraViolet else TextSecondary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(Modifier.width(16.dp))
+                                Text(
+                                    text = entry.label,
+                                    fontSize = 14.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) PrimeraViolet else TextPrimary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Bottom Logout button
+            HorizontalDivider(
+                color = MenuButtonBorder,
+                thickness = 1.dp,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.Transparent)
+                    .clickable { onLogoutClick() }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Logout,
+                    contentDescription = "Log Out",
+                    tint = cit.edu.primera.core.theme.ErrorRed,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(16.dp))
+                Text(
+                    text = "Log Out",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = cit.edu.primera.core.theme.ErrorRed
+                )
+            }
         }
     }
 }
@@ -315,8 +317,8 @@ fun AppSidebar(
 private fun AppSidebarPreview() {
     PrimeraTheme {
         AppSidebar(
-            userName = "Rlexandra",
-            email = "rlexandra@gmail.com",
+            userName = "Jane Doe",
+            email = "janedoe@gmail.com",
             photoUri = null,
             currentRoute = Routes.DASHBOARD,
             onNavigate = {},

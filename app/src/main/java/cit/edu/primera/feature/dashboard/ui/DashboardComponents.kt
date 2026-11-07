@@ -45,7 +45,6 @@ import androidx.compose.ui.unit.sp
 import cit.edu.primera.R
 import cit.edu.primera.core.theme.HeartRateBg
 import cit.edu.primera.core.theme.LogPain
-import cit.edu.primera.core.theme.MenuButtonBg
 import cit.edu.primera.core.theme.MenuButtonBorder
 import cit.edu.primera.core.theme.PrimeraLilac
 import cit.edu.primera.core.theme.PrimeraViolet
@@ -85,7 +84,7 @@ fun DashboardTopBar(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(MenuButtonBg)
+                .background(SurfaceWhite)
                 .border(1.dp, MenuButtonBorder, CircleShape)
                 .minimumInteractiveComponentSize()
                 .clickable { onOpenDrawer() },
@@ -95,17 +94,17 @@ fun DashboardTopBar(
                 Box(
                     Modifier
                         .size(width = 16.dp, height = 2.dp)
-                        .background(TextSecondary)
+                        .background(PrimeraViolet)
                 )
                 Box(
                     Modifier
                         .size(width = 16.dp, height = 2.dp)
-                        .background(TextSecondary)
+                        .background(PrimeraViolet)
                 )
                 Box(
                     Modifier
                         .size(width = 10.dp, height = 2.dp)
-                        .background(TextSecondary)
+                        .background(PrimeraViolet)
                 )
             }
         }
@@ -122,7 +121,7 @@ fun DashboardTopBar(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(MenuButtonBg)
+                    .background(SurfaceWhite)
                     .border(1.dp, MenuButtonBorder, CircleShape)
                     .minimumInteractiveComponentSize()
                     .clickable { onPrintQrClick() },
@@ -247,13 +246,6 @@ fun StatsGrid(
         modifier = modifier.padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        if (!state.isWatchSynced) {
-            SyncWatchButton(
-                onClick = onSyncWatch, modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 0.dp)
-            )
-        }
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             HealthStatCard(
@@ -296,6 +288,14 @@ fun StatsGrid(
                 trendText = if (state.isWatchSynced) "Normal" else null,
                 trendColor = TrendGreen,
                 modifier = Modifier.weight(1f)
+            )
+        }
+
+        if (!state.isWatchSynced) {
+            SyncWatchButton(
+                onClick = onSyncWatch, modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 0.dp)
             )
         }
     }

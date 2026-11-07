@@ -3,7 +3,7 @@ package cit.edu.primera.feature.checkins.data
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -26,7 +26,6 @@ class CheckinsDataSource {
 
         val registration: ListenerRegistration = firestore.collection("checkins")
             .whereEqualTo("userId", userId)
-            .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     trySend(emptyList())
@@ -48,7 +47,7 @@ class CheckinsDataSource {
                     } catch (_: Exception) {
                         null
                     }
-                } ?: emptyList()
+                }?.sortedByDescending { it.timestamp ?: Date(0) } ?: emptyList()
 
                 trySend(logs)
             }
@@ -111,10 +110,10 @@ class CheckinsDataSource {
                 "warningMessage" to warningMessage
             )
 
-            if (log.id != null) {
+            if (!log.id.isNullOrBlank()) {
                 firestore.collection("checkins")
                     .document(log.id)
-                    .set(logData)
+                    .set(logData, SetOptions.merge())
                     .await()
             } else {
                 firestore.collection("checkins")
@@ -135,11 +134,12 @@ class CheckinsDataSource {
 
             firestore.collection("users")
                 .document(userId)
-                .update(
+                .set(
                     mapOf(
                         "weightKg" to weightKg,
                         "updatedAt" to Date()
-                    )
+                    ),
+                    SetOptions.merge()
                 )
                 .await()
 
@@ -156,38 +156,45 @@ class CheckinsDataSource {
     ): String? {
         if (currentSymptoms.isEmpty()) return null
 
-        val startDate = Calendar.getInstance().apply {
-            add(Calendar.DAY_OF_YEAR, -2)
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.time
+        return try {
+            val startDate = Calendar.getInstance().apply {
+                add(Calendar.DAY_OF_YEAR, -2)
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.time
 
-        val recentLogs = firestore.collection("checkins")
-            .whereEqualTo("userId", userId)
-            .whereGreaterThanOrEqualTo("timestamp", startDate)
-            .get()
-            .await()
-            .documents
-            .filter { document ->
-                currentEditingId == null || document.id != currentEditingId
+            val recentLogs = firestore.collection("checkins")
+                .whereEqualTo("userId", userId)
+                .get()
+                .await()
+                .documents
+                .filter { document ->
+                    currentEditingId == null || document.id != currentEditingId
+                }
+                .filter { document ->
+                    val ts = document.getTimestamp("timestamp")?.toDate()
+                    ts != null && !ts.before(startDate)
+                }
+
+            val previousSymptoms = recentLogs
+                .flatMap { document ->
+                    val description = document.getString("description").orEmpty()
+                    extractSymptomsFromDescription(description)
+                }
+                .map { it.lowercase().trim() }
+                .toSet()
+
+            val repeatedSymptom = currentSymptoms.firstOrNull { symptom ->
+                previousSymptoms.contains(symptom.lowercase().trim())
             }
 
-        val previousSymptoms = recentLogs
-            .flatMap { document ->
-                val description = document.getString("description").orEmpty()
-                extractSymptomsFromDescription(description)
+            repeatedSymptom?.let { symptom ->
+                "You have logged $symptom repeatedly within the last 3 days. Please monitor your condition and consider consulting a healthcare professional if it continues or worsens."
             }
-            .map { it.lowercase().trim() }
-            .toSet()
-
-        val repeatedSymptom = currentSymptoms.firstOrNull { symptom ->
-            previousSymptoms.contains(symptom.lowercase().trim())
-        }
-
-        return repeatedSymptom?.let { symptom ->
-            "You have logged $symptom repeatedly within the last 3 days. Please monitor your condition and consider consulting a healthcare professional if it continues or worsens."
+        } catch (_: Exception) {
+            null
         }
     }
 

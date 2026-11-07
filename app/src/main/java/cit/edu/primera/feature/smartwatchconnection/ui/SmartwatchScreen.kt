@@ -1,10 +1,20 @@
 package cit.edu.primera.feature.smartwatchconnection.ui
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,13 +22,18 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -26,11 +41,26 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cit.edu.primera.R
-import cit.edu.primera.core.theme.*
-import cit.edu.primera.ui.components.*
+import cit.edu.primera.core.theme.ArchFill
+import cit.edu.primera.core.theme.BackgroundCream
+import cit.edu.primera.core.theme.ErrorRed
+import cit.edu.primera.core.theme.HeartRateBg
+import cit.edu.primera.core.theme.PrimeraLilac
+import cit.edu.primera.core.theme.PrimeraTheme
+import cit.edu.primera.core.theme.PrimeraViolet
+import cit.edu.primera.core.theme.SleepBg
+import cit.edu.primera.core.theme.StepsBg
+import cit.edu.primera.core.theme.TextPrimary
+import cit.edu.primera.core.theme.TextSecondary
+import cit.edu.primera.core.theme.TrendGreen
+import cit.edu.primera.ui.components.ChartContainer
+import cit.edu.primera.ui.components.FeatureTopBar
+import cit.edu.primera.ui.components.HealthStatCard
+import cit.edu.primera.ui.components.PrimeraGradientButton
+import cit.edu.primera.ui.components.PrimeraOutlinedButton
+import cit.edu.primera.ui.components.SimpleBarChart
 import java.text.SimpleDateFormat
-import java.util.*
-import androidx.compose.ui.platform.LocalLocale
+import java.util.Date
 
 @Composable
 fun SmartwatchScreen(
@@ -39,6 +69,7 @@ fun SmartwatchScreen(
     onReadAndSave: () -> Unit,
     onBackToSources: () -> Unit,
     onOpenHealthConnect: () -> Unit,
+    onBack: (() -> Unit)? = null
 ) {
     Box(
         modifier = Modifier
@@ -67,7 +98,8 @@ fun SmartwatchScreen(
                     uiState = uiState,
                     onRequestPermissions = onRequestPermissions,
                     onConnectAndSync = onReadAndSave,
-                    onOpenHealthConnect = onOpenHealthConnect
+                    onOpenHealthConnect = onOpenHealthConnect,
+                    onBack = onBack
                 )
             }
         }
@@ -79,49 +111,22 @@ private fun ConnectDeviceContent(
     uiState: SmartwatchUiState,
     onRequestPermissions: () -> Unit,
     onConnectAndSync: () -> Unit,
-    onOpenHealthConnect: () -> Unit
+    onOpenHealthConnect: () -> Unit,
+    onBack: (() -> Unit)? = null
 ) {
     val scrollState = rememberScrollState()
     
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .statusBarsPadding()
             .verticalScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Top Bar
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Surface(
-                modifier = Modifier
-                    .size(40.dp)
-                    .align(Alignment.CenterStart),
-                shape = CircleShape,
-                color = Color.White,
-                shadowElevation = 2.dp
-            ) {
-                IconButton(onClick = { /* Handle back if needed */ }) {
-                    Icon(
-                        Icons.Default.ArrowBackIosNew,
-                        contentDescription = "Back",
-                        modifier = Modifier.size(16.dp),
-                        tint = TextPrimary
-                    )
-                }
-            }
-
-            Text(
-                "Connect a Device",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
-            )
-        }
+        // Unified Top Bar
+        FeatureTopBar(
+            title = "Connect a Device",
+            onBack = onBack
+        )
 
         Spacer(Modifier.height(32.dp))
 
@@ -476,7 +481,8 @@ private fun SmartwatchScreenPreview() {
             onRequestPermissions = {},
             onReadAndSave = {},
             onBackToSources = {},
-        ) { }
+            onOpenHealthConnect = {}
+        )
     }
 }
 
@@ -493,7 +499,8 @@ private fun SmartwatchScreenPermissionsAcceptedPreview() {
             onRequestPermissions = {},
             onReadAndSave = {},
             onBackToSources = {},
-        ) { }
+            onOpenHealthConnect = {}
+        )
     }
 }
 
@@ -509,6 +516,7 @@ private fun SmartwatchScreenDataPreview() {
             onRequestPermissions = {},
             onReadAndSave = {},
             onBackToSources = {},
-        ) { }
+            onOpenHealthConnect = {}
+        )
     }
 }
