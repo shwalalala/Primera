@@ -93,5 +93,5 @@ dependencies {
     implementation("com.google.android.libraries.identity.googleid:googleid:1.2.1")
 
     // Facebook Login
-    implementation("com.facebook.android:facebook-login:19.0.0")
+    implementation("com.facebook.android:facebook-login:19.0.1")
 }
