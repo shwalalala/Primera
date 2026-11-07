@@ -54,7 +54,6 @@ import cit.edu.primera.core.theme.TextPrimary
 import cit.edu.primera.core.theme.TextSecondary
 import cit.edu.primera.core.theme.TrendGreen
 import cit.edu.primera.ui.components.ChartContainer
-import cit.edu.primera.ui.components.FeatureTopBar
 import cit.edu.primera.ui.components.HealthStatCard
 import cit.edu.primera.ui.components.PrimeraGradientButton
 import cit.edu.primera.ui.components.PrimeraOutlinedButton
@@ -69,7 +68,9 @@ fun SmartwatchScreen(
     onReadAndSave: () -> Unit,
     onBackToSources: () -> Unit,
     onOpenHealthConnect: () -> Unit,
-    onBack: (() -> Unit)? = null
+    onBack: (() -> Unit)? = null,
+    onOpenDrawer: () -> Unit = {},
+    onPrintQrClick: (() -> Unit)? = null
 ) {
     Box(
         modifier = Modifier
@@ -99,7 +100,9 @@ fun SmartwatchScreen(
                     onRequestPermissions = onRequestPermissions,
                     onConnectAndSync = onReadAndSave,
                     onOpenHealthConnect = onOpenHealthConnect,
-                    onBack = onBack
+                    onBack = onBack,
+                    onOpenDrawer = onOpenDrawer,
+                    onPrintQrClick = onPrintQrClick
                 )
             }
         }
@@ -112,7 +115,9 @@ private fun ConnectDeviceContent(
     onRequestPermissions: () -> Unit,
     onConnectAndSync: () -> Unit,
     onOpenHealthConnect: () -> Unit,
-    onBack: (() -> Unit)? = null
+    onBack: (() -> Unit)? = null,
+    onOpenDrawer: () -> Unit = {},
+    onPrintQrClick: (() -> Unit)? = null
 ) {
     val scrollState = rememberScrollState()
     
@@ -123,9 +128,10 @@ private fun ConnectDeviceContent(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Unified Top Bar
-        FeatureTopBar(
-            title = "Connect a Device",
-            onBack = onBack
+        cit.edu.primera.ui.components.MainTopBar(
+            title = "Smartwatch",
+            onOpenDrawer = onOpenDrawer,
+            onPrintQrClick = onPrintQrClick
         )
 
         Spacer(Modifier.height(32.dp))

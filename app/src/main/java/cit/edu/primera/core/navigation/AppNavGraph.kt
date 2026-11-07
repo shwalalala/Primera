@@ -69,7 +69,8 @@ private val bottomNavRoutes = setOf(
     Routes.DEVICE,
     Routes.INSIGHT,
     Routes.CHECKIN,
-    Routes.DAILY_CHECKIN
+    Routes.DAILY_CHECKIN,
+    Routes.CHECKIN_PREVIEW
 )
 
 @Composable
@@ -379,18 +380,30 @@ fun AppNavGraph(
                 }
 
                 composable(Routes.DEVICE) {
-                    SmartwatchRoute()
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    SmartwatchRoute(
+                        onOpenDrawer = {
+                            coroutineScope.launch { drawerState.open() }
+                        },
+                        onPrintQrClick = {
+                            dashboardViewModel.onExportSummaryPdf(context)
+                        }
+                    )
                 }
 
                 composable(Routes.INSIGHT) {
                     InsightsScreen(
                         onBack = {
                             navController.popBackStack()
+                        },
+                        onOpenDrawer = {
+                            coroutineScope.launch { drawerState.open() }
                         }
                     )
                 }
 
                 composable(Routes.CHECKIN) {
+                    val context = androidx.compose.ui.platform.LocalContext.current
                     val parentEntry = remember(it) {
                         navController.getBackStackEntry(Routes.DASHBOARD)
                     }
@@ -406,6 +419,12 @@ fun AppNavGraph(
                         onLogClick = { log ->
                             checkinsViewModel.loadCheckinForEdit(log)
                             navController.navigate(Routes.DAILY_CHECKIN)
+                        },
+                        onOpenDrawer = {
+                            coroutineScope.launch { drawerState.open() }
+                        },
+                        onPrintQrClick = {
+                            dashboardViewModel.onExportSummaryPdf(context)
                         },
                         viewModel = checkinsViewModel
                     )

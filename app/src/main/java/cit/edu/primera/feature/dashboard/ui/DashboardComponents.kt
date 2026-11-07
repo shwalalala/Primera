@@ -2,7 +2,6 @@ package cit.edu.primera.feature.dashboard.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -24,14 +22,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,72 +68,12 @@ fun DashboardTopBar(
     onPrintQrClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    cit.edu.primera.ui.components.MainTopBar(
+        title = "Home",
+        onOpenDrawer = onOpenDrawer,
+        onPrintQrClick = onPrintQrClick,
         modifier = modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(SurfaceWhite)
-                .border(1.dp, MenuButtonBorder, CircleShape)
-                .minimumInteractiveComponentSize()
-                .clickable { onOpenDrawer() },
-            contentAlignment = Alignment.Center
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Box(
-                    Modifier
-                        .size(width = 16.dp, height = 2.dp)
-                        .background(PrimeraViolet)
-                )
-                Box(
-                    Modifier
-                        .size(width = 16.dp, height = 2.dp)
-                        .background(PrimeraViolet)
-                )
-                Box(
-                    Modifier
-                        .size(width = 10.dp, height = 2.dp)
-                        .background(PrimeraViolet)
-                )
-            }
-        }
-
-        Text(
-            text = "Primera",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = PrimeraViolet
-        )
-
-        if (onPrintQrClick != null) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(SurfaceWhite)
-                    .border(1.dp, MenuButtonBorder, CircleShape)
-                    .minimumInteractiveComponentSize()
-                    .clickable { onPrintQrClick() },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.QrCode,
-                    contentDescription = "Print Summary QR",
-                    tint = PrimeraViolet,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        } else {
-            Spacer(Modifier.size(40.dp))
-        }
-    }
+    )
 }
 
 @Composable

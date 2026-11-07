@@ -360,6 +360,16 @@ fun FeatureTopBar(
 @Composable
 private fun TopBarsPreview() {
     PrimeraTheme {
-        FeatureTopBar(title = "Insights", onBack = {})
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            MainTopBar(title = "Home", onOpenDrawer = {}, onPrintQrClick = {})
+            MainTopBar(title = "Check-Ins", onOpenDrawer = {}, onPrintQrClick = {})
+            MainTopBar(
+                title = "Insights",
+                onOpenDrawer = {},
+                onPrintQrClick = {},
+                selectedPeriod = "Weekly"
+            )
+            MainTopBar(title = "Smartwatch", onOpenDrawer = {}, onPrintQrClick = {})
+        }
     }
 }
