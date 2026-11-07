@@ -132,36 +132,34 @@ fun AppNavGraph(
         gesturesEnabled = currentRoute in bottomNavRoutes,
         scrimColor = Color.Black.copy(alpha = 0.6f),
         drawerContent = {
-            if (currentRoute in bottomNavRoutes) {
-                AppSidebar(
-                    userName = sidebarUserData?.userName ?: "",
-                    email = sidebarUserData?.email ?: "",
-                    photoUri = sidebarUserData?.photoUri,
-                    currentRoute = currentRoute ?: Routes.DASHBOARD,
-                    onNavigate = { route ->
-                        coroutineScope.launch { drawerState.close() }
-                        navController.navigate(route) {
-                            if (route != Routes.DASHBOARD) {
-                                launchSingleTop = true
-                            }
+            AppSidebar(
+                userName = sidebarUserData?.userName ?: "",
+                email = sidebarUserData?.email ?: "",
+                photoUri = sidebarUserData?.photoUri,
+                currentRoute = currentRoute ?: Routes.DASHBOARD,
+                onNavigate = { route ->
+                    coroutineScope.launch { drawerState.close() }
+                    navController.navigate(route) {
+                        if (route != Routes.DASHBOARD) {
+                            launchSingleTop = true
                         }
-                    },
-                    onClose = {
-                        coroutineScope.launch { drawerState.close() }
-                    },
-                    onEditProfilePicture = {
-                        coroutineScope.launch { drawerState.close() }
-                        navController.navigate(Routes.PROFILE)
-                    },
-                    onNotificationClick = {
-                        coroutineScope.launch { drawerState.close() }
-                    },
-                    onLogoutClick = {
-                        coroutineScope.launch { drawerState.close() }
-                        authViewModel.logout()
                     }
-                )
-            }
+                },
+                onClose = {
+                    coroutineScope.launch { drawerState.close() }
+                },
+                onEditProfilePicture = {
+                    coroutineScope.launch { drawerState.close() }
+                    navController.navigate(Routes.PROFILE)
+                },
+                onNotificationClick = {
+                    coroutineScope.launch { drawerState.close() }
+                },
+                onLogoutClick = {
+                    coroutineScope.launch { drawerState.close() }
+                    authViewModel.logout()
+                }
+            )
         }
     ) {
         Scaffold(
@@ -405,7 +403,11 @@ fun AppNavGraph(
                 composable(Routes.CHECKIN) {
                     val context = androidx.compose.ui.platform.LocalContext.current
                     val parentEntry = remember(it) {
-                        navController.getBackStackEntry(Routes.DASHBOARD)
+                        try {
+                            navController.getBackStackEntry(Routes.CHECKIN)
+                        } catch (_: Exception) {
+                            it
+                        }
                     }
 
                     val checkinsViewModel: CheckinsViewModel =
@@ -432,7 +434,11 @@ fun AppNavGraph(
 
                 composable(Routes.DAILY_CHECKIN) {
                     val parentEntry = remember(it) {
-                        navController.getBackStackEntry(Routes.DASHBOARD)
+                        try {
+                            navController.getBackStackEntry(Routes.CHECKIN)
+                        } catch (_: Exception) {
+                            it
+                        }
                     }
 
                     val checkinsViewModel: CheckinsViewModel =
@@ -451,7 +457,11 @@ fun AppNavGraph(
 
                 composable(Routes.CHECKIN_PREVIEW) {
                     val parentEntry = remember(it) {
-                        navController.getBackStackEntry(Routes.DASHBOARD)
+                        try {
+                            navController.getBackStackEntry(Routes.CHECKIN)
+                        } catch (_: Exception) {
+                            it
+                        }
                     }
 
                     val checkinsViewModel: CheckinsViewModel =
@@ -463,7 +473,8 @@ fun AppNavGraph(
                         },
                         onNavigateToOverview = {
                             navController.navigate(Routes.CHECKIN) {
-                                popUpTo(Routes.CHECKIN) { inclusive = true }
+                                popUpTo(Routes.CHECKIN) { inclusive = false }
+                                launchSingleTop = true
                             }
                         },
                         viewModel = checkinsViewModel

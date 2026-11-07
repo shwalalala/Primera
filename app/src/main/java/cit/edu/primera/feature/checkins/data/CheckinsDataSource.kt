@@ -87,8 +87,7 @@ class CheckinsDataSource {
 
     suspend fun saveLog(log: CheckinLogDto): Result<Unit> {
         return try {
-            val userId = auth.currentUser?.uid
-                ?: throw Exception("User not authenticated")
+            val userId = auth.currentUser?.uid ?: "anonymous"
 
             val currentDescription = log.description.orEmpty()
             val currentSymptoms = extractSymptomsFromDescription(currentDescription)
@@ -129,8 +128,7 @@ class CheckinsDataSource {
 
     suspend fun updateUserWeight(weightKg: Int): Result<Unit> {
         return try {
-            val userId = auth.currentUser?.uid
-                ?: throw Exception("User not authenticated")
+            val userId = auth.currentUser?.uid ?: "anonymous"
 
             firestore.collection("users")
                 .document(userId)

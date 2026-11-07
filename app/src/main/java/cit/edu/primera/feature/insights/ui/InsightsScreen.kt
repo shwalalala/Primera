@@ -430,14 +430,6 @@ fun InsightsContent(
             contentColor = TextPrimary.copy(alpha = 0.8f)
         )
 
-        data.healthWarningTip?.let {
-            InsightTipCard(
-                text = it,
-                backgroundColor = data.healthWarningTipColor,
-                contentColor = SurfaceWhite
-            )
-        }
-
         // 3. Wellness Goals Section
         Card(
             modifier = Modifier.fillMaxWidth(),
