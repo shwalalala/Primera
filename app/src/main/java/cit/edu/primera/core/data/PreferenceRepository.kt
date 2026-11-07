@@ -19,6 +19,8 @@ interface PreferenceRepository {
     fun setHasEverLoggedIn(hasLoggedIn: Boolean)
     fun getSavedEmail(): String?
     fun setSavedEmail(email: String?)
+    fun getProfilePictureUri(userId: String): String?
+    fun setProfilePictureUri(userId: String, uri: String?)
     fun clearLocalData()
 }
 
@@ -33,15 +35,14 @@ class PreferenceRepositoryImpl(context: Context) : PreferenceRepository {
         private const val KEY_CUSTOM_OPTIONS_PREFIX = "custom_options_"
         private const val KEY_HAS_EVER_LOGGED_IN = "has_ever_logged_in"
         private const val KEY_SAVED_EMAIL = "saved_remember_me_email"
+        private const val KEY_PROFILE_PICTURE_URI = "profile_picture_uri_"
     }
 
     override suspend fun shouldShowOnboarding(userId: String): Boolean {
         if (userId.isBlank()) return true
 
         val isCompletedLocally = sharedPreferences.getBoolean(KEY_ONBOARDING_COMPLETED + userId, false)
-        if (isCompletedLocally) return false
-
-        return try {
+        return !isCompletedLocally && try {
             val snapshot = FirebaseFirestore.getInstance()
                 .collection("users")
                 .document(userId)
@@ -113,6 +114,22 @@ class PreferenceRepositoryImpl(context: Context) : PreferenceRepository {
                 remove(KEY_SAVED_EMAIL)
             } else {
                 putString(KEY_SAVED_EMAIL, email.trim().lowercase())
+            }
+        }
+    }
+
+    override fun getProfilePictureUri(userId: String): String? {
+        if (userId.isBlank()) return null
+        return sharedPreferences.getString(KEY_PROFILE_PICTURE_URI + userId, null)
+    }
+
+    override fun setProfilePictureUri(userId: String, uri: String?) {
+        if (userId.isBlank()) return
+        sharedPreferences.edit {
+            if (uri.isNullOrBlank()) {
+                remove(KEY_PROFILE_PICTURE_URI + userId)
+            } else {
+                putString(KEY_PROFILE_PICTURE_URI + userId, uri)
             }
         }
     }

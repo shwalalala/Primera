@@ -172,6 +172,12 @@ private class FakePreferenceRepository : PreferenceRepository {
         savedEmail = email
     }
 
+    private var profilePictureUri: String? = null
+    override fun getProfilePictureUri(userId: String): String? = profilePictureUri
+    override fun setProfilePictureUri(userId: String, uri: String?) {
+        profilePictureUri = uri
+    }
+
     override fun clearLocalData() {
         onboardingCompleted = false
         onboardingStep = null

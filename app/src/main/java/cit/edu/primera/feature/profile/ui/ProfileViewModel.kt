@@ -40,6 +40,7 @@ class ProfileViewModel(
                     _uiState.update { 
                         it.copy(
                             email = data.email ?: "",
+                            photoUri = data.photoUri,
                             birthday = data.birthday,
                             weightKg = data.weightKg ?: weightData?.weightKg ?: 0,
                             heightCm = data.heightCm ?: 0,
@@ -244,6 +245,13 @@ class ProfileViewModel(
     }
     fun onIceSecondaryPhoneChange(phone: String) = _uiState.update { 
         it.copy(emergencyContact = it.emergencyContact.copy(secondaryPhone = phone)) 
+    }
+
+    fun onPhotoUriSelected(photoUri: String) {
+        _uiState.update { it.copy(photoUri = photoUri) }
+        viewModelScope.launch {
+            dashboardRepository.updatePhotoUri(photoUri)
+        }
     }
 
     // UI State

@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.DropdownMenu
@@ -52,7 +53,8 @@ fun FeatureTopBar(
     selectedPeriod: String? = null,
     onPeriodSelected: ((String) -> Unit)? = null,
     onExport: (() -> Unit)? = null,
-    onSettings: (() -> Unit)? = null
+    onSettings: (() -> Unit)? = null,
+    onPrintQrClick: (() -> Unit)? = null
 ) {
     var showPeriodMenu by remember { mutableStateOf(false) }
 
@@ -78,7 +80,9 @@ fun FeatureTopBar(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBackIos,
                 contentDescription = "Back",
                 tint = TextSecondary,
-                modifier = Modifier.size(16.dp).padding(start = 4.dp)
+                modifier = Modifier
+                    .size(16.dp)
+                    .padding(start = 4.dp)
             )
         }
 
@@ -184,7 +188,26 @@ fun FeatureTopBar(
                     )
                 }
             }
-            if (onExport == null && onSettings == null && selectedPeriod == null) {
+            if (onPrintQrClick != null) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MenuButtonBg)
+                        .border(1.dp, MenuButtonBorder, CircleShape)
+                        .minimumInteractiveComponentSize()
+                        .clickable { onPrintQrClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.QrCode,
+                        contentDescription = "Print Summary QR",
+                        tint = PrimeraViolet,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            if (onExport == null && onSettings == null && selectedPeriod == null && onPrintQrClick == null) {
                 Box(modifier = Modifier.size(40.dp))
             }
         }

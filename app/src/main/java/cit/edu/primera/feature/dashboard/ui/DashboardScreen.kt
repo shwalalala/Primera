@@ -1,5 +1,8 @@
 package cit.edu.primera.feature.dashboard.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,33 +12,39 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cit.edu.primera.core.di.ViewModelProvider
+import cit.edu.primera.core.navigation.Routes
 import cit.edu.primera.core.theme.BackgroundCream
 import cit.edu.primera.core.theme.ErrorRed
 import cit.edu.primera.core.theme.PrimeraLilac
 import cit.edu.primera.core.theme.PrimeraTheme
-import cit.edu.primera.feature.dashboard.domain.ArticleInfo
+import cit.edu.primera.ui.components.AppSidebar
 import cit.edu.primera.ui.components.FullScreenLoadingOverlay
 import cit.edu.primera.ui.components.OfflineBanner
+import kotlinx.coroutines.launch
 
 @Composable
 fun DashboardScreen(
     modifier: Modifier = Modifier,
     onLogout: () -> Unit,
+    onNavigate: (String) -> Unit,
     onLogClick: (DashboardLogUiItem) -> Unit,
     onViewAllLogs: () -> Unit,
     onAddLog: () -> Unit,
@@ -45,39 +54,81 @@ fun DashboardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        (BackgroundCream),
-                        PrimeraLilac.copy(alpha = 0.45f)
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let { viewModel.onPhotoUriSelected(it.toString()) }
+    }
+
+    when (val state = uiState) {
+        is DashboardUiState.Loading -> FullScreenLoadingOverlay()
+        is DashboardUiState.Error -> ErrorContent(state.message)
+        is DashboardUiState.Success -> {
+            ModalNavigationDrawer(
+                drawerState = drawerState,
+                scrimColor = Color.Black.copy(alpha = 0.6f),
+                drawerContent = {
+                    AppSidebar(
+                        userName = state.data.userName,
+                        email = state.data.email,
+                        photoUri = state.data.photoUri,
+                        currentRoute = Routes.DASHBOARD,
+                        onNavigate = { route ->
+                            coroutineScope.launch { drawerState.close() }
+                            onNavigate(route)
+                        },
+                        onClose = {
+                            coroutineScope.launch { drawerState.close() }
+                        },
+                        onEditProfilePicture = {
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        },
+                        onNotificationClick = {
+                            coroutineScope.launch { drawerState.close() }
+                        },
+                        onLogoutClick = {
+                            coroutineScope.launch { drawerState.close() }
+                            onLogout()
+                        }
                     )
-                )
-            )
-    ) {
-        when (val state = uiState) {
-            is DashboardUiState.Loading -> FullScreenLoadingOverlay()
-            is DashboardUiState.Error -> ErrorContent(state.message)
-            is DashboardUiState.Success -> {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    DashboardTopBar(state.data.userName, onLogout, onProfileClick)
-                    
-                    if (!isOnline) {
-                        OfflineBanner()
+                }
+            ) {
+                Box(
+                    modifier = modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    BackgroundCream,
+                                    PrimeraLilac.copy(alpha = 0.45f)
+                                )
+                            )
+                        )
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        DashboardTopBar(
+                            onOpenDrawer = {
+                                coroutineScope.launch { drawerState.open() }
+                            },
+                            onPrintQrClick = { viewModel.onExportSummaryPdf(context) }
+                        )
+
+                        if (!isOnline) {
+                            OfflineBanner()
+                        }
+
+                        DashboardContent(
+                            state = state.data,
+                            onInputManually = onInputManually,
+                            onSyncWatch = { viewModel.onSyncWatch() }
+                        )
                     }
-
-                    DashboardContent(
-                        state = state.data,
-                        onViewAllLogs = onViewAllLogs,
-                        onAddLog = onAddLog,
-                        onInputManually = onInputManually,
-                        onLogClick = onLogClick,
-                        onSyncWatch = { viewModel.onSyncWatch() },
-                        onProfileClick = onProfileClick
-                    )
                 }
             }
         }
@@ -87,16 +138,10 @@ fun DashboardScreen(
 @Composable
 fun DashboardContent(
     state: DashboardUiModel,
-    onViewAllLogs: () -> Unit,
-    onAddLog: () -> Unit,
     onInputManually: () -> Unit,
-    onLogClick: (DashboardLogUiItem) -> Unit,
     onSyncWatch: () -> Unit,
-    onProfileClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedArticle by remember { mutableStateOf<ArticleInfo?>(null) }
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -116,7 +161,7 @@ fun DashboardContent(
             userName = state.userName,
             timeOfDay = state.timeOfDay,
             trimesterText = "You're in your ${state.trimester}",
-            inaccuracyWarning = null // Handled above at top level
+            inaccuracyWarning = null
         )
         Spacer(Modifier.height(4.dp))
         BabyRingCard(
@@ -133,27 +178,9 @@ fun DashboardContent(
             onInputManually = onInputManually,
             onSyncWatch = onSyncWatch
         )
-        Spacer(Modifier.height(20.dp))
-        PrenatalRemindersSection(state.upcomingReminders)
         Spacer(Modifier.height(24.dp))
-        RecentHealthLogsSection(state.recentLogs, onViewAllLogs, onAddLog, onLogClick)
-        Spacer(Modifier.height(16.dp))
-        BabyDevelopmentSection(state.milestones, state.symptoms)
-        Spacer(Modifier.height(8.dp))
-        EducationalArticlesSection(
-            articles = state.articles,
-            onArticleClick = { selectedArticle = it }
-        )
-        Spacer(Modifier.height(12.dp))
         cit.edu.primera.ui.components.MonitoringDisclaimerFooter()
         Spacer(Modifier.height(8.dp))
-    }
-
-    selectedArticle?.let { article ->
-        ArticleDetailDialog(
-            article = article,
-            onDismiss = { selectedArticle = null }
-        )
     }
 }
 
@@ -205,21 +232,17 @@ private fun DashboardScreenPreview() {
                     inaccuracyWarning = null,
                     recentLogs = emptyList(),
                     weekDays = listOf(
-                        DashboardWeekDayItem("S", 22, false),
-                        DashboardWeekDayItem("M", 23, true),
-                        DashboardWeekDayItem("T", 24, false),
-                        DashboardWeekDayItem("W", 25, false),
-                        DashboardWeekDayItem("T", 26, false),
-                        DashboardWeekDayItem("F", 27, false),
-                        DashboardWeekDayItem("S", 28, false)
+                        DashboardWeekDayItem("S", 22, false, "Oct"),
+                        DashboardWeekDayItem("M", 23, true, "Oct"),
+                        DashboardWeekDayItem("T", 24, false, "Oct"),
+                        DashboardWeekDayItem("W", 25, false, "Oct"),
+                        DashboardWeekDayItem("T", 26, false, "Oct"),
+                        DashboardWeekDayItem("F", 27, false, "Oct"),
+                        DashboardWeekDayItem("S", 28, false, "Oct")
                     )
                 ),
-                onViewAllLogs = {},
-                onAddLog = {},
                 onInputManually = {},
-                onLogClick = {},
-                onSyncWatch = {},
-                onProfileClick = {}
+                onSyncWatch = {}
             )
         }
     }

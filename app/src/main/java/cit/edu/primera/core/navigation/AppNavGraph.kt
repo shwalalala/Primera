@@ -44,6 +44,7 @@ import cit.edu.primera.feature.checkins.ui.CheckinsOverviewScreen
 import cit.edu.primera.feature.checkins.ui.CheckinsViewModel
 import cit.edu.primera.feature.checkins.ui.DailyCheckinScreen
 import cit.edu.primera.feature.dashboard.ui.DashboardScreen
+import cit.edu.primera.feature.dashboard.ui.NewsEducationScreen
 import cit.edu.primera.feature.insights.ui.InsightsScreen
 import cit.edu.primera.feature.onboarding.ui.OnboardingHostScreen
 import cit.edu.primera.feature.profile.ui.ProfileScreen
@@ -283,6 +284,13 @@ fun AppNavGraph(
                     onLogout = {
                         authViewModel.logout()
                     },
+                    onNavigate = { route ->
+                        navController.navigate(route) {
+                            if (route != Routes.DASHBOARD) {
+                                launchSingleTop = true
+                            }
+                        }
+                    },
                     onLogClick = { log ->
                         checkinsViewModel.loadCheckinForEdit(log)
                         navController.navigate(Routes.DAILY_CHECKIN)
@@ -434,6 +442,14 @@ fun AppNavGraph(
                     },
                     onLogout = {
                         authViewModel.logout()
+                    }
+                )
+            }
+
+            composable(Routes.NEWS_EDUCATION) {
+                NewsEducationScreen(
+                    onBack = {
+                        navController.popBackStack()
                     }
                 )
             }

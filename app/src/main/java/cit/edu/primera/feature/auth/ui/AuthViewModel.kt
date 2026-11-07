@@ -14,7 +14,12 @@ import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
@@ -185,7 +190,36 @@ class AuthViewModel(
                     handleSuccessfulAuthentication(trimmedEmail, false)
                 },
                 onFailure = { error ->
-                    handleAuthenticationFailure(error, "Registration failed. Please check your details.")
+                    val specificMessage = when {
+                        error is FirebaseAuthUserCollisionException ||
+                                (error.message?.contains(
+                                    "already in use",
+                                    ignoreCase = true
+                                ) == true) ->
+                            "This email address is already registered. Please sign in or use a different email."
+
+                        error is com.google.firebase.auth.FirebaseAuthWeakPasswordException ||
+                                (error.message?.contains(
+                                    "weak password",
+                                    ignoreCase = true
+                                ) == true) ->
+                            "The password is too weak. Please choose a stronger password."
+
+                        error is com.google.firebase.auth.FirebaseAuthInvalidCredentialsException ||
+                                (error.message?.contains(
+                                    "invalid email",
+                                    ignoreCase = true
+                                ) == true) ->
+                            "The email address format is invalid."
+
+                        error is com.google.firebase.FirebaseNetworkException ||
+                                (error.message?.contains("network", ignoreCase = true) == true) ->
+                            "Network error. Please check your internet connection."
+
+                        !error.message.isNullOrBlank() -> error.message!!
+                        else -> "Registration failed. Please check your details."
+                    }
+                    handleAuthenticationFailure(error, specificMessage)
                 }
             )
         }

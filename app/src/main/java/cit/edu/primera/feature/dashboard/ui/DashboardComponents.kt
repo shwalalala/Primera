@@ -1,10 +1,9 @@
 package cit.edu.primera.feature.dashboard.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,27 +18,21 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -72,18 +65,56 @@ import cit.edu.primera.ui.components.PrimeraGradientButton
 import cit.edu.primera.ui.components.TrimesterBadge
 
 @Composable
-fun DashboardTopBar(userName: String, onLogout: () -> Unit, onProfileClick: () -> Unit) {
-    var showMenu by remember { mutableStateOf(false) }
-
+fun DashboardTopBar(
+    onOpenDrawer: () -> Unit,
+    onPrintQrClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .statusBarsPadding()
             .padding(horizontal = 20.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(MenuButtonBg)
+                .border(1.dp, MenuButtonBorder, CircleShape)
+                .minimumInteractiveComponentSize()
+                .clickable { onOpenDrawer() },
+            contentAlignment = Alignment.Center
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Box(
+                    Modifier
+                        .size(width = 16.dp, height = 2.dp)
+                        .background(TextSecondary)
+                )
+                Box(
+                    Modifier
+                        .size(width = 16.dp, height = 2.dp)
+                        .background(TextSecondary)
+                )
+                Box(
+                    Modifier
+                        .size(width = 10.dp, height = 2.dp)
+                        .background(TextSecondary)
+                )
+            }
+        }
+
+        Text(
+            text = "Primera",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = PrimeraViolet
+        )
+
+        if (onPrintQrClick != null) {
             Box(
                 modifier = Modifier
                     .size(40.dp)
@@ -91,84 +122,18 @@ fun DashboardTopBar(userName: String, onLogout: () -> Unit, onProfileClick: () -
                     .background(MenuButtonBg)
                     .border(1.dp, MenuButtonBorder, CircleShape)
                     .minimumInteractiveComponentSize()
-                    .clickable { showMenu = true },
+                    .clickable { onPrintQrClick() },
                 contentAlignment = Alignment.Center
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Box(Modifier.size(width = 16.dp, height = 2.dp).background(TextSecondary))
-                    Box(Modifier.size(width = 16.dp, height = 2.dp).background(TextSecondary))
-                    Box(Modifier.size(width = 10.dp, height = 2.dp).background(TextSecondary))
-                }
-            }
-
-            DropdownMenu(
-                expanded = showMenu,
-                onDismissRequest = { showMenu = false },
-                modifier = Modifier
-                    .background(SurfaceWhite)
-                    .border(1.dp, MenuButtonBorder, RoundedCornerShape(12.dp))
-            ) {
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            "Profile",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextPrimary,
-                            fontWeight = FontWeight.Medium
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Profile",
-                            tint = PrimeraViolet,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    },
-                    onClick = {
-                        showMenu = false
-                        onProfileClick()
-                    }
-                )
-
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            "Logout",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextPrimary,
-                            fontWeight = FontWeight.Medium
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Logout,
-                            contentDescription = "Logout",
-                            tint = PrimeraViolet,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    },
-                    onClick = {
-                        showMenu = false
-                        onLogout()
-                    }
+                Icon(
+                    imageVector = Icons.Default.QrCode,
+                    contentDescription = "Print Summary QR",
+                    tint = PrimeraViolet,
+                    modifier = Modifier.size(20.dp)
                 )
             }
-        }
-
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(PrimeraViolet)
-                .clickable { onProfileClick() },
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = userName.take(1).uppercase(),
-                color = SurfaceWhite,
-                fontWeight = FontWeight.Bold
-            )
+        } else {
+            Spacer(Modifier.size(40.dp))
         }
     }
 }
@@ -191,6 +156,7 @@ fun WeekCalendarRow(days: List<DashboardWeekDayItem>) {
                 DayChip(
                     initial = day.initial,
                     date = day.date,
+                    month = day.month,
                     isSelected = day.isSelected
                 )
             }
@@ -255,7 +221,11 @@ fun StatsGrid(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         if (!state.isWatchSynced) {
-            SyncWatchButton(onClick = onSyncWatch, modifier = Modifier.fillMaxWidth().padding(horizontal = 0.dp))
+            SyncWatchButton(
+                onClick = onSyncWatch, modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 0.dp)
+            )
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -610,7 +580,11 @@ fun PrenatalRemindersSection(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(if (reminder.isUrgent) Color(0xFFFFECB3) else PrimeraLilac.copy(alpha = 0.3f)),
+                                .background(
+                                    if (reminder.isUrgent) Color(0xFFFFECB3) else PrimeraLilac.copy(
+                                        alpha = 0.3f
+                                    )
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(if (reminder.isUrgent) "⚠️" else "🩺", fontSize = 18.sp)

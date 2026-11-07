@@ -17,4 +17,5 @@ object Routes {
     const val TRANSCRIPTION = "transcription"
     const val PROFILE       = "profile"
     const val SETTINGS      = "settings"
+    const val NEWS_EDUCATION = "news_education"
 }

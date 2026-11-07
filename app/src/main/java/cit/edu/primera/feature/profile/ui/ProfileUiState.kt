@@ -5,6 +5,7 @@ import java.util.Date
 
 data class ProfileUiState(
     val email: String = "",
+    val photoUri: String? = null,
     val birthday: Date? = null,
     val weightKg: Int = 0,
     val heightCm: Int = 0,

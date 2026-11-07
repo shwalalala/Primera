@@ -8,6 +8,7 @@ data class DashboardData(
     val lastName: String? = null,
     val middleName: String? = null,
     val userName: String,
+    val photoUri: String? = null,
     val birthday: Date? = null,
     val lmpDate: Date? = null,
     val dueDate: Date?,

@@ -1,13 +1,11 @@
 package cit.edu.primera.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -15,7 +13,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,13 +22,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cit.edu.primera.core.theme.CalendarDayBg
-import cit.edu.primera.core.theme.CalendarDaySelected
 import cit.edu.primera.core.theme.NauseaBg
 import cit.edu.primera.core.theme.NauseaText
 import cit.edu.primera.core.theme.PrimeraTheme
+import cit.edu.primera.core.theme.PrimeraViolet
 import cit.edu.primera.core.theme.TextPrimary
-import cit.edu.primera.core.theme.TextSecondary
 
 @Composable
 fun SymptomChip(
@@ -71,40 +66,23 @@ fun DayChip(
     initial: String,
     date: Int,
     isSelected: Boolean,
+    month: String = "",
     modifier: Modifier = Modifier
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
+    val labelText = if (month.isNotBlank()) "$month $date ($initial)" else "$initial $date"
+    Box(
         modifier = modifier
-            .width(40.dp)
-            .minimumInteractiveComponentSize()
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (isSelected) PrimeraViolet.copy(alpha = 0.15f) else Color.Transparent)
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center
     ) {
         Text(
-            text = initial,
-            fontSize = 11.sp,
-            color = if (isSelected) CalendarDaySelected else TextSecondary,
-            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+            text = labelText,
+            fontSize = 16.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+            color = if (isSelected) PrimeraViolet else TextPrimary
         )
-        Spacer(Modifier.height(4.dp))
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(CalendarDayBg)
-                .then(
-                    if (isSelected) {
-                        Modifier.border(1.5.dp, CalendarDaySelected, CircleShape)
-                    } else Modifier
-                )
-        ) {
-            Text(
-                text = date.toString(),
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = if (isSelected) CalendarDaySelected else TextPrimary
-            )
-        }
     }
 }
 
@@ -128,5 +106,3 @@ private fun TagsAndChipsPreview() {
         }
     }
 }
-
-
