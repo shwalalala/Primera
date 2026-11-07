@@ -10,14 +10,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cit.edu.primera.core.theme.ErrorRed
 import cit.edu.primera.core.theme.PrimeraTheme
-import cit.edu.primera.core.theme.TextPrimary
 import cit.edu.primera.core.theme.TextSecondary
 
 @Composable
@@ -36,13 +34,6 @@ fun DashboardGreeting(
             text = "Hello, $userName",
             fontSize = 13.sp,
             color = TextSecondary
-        )
-        Spacer(Modifier.height(2.dp))
-        Text(
-            text = timeOfDay.ifBlank { "Good morning" },
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextPrimary
         )
         Spacer(Modifier.height(2.dp))
         Text(

@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cit.edu.primera.R
@@ -63,6 +64,8 @@ import cit.edu.primera.ui.components.HealthStatCard
 import cit.edu.primera.ui.components.LogCard
 import cit.edu.primera.ui.components.PrimeraGradientButton
 import cit.edu.primera.ui.components.TrimesterBadge
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @Composable
 fun DashboardTopBar(
@@ -140,17 +143,41 @@ fun DashboardTopBar(
 
 @Composable
 fun WeekCalendarRow(days: List<DashboardWeekDayItem>) {
-    Surface(
+    val selectedDay = days.find { it.isSelected } ?: days.firstOrNull()
+    val fullMonthName = if (selectedDay != null && selectedDay.month.isNotBlank()) {
+        try {
+            val dateObj = SimpleDateFormat("MMM", Locale.getDefault()).parse(selectedDay.month)
+            if (dateObj != null) SimpleDateFormat(
+                "MMMM",
+                Locale.getDefault()
+            ).format(dateObj) else selectedDay.month
+        } catch (_: Exception) {
+            selectedDay.month
+        }
+    } else "October"
+
+    val dateNum = selectedDay?.date ?: 23
+    val headerDateText = "$fullMonthName $dateNum"
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-        color = Color.Transparent
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Text(
+            text = headerDateText,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextPrimary,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(14.dp))
+
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             days.forEach { day ->
                 DayChip(

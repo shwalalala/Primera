@@ -1,11 +1,13 @@
 package cit.edu.primera.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -26,7 +28,9 @@ import cit.edu.primera.core.theme.NauseaBg
 import cit.edu.primera.core.theme.NauseaText
 import cit.edu.primera.core.theme.PrimeraTheme
 import cit.edu.primera.core.theme.PrimeraViolet
+import cit.edu.primera.core.theme.SurfaceWhite
 import cit.edu.primera.core.theme.TextPrimary
+import cit.edu.primera.core.theme.TextSecondary
 
 @Composable
 fun SymptomChip(
@@ -69,20 +73,35 @@ fun DayChip(
     month: String = "",
     modifier: Modifier = Modifier
 ) {
-    val labelText = if (month.isNotBlank()) "$month $date ($initial)" else "$initial $date"
-    Box(
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (isSelected) PrimeraViolet.copy(alpha = 0.15f) else Color.Transparent)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        contentAlignment = Alignment.Center
     ) {
         Text(
-            text = labelText,
-            fontSize = 16.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-            color = if (isSelected) PrimeraViolet else TextPrimary
+            text = initial,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = TextSecondary
         )
+        Spacer(Modifier.height(6.dp))
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(SurfaceWhite)
+                .then(
+                    if (isSelected) Modifier.border(1.5.dp, PrimeraViolet, CircleShape)
+                    else Modifier.border(1.dp, Color.Transparent, CircleShape)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = date.toString(),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+        }
     }
 }
 
