@@ -5,7 +5,7 @@ import cit.edu.primera.feature.dashboard.domain.DashboardHealthLog
 import cit.edu.primera.feature.smartwatchconnection.domain.SmartwatchHealth
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import java.util.*
+import java.util.Date
 
 class DashboardRepositoryImpl(
     private val dataSource: DashboardDataSource
@@ -24,6 +24,7 @@ class DashboardRepositoryImpl(
                 lastName = userDto.lastName,
                 middleName = userDto.middleName,
                 userName = userDto.username ?: userDto.fullName ?: userDto.firstName ?: "Sarah",
+                photoUri = userDto.photoUri,
                 birthday = userDto.birthday,
                 lmpDate = userDto.lmpDate,
                 dueDate = userDto.dueDate,
@@ -96,5 +97,9 @@ class DashboardRepositoryImpl(
 
     override fun observeHealthRecords(): Flow<List<SmartwatchHealth>> {
         return dataSource.observeHealthRecords()
+    }
+
+    override suspend fun updatePhotoUri(photoUri: String): Result<Unit> {
+        return dataSource.updatePhotoUri(photoUri)
     }
 }

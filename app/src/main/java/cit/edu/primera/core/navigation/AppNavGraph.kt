@@ -8,16 +8,21 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -44,6 +49,9 @@ import cit.edu.primera.feature.checkins.ui.CheckinsOverviewScreen
 import cit.edu.primera.feature.checkins.ui.CheckinsViewModel
 import cit.edu.primera.feature.checkins.ui.DailyCheckinScreen
 import cit.edu.primera.feature.dashboard.ui.DashboardScreen
+import cit.edu.primera.feature.dashboard.ui.DashboardUiState
+import cit.edu.primera.feature.dashboard.ui.DashboardViewModel
+import cit.edu.primera.feature.dashboard.ui.NewsEducationScreen
 import cit.edu.primera.feature.insights.ui.InsightsScreen
 import cit.edu.primera.feature.onboarding.ui.OnboardingHostScreen
 import cit.edu.primera.feature.profile.ui.ProfileScreen
@@ -53,13 +61,16 @@ import cit.edu.primera.feature.splash.ui.SplashScreen
 import cit.edu.primera.feature.transcription.ui.TranscriptionScreen
 import cit.edu.primera.feature.transcription.ui.TranscriptionViewModel
 import cit.edu.primera.feature.welcome.ui.WelcomeScreen
+import cit.edu.primera.ui.components.AppSidebar
+import kotlinx.coroutines.launch
 
 private val bottomNavRoutes = setOf(
     Routes.DASHBOARD,
     Routes.DEVICE,
     Routes.INSIGHT,
     Routes.CHECKIN,
-    Routes.DAILY_CHECKIN
+    Routes.DAILY_CHECKIN,
+    Routes.CHECKIN_PREVIEW
 )
 
 @Composable
@@ -70,6 +81,13 @@ fun AppNavGraph(
     val authViewModel: AuthViewModel = viewModel(factory = ViewModelProvider.Factory)
     val currentBackStack by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStack?.destination?.route
+
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val coroutineScope = rememberCoroutineScope()
+
+    val dashboardViewModel: DashboardViewModel = viewModel(factory = ViewModelProvider.Factory)
+    val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
+    val sidebarUserData = (dashboardUiState as? DashboardUiState.Success)?.data
 
     LaunchedEffect(Unit) {
         authViewModel.effect.collect { effect ->
@@ -109,333 +127,428 @@ fun AppNavGraph(
         }
     }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        bottomBar = {
-            if (currentRoute in bottomNavRoutes) {
-                PrimeraBottomNav(
-                    currentRoute = currentRoute ?: Routes.DASHBOARD,
-                    onDestinationSelected = { dest ->
-                        navController.navigate(dest.route) {
-                            popUpTo(Routes.DASHBOARD) {
-                                saveState = true
-                            }
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        gesturesEnabled = currentRoute in bottomNavRoutes,
+        scrimColor = Color.Black.copy(alpha = 0.6f),
+        drawerContent = {
+            AppSidebar(
+                userName = sidebarUserData?.userName ?: "",
+                email = sidebarUserData?.email ?: "",
+                photoUri = sidebarUserData?.photoUri,
+                currentRoute = currentRoute ?: Routes.DASHBOARD,
+                onNavigate = { route ->
+                    coroutineScope.launch { drawerState.close() }
+                    navController.navigate(route) {
+                        if (route != Routes.DASHBOARD) {
                             launchSingleTop = true
-                            restoreState = true
                         }
-                    },
-                    onFabClicked = {
-                        navController.navigate(Routes.TRANSCRIPTION)
                     }
-                )
-            }
-        }
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = startDestination,
-            modifier = Modifier.padding(
-                top = innerPadding.calculateTopPadding(),
-                bottom = if (currentRoute in bottomNavRoutes) {
-                    innerPadding.calculateBottomPadding()
-                } else {
-                    0.dp
+                },
+                onClose = {
+                    coroutineScope.launch { drawerState.close() }
+                },
+                onEditProfilePicture = {
+                    coroutineScope.launch { drawerState.close() }
+                    navController.navigate(Routes.PROFILE)
+                },
+                onNotificationClick = {
+                    coroutineScope.launch { drawerState.close() }
+                },
+                onLogoutClick = {
+                    coroutineScope.launch { drawerState.close() }
+                    authViewModel.logout()
                 }
             )
-        ) {
-            composable(Routes.SPLASH) {
-                SplashScreen(
-                    onTimeout = {
-                        navController.navigate(Routes.WELCOME) {
-                            popUpTo(Routes.SPLASH) {
-                                inclusive = true
+        }
+    ) {
+        Scaffold(
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            bottomBar = {
+                if (currentRoute in bottomNavRoutes) {
+                    PrimeraBottomNav(
+                        currentRoute = currentRoute ?: Routes.DASHBOARD,
+                        onDestinationSelected = { dest ->
+                            if (dest == NavDestination.CHECKIN && (currentRoute == Routes.DAILY_CHECKIN || currentRoute == Routes.CHECKIN_PREVIEW || currentRoute == Routes.CHECKIN)) {
+                                navController.navigate(Routes.CHECKIN) {
+                                    popUpTo(Routes.CHECKIN) {
+                                        inclusive = false
+                                    }
+                                    launchSingleTop = true
+                                }
+                            } else {
+                                navController.navigate(dest.route) {
+                                    popUpTo(Routes.DASHBOARD) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
+                        },
+                        onFabClicked = {
+                            navController.navigate(Routes.TRANSCRIPTION)
                         }
-                    },
-                    onNavigateToAuth = {
-                        navController.navigate(Routes.LOGIN) {
-                            popUpTo(Routes.SPLASH) {
-                                inclusive = true
-                            }
-                        }
-                    },
-                    onNavigateToDashboard = {
-                        navController.navigate(Routes.DASHBOARD) {
-                            popUpTo(Routes.SPLASH) {
-                                inclusive = true
-                            }
-                        }
-                    },
-                    onNavigateToOnboarding = {
-                        navController.navigate(Routes.ONBOARDING) {
-                            popUpTo(Routes.SPLASH) {
-                                inclusive = true
-                            }
-                        }
+                    )
+                }
+            }
+        ) { innerPadding ->
+            NavHost(
+                navController = navController,
+                startDestination = startDestination,
+                modifier = Modifier.padding(
+                    top = innerPadding.calculateTopPadding(),
+                    bottom = if (currentRoute in bottomNavRoutes) {
+                        innerPadding.calculateBottomPadding()
+                    } else {
+                        0.dp
                     }
                 )
-            }
-
-            composable(Routes.WELCOME) {
-                WelcomeScreen(
-                    onNavigateToRegister = {
-                        navController.navigate(Routes.REGISTER) {
-                            popUpTo(Routes.WELCOME) {
-                                inclusive = true
+            ) {
+                composable(Routes.SPLASH) {
+                    SplashScreen(
+                        onTimeout = {
+                            navController.navigate(Routes.WELCOME) {
+                                popUpTo(Routes.SPLASH) {
+                                    inclusive = true
+                                }
+                            }
+                        },
+                        onNavigateToAuth = {
+                            navController.navigate(Routes.LOGIN) {
+                                popUpTo(Routes.SPLASH) {
+                                    inclusive = true
+                                }
+                            }
+                        },
+                        onNavigateToDashboard = {
+                            navController.navigate(Routes.DASHBOARD) {
+                                popUpTo(Routes.SPLASH) {
+                                    inclusive = true
+                                }
+                            }
+                        },
+                        onNavigateToOnboarding = {
+                            navController.navigate(Routes.ONBOARDING) {
+                                popUpTo(Routes.SPLASH) {
+                                    inclusive = true
+                                }
                             }
                         }
-                    },
-                    onNavigateToLogin = {
-                        navController.navigate(Routes.LOGIN) {
-                            popUpTo(Routes.WELCOME) {
-                                inclusive = true
-                            }
-                        }
-                    }
-                )
-            }
-
-            composable(Routes.LOGIN) {
-                val state by authViewModel.uiState.collectAsStateWithLifecycle()
-                val launchFacebook = rememberFacebookLoginLauncher(
-                    onAuthComplete = authViewModel::onFacebookLoginSuccess,
-                    onAuthError = authViewModel::onFacebookLoginError
-                )
-                val launchGoogle = rememberGoogleLoginLauncher(
-                    onAuthComplete = authViewModel::onGoogleLoginSuccess,
-                    onAuthError = authViewModel::onGoogleLoginError
-                )
-
-                LoginScreen(
-                    state = state,
-                    onEmailChange = authViewModel::onEmailChange,
-                    onPasswordChange = authViewModel::onPasswordChange,
-                    onRememberMeToggle = authViewModel::onRememberMeToggle,
-                    onForgotPasswordClicked = authViewModel::onForgotPasswordClicked,
-                    onLoginClicked = authViewModel::onLoginClicked,
-                    onTabSelected = { tab ->
-                        if (tab == AuthTab.SIGNUP) authViewModel.onNavigateToRegisterClicked()
-                    },
-                    onSocialLoginClicked = authViewModel::onSocialLoginClicked,
-                    onFacebookLoginClicked = { launchFacebook() },
-                    onGoogleLoginClicked = { launchGoogle() },
-                    onNavigateToRegister = authViewModel::onNavigateToRegisterClicked,
-                    onDismissAccountLinkingDialog = authViewModel::onDismissAccountLinkingDialog
-                )
-            }
-
-            composable(Routes.REGISTER) {
-                val state by authViewModel.uiState.collectAsStateWithLifecycle()
-                val launchFacebook = rememberFacebookLoginLauncher(
-                    onAuthComplete = authViewModel::onFacebookLoginSuccess,
-                    onAuthError = authViewModel::onFacebookLoginError
-                )
-                val launchGoogle = rememberGoogleLoginLauncher(
-                    onAuthComplete = authViewModel::onGoogleLoginSuccess,
-                    onAuthError = authViewModel::onGoogleLoginError
-                )
-
-                RegisterScreen(
-                    state = state,
-                    onUsernameChange = authViewModel::onUsernameChange,
-                    onEmailChange = authViewModel::onEmailChange,
-                    onPasswordChange = authViewModel::onPasswordChange,
-                    onConfirmPasswordChange = authViewModel::onConfirmPasswordChange,
-                    onAgreedToTermsToggle = authViewModel::onAgreedToTermsToggle,
-                    onTermsClicked = authViewModel::onTermsClicked,
-                    onDismissTermsDialog = authViewModel::onDismissTermsDialog,
-                    onSignUpClicked = authViewModel::onSignUpClicked,
-                    onTabSelected = { tab ->
-                        if (tab == AuthTab.LOGIN) authViewModel.onNavigateToLoginClicked()
-                    },
-                    onSocialLoginClicked = authViewModel::onSocialLoginClicked,
-                    onFacebookLoginClicked = { launchFacebook() },
-                    onGoogleLoginClicked = { launchGoogle() },
-                    onNavigateToLogin = authViewModel::onNavigateToLoginClicked,
-                    onDismissAccountLinkingDialog = authViewModel::onDismissAccountLinkingDialog
-                )
-            }
-
-            composable(Routes.ONBOARDING) {
-                OnboardingHostScreen(
-                    onOnboardingComplete = {
-                        navController.navigate(Routes.DASHBOARD) {
-                            popUpTo(Routes.ONBOARDING) {
-                                inclusive = true
-                            }
-                        }
-                    },
-                    onBack = {
-                        navController.navigate(Routes.LOGIN) {
-                            popUpTo(Routes.ONBOARDING) {
-                                inclusive = true
-                            }
-                        }
-                    }
-                )
-            }
-
-            composable(Routes.DASHBOARD) {
-                val checkinsViewModel: CheckinsViewModel =
-                    viewModel(factory = ViewModelProvider.Factory)
-
-                DashboardScreen(
-                    onLogout = {
-                        authViewModel.logout()
-                    },
-                    onLogClick = { log ->
-                        checkinsViewModel.loadCheckinForEdit(log)
-                        navController.navigate(Routes.DAILY_CHECKIN)
-                    },
-                    onViewAllLogs = {
-                        navController.navigate(Routes.CHECKIN)
-                    },
-                    onAddLog = {
-                        checkinsViewModel.prepareNewCheckin()
-                        navController.navigate(Routes.DAILY_CHECKIN)
-                    },
-                    onInputManually = {
-                        checkinsViewModel.prepareNewCheckin()
-                        navController.navigate(Routes.DAILY_CHECKIN)
-                    },
-                    onProfileClick = {
-                        navController.navigate(Routes.PROFILE)
-                    }
-                )
-            }
-
-            composable(Routes.DEVICE) {
-                SmartwatchRoute()
-            }
-
-            composable(Routes.INSIGHT) {
-                InsightsScreen(
-                    onBack = {
-                        navController.popBackStack()
-                    }
-                )
-            }
-
-            composable(Routes.CHECKIN) {
-                val parentEntry = remember(it) {
-                    navController.getBackStackEntry(Routes.DASHBOARD)
+                    )
                 }
 
-                val checkinsViewModel: CheckinsViewModel =
-                    viewModel(parentEntry, factory = ViewModelProvider.Factory)
-
-                CheckinsOverviewScreen(
-                    onNavigateToDailyCheckin = {
-                        checkinsViewModel.prepareNewCheckin()
-                        navController.navigate(Routes.DAILY_CHECKIN)
-                    },
-                    onLogClick = { log ->
-                        checkinsViewModel.loadCheckinForEdit(log)
-                        navController.navigate(Routes.DAILY_CHECKIN)
-                    },
-                    viewModel = checkinsViewModel
-                )
-            }
-
-            composable(Routes.DAILY_CHECKIN) {
-                val parentEntry = remember(it) {
-                    navController.getBackStackEntry(Routes.DASHBOARD)
-                }
-
-                val checkinsViewModel: CheckinsViewModel =
-                    viewModel(parentEntry, factory = ViewModelProvider.Factory)
-
-                DailyCheckinScreen(
-                    onBack = {
-                        navController.popBackStack()
-                    },
-                    onReview = {
-                        navController.navigate(Routes.CHECKIN_PREVIEW)
-                    },
-                    viewModel = checkinsViewModel
-                )
-            }
-
-            composable(Routes.CHECKIN_PREVIEW) {
-                val parentEntry = remember(it) {
-                    navController.getBackStackEntry(Routes.DASHBOARD)
-                }
-
-                val checkinsViewModel: CheckinsViewModel =
-                    viewModel(parentEntry, factory = ViewModelProvider.Factory)
-
-                CheckinPreviewScreen(
-                    onBack = {
-                        navController.popBackStack()
-                    },
-                    onNavigateToOverview = {
-                        navController.navigate(Routes.CHECKIN) {
-                            popUpTo(Routes.CHECKIN) { inclusive = true }
+                composable(Routes.WELCOME) {
+                    WelcomeScreen(
+                        onNavigateToRegister = {
+                            navController.navigate(Routes.REGISTER) {
+                                popUpTo(Routes.WELCOME) {
+                                    inclusive = true
+                                }
+                            }
+                        },
+                        onNavigateToLogin = {
+                            navController.navigate(Routes.LOGIN) {
+                                popUpTo(Routes.WELCOME) {
+                                    inclusive = true
+                                }
+                            }
                         }
-                    },
-                    viewModel = checkinsViewModel
-                )
-            }
-
-            composable(Routes.FORGOT_PW) {
-                val state by authViewModel.uiState.collectAsStateWithLifecycle()
-                ForgotPasswordScreen(
-                    state = state,
-                    onEmailChange = authViewModel::onEmailChange,
-                    onResetPasswordClicked = authViewModel::onResetPasswordClicked,
-                    onBackToLogin = {
-                        navController.popBackStack()
-                    }
-                )
-            }
-
-            composable(Routes.TRANSCRIPTION) {
-                val transcriptionViewModel: TranscriptionViewModel =
-                    viewModel(factory = ViewModelProvider.Factory)
-
-                val parentEntry = remember(it) {
-                    navController.getBackStackEntry(Routes.DASHBOARD)
+                    )
                 }
 
-                val checkinsViewModel: CheckinsViewModel =
-                    viewModel(parentEntry, factory = ViewModelProvider.Factory)
+                composable(Routes.LOGIN) {
+                    val state by authViewModel.uiState.collectAsStateWithLifecycle()
+                    val launchFacebook = rememberFacebookLoginLauncher(
+                        onAuthComplete = authViewModel::onFacebookLoginSuccess,
+                        onAuthError = authViewModel::onFacebookLoginError
+                    )
+                    val launchGoogle = rememberGoogleLoginLauncher(
+                        onAuthComplete = authViewModel::onGoogleLoginSuccess,
+                        onAuthError = authViewModel::onGoogleLoginError
+                    )
 
-                TranscriptionScreen(
-                    viewModel = transcriptionViewModel,
-                    onBack = {
-                        navController.popBackStack()
-                    },
-                    onUseInCheckin = { transcribedText ->
-                        checkinsViewModel.prepareNewCheckin()
-                        checkinsViewModel.applyVoiceInputToCheckin(
-                            transcribedText = transcribedText
-                        )
+                    LoginScreen(
+                        state = state,
+                        onEmailChange = authViewModel::onEmailChange,
+                        onPasswordChange = authViewModel::onPasswordChange,
+                        onRememberMeToggle = authViewModel::onRememberMeToggle,
+                        onForgotPasswordClicked = authViewModel::onForgotPasswordClicked,
+                        onLoginClicked = authViewModel::onLoginClicked,
+                        onTabSelected = { tab ->
+                            if (tab == AuthTab.SIGNUP) authViewModel.onNavigateToRegisterClicked()
+                        },
+                        onSocialLoginClicked = authViewModel::onSocialLoginClicked,
+                        onFacebookLoginClicked = { launchFacebook() },
+                        onGoogleLoginClicked = { launchGoogle() },
+                        onNavigateToRegister = authViewModel::onNavigateToRegisterClicked,
+                        onDismissAccountLinkingDialog = authViewModel::onDismissAccountLinkingDialog
+                    )
+                }
 
-                        navController.navigate(Routes.DAILY_CHECKIN)
+                composable(Routes.REGISTER) {
+                    val state by authViewModel.uiState.collectAsStateWithLifecycle()
+                    val launchFacebook = rememberFacebookLoginLauncher(
+                        onAuthComplete = authViewModel::onFacebookLoginSuccess,
+                        onAuthError = authViewModel::onFacebookLoginError
+                    )
+                    val launchGoogle = rememberGoogleLoginLauncher(
+                        onAuthComplete = authViewModel::onGoogleLoginSuccess,
+                        onAuthError = authViewModel::onGoogleLoginError
+                    )
+
+                    RegisterScreen(
+                        state = state,
+                        onUsernameChange = authViewModel::onUsernameChange,
+                        onEmailChange = authViewModel::onEmailChange,
+                        onPasswordChange = authViewModel::onPasswordChange,
+                        onConfirmPasswordChange = authViewModel::onConfirmPasswordChange,
+                        onAgreedToTermsToggle = authViewModel::onAgreedToTermsToggle,
+                        onTermsClicked = authViewModel::onTermsClicked,
+                        onDismissTermsDialog = authViewModel::onDismissTermsDialog,
+                        onSignUpClicked = authViewModel::onSignUpClicked,
+                        onTabSelected = { tab ->
+                            if (tab == AuthTab.LOGIN) authViewModel.onNavigateToLoginClicked()
+                        },
+                        onSocialLoginClicked = authViewModel::onSocialLoginClicked,
+                        onFacebookLoginClicked = { launchFacebook() },
+                        onGoogleLoginClicked = { launchGoogle() },
+                        onNavigateToLogin = authViewModel::onNavigateToLoginClicked,
+                        onDismissAccountLinkingDialog = authViewModel::onDismissAccountLinkingDialog
+                    )
+                }
+
+                composable(Routes.ONBOARDING) {
+                    OnboardingHostScreen(
+                        onOnboardingComplete = {
+                            navController.navigate(Routes.DASHBOARD) {
+                                popUpTo(Routes.ONBOARDING) {
+                                    inclusive = true
+                                }
+                            }
+                        },
+                        onBack = {
+                            navController.navigate(Routes.LOGIN) {
+                                popUpTo(Routes.ONBOARDING) {
+                                    inclusive = true
+                                }
+                            }
+                        }
+                    )
+                }
+
+                composable(Routes.DASHBOARD) {
+                    val checkinsViewModel: CheckinsViewModel =
+                        viewModel(factory = ViewModelProvider.Factory)
+
+                    DashboardScreen(
+                        onOpenDrawer = {
+                            coroutineScope.launch { drawerState.open() }
+                        },
+                        onLogout = {
+                            authViewModel.logout()
+                        },
+                        onNavigate = { route ->
+                            navController.navigate(route) {
+                                if (route != Routes.DASHBOARD) {
+                                    launchSingleTop = true
+                                }
+                            }
+                        },
+                        onLogClick = { log ->
+                            checkinsViewModel.loadCheckinForEdit(log)
+                            navController.navigate(Routes.DAILY_CHECKIN)
+                        },
+                        onViewAllLogs = {
+                            navController.navigate(Routes.CHECKIN)
+                        },
+                        onAddLog = {
+                            checkinsViewModel.prepareNewCheckin()
+                            navController.navigate(Routes.DAILY_CHECKIN)
+                        },
+                        onInputManually = {
+                            checkinsViewModel.prepareNewCheckin()
+                            navController.navigate(Routes.DAILY_CHECKIN)
+                        },
+                        onProfileClick = {
+                            navController.navigate(Routes.PROFILE)
+                        },
+                        viewModel = dashboardViewModel
+                    )
+                }
+
+                composable(Routes.DEVICE) {
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    SmartwatchRoute(
+                        onOpenDrawer = {
+                            coroutineScope.launch { drawerState.open() }
+                        },
+                        onPrintQrClick = {
+                            dashboardViewModel.onExportSummaryPdf(context)
+                        }
+                    )
+                }
+
+                composable(Routes.INSIGHT) {
+                    InsightsScreen(
+                        onBack = {
+                            navController.popBackStack()
+                        },
+                        onOpenDrawer = {
+                            coroutineScope.launch { drawerState.open() }
+                        }
+                    )
+                }
+
+                composable(Routes.CHECKIN) {
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    val parentEntry = remember(it) {
+                        try {
+                            navController.getBackStackEntry(Routes.CHECKIN)
+                        } catch (_: Exception) {
+                            it
+                        }
                     }
-                )
-            }
 
-            composable(Routes.PROFILE) {
-                ProfileScreen(
-                    onBack = {
-                        navController.popBackStack()
-                    },
-                    onNavigateToSettings = {
-                        navController.navigate(Routes.SETTINGS)
-                    }
-                )
-            }
+                    val checkinsViewModel: CheckinsViewModel =
+                        viewModel(parentEntry, factory = ViewModelProvider.Factory)
 
-            composable(Routes.SETTINGS) {
-                SettingsScreen(
-                    onBack = {
-                        navController.popBackStack()
-                    },
-                    onLogout = {
-                        authViewModel.logout()
+                    CheckinsOverviewScreen(
+                        onNavigateToDailyCheckin = {
+                            checkinsViewModel.prepareNewCheckin()
+                            navController.navigate(Routes.DAILY_CHECKIN)
+                        },
+                        onLogClick = { log ->
+                            checkinsViewModel.loadCheckinForEdit(log)
+                            navController.navigate(Routes.DAILY_CHECKIN)
+                        },
+                        onOpenDrawer = {
+                            coroutineScope.launch { drawerState.open() }
+                        },
+                        onPrintQrClick = {
+                            dashboardViewModel.onExportSummaryPdf(context)
+                        },
+                        viewModel = checkinsViewModel
+                    )
+                }
+
+                composable(Routes.DAILY_CHECKIN) {
+                    val parentEntry = remember(it) {
+                        try {
+                            navController.getBackStackEntry(Routes.CHECKIN)
+                        } catch (_: Exception) {
+                            it
+                        }
                     }
-                )
+
+                    val checkinsViewModel: CheckinsViewModel =
+                        viewModel(parentEntry, factory = ViewModelProvider.Factory)
+
+                    DailyCheckinScreen(
+                        onBack = {
+                            navController.popBackStack()
+                        },
+                        onReview = {
+                            navController.navigate(Routes.CHECKIN_PREVIEW)
+                        },
+                        viewModel = checkinsViewModel
+                    )
+                }
+
+                composable(Routes.CHECKIN_PREVIEW) {
+                    val parentEntry = remember(it) {
+                        try {
+                            navController.getBackStackEntry(Routes.CHECKIN)
+                        } catch (_: Exception) {
+                            it
+                        }
+                    }
+
+                    val checkinsViewModel: CheckinsViewModel =
+                        viewModel(parentEntry, factory = ViewModelProvider.Factory)
+
+                    CheckinPreviewScreen(
+                        onBack = {
+                            navController.popBackStack()
+                        },
+                        onNavigateToOverview = {
+                            navController.navigate(Routes.CHECKIN) {
+                                popUpTo(Routes.CHECKIN) { inclusive = false }
+                                launchSingleTop = true
+                            }
+                        },
+                        viewModel = checkinsViewModel
+                    )
+                }
+
+                composable(Routes.FORGOT_PW) {
+                    val state by authViewModel.uiState.collectAsStateWithLifecycle()
+                    ForgotPasswordScreen(
+                        state = state,
+                        onEmailChange = authViewModel::onEmailChange,
+                        onResetPasswordClicked = authViewModel::onResetPasswordClicked,
+                        onBackToLogin = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable(Routes.TRANSCRIPTION) {
+                    val transcriptionViewModel: TranscriptionViewModel =
+                        viewModel(factory = ViewModelProvider.Factory)
+
+                    val parentEntry = remember(it) {
+                        navController.getBackStackEntry(Routes.DASHBOARD)
+                    }
+
+                    val checkinsViewModel: CheckinsViewModel =
+                        viewModel(parentEntry, factory = ViewModelProvider.Factory)
+
+                    TranscriptionScreen(
+                        viewModel = transcriptionViewModel,
+                        onBack = {
+                            navController.popBackStack()
+                        },
+                        onUseInCheckin = { transcribedText ->
+                            checkinsViewModel.prepareNewCheckin()
+                            checkinsViewModel.applyVoiceInputToCheckin(
+                                transcribedText = transcribedText
+                            )
+
+                            navController.navigate(Routes.DAILY_CHECKIN)
+                        }
+                    )
+                }
+
+                composable(Routes.PROFILE) {
+                    ProfileScreen(
+                        onBack = {
+                            navController.popBackStack()
+                        },
+                        onNavigateToSettings = {
+                            navController.navigate(Routes.SETTINGS)
+                        }
+                    )
+                }
+
+                composable(Routes.SETTINGS) {
+                    SettingsScreen(
+                        onBack = {
+                            navController.popBackStack()
+                        },
+                        onLogout = {
+                            authViewModel.logout()
+                        }
+                    )
+                }
+
+                composable(Routes.NEWS_EDUCATION) {
+                    NewsEducationScreen(
+                        onBack = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
             }
         }
     }

@@ -33,6 +33,7 @@ class DashboardDataSource {
                         UserDto(
                             email = snapshot.getString("email"),
                             username = snapshot.getString("username"),
+                            photoUri = snapshot.getString("photoUri"),
                             firstName = snapshot.getString("firstName"),
                             lastName = snapshot.getString("lastName"),
                             middleName = snapshot.getString("middleName"),
@@ -213,6 +214,22 @@ class DashboardDataSource {
             Result.success(Unit)
         } catch (e: Exception) {
             android.util.Log.e("DashboardDataSource", "Failed to update health data", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updatePhotoUri(photoUri: String): Result<Unit> {
+        return try {
+            val userId =
+                auth.currentUser?.uid ?: return Result.failure(Exception("Not authenticated"))
+            firestore.collection("users").document(userId)
+                .set(
+                    mapOf("photoUri" to photoUri),
+                    com.google.firebase.firestore.SetOptions.merge()
+                )
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
             Result.failure(e)
         }
     }

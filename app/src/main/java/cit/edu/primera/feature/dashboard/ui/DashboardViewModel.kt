@@ -3,18 +3,27 @@ package cit.edu.primera.feature.dashboard.ui
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import cit.edu.primera.feature.dashboard.data.DashboardRepository
-import cit.edu.primera.feature.dashboard.domain.DashboardBusinessLogic
-import cit.edu.primera.feature.dashboard.domain.DashboardData
-import cit.edu.primera.feature.smartwatchconnection.data.HealthConnectManager
 import cit.edu.primera.core.theme.LogBaby
 import cit.edu.primera.core.theme.LogNutrition
 import cit.edu.primera.core.theme.LogOther
 import cit.edu.primera.core.theme.LogPain
-import kotlinx.coroutines.flow.*
+import cit.edu.primera.feature.dashboard.data.DashboardRepository
+import cit.edu.primera.feature.dashboard.domain.DashboardBusinessLogic
+import cit.edu.primera.feature.dashboard.domain.DashboardData
+import cit.edu.primera.feature.smartwatchconnection.data.HealthConnectManager
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 class DashboardViewModel(
     private val repository: DashboardRepository,
@@ -288,18 +297,33 @@ class DashboardViewModel(
         
         val days = mutableListOf<DashboardWeekDayItem>()
         val dayInitials = listOf("S", "M", "T", "W", "T", "F", "S")
+        val monthFormat = SimpleDateFormat("MMM", Locale.getDefault())
         
         for (i in 0..6) {
+            val monthStr = monthFormat.format(calendar.time)
             days.add(
                 DashboardWeekDayItem(
                     initial = dayInitials[i],
                     date = calendar[Calendar.DAY_OF_MONTH],
-                    isSelected = calendar[Calendar.DAY_OF_YEAR] == today
+                    isSelected = calendar[Calendar.DAY_OF_YEAR] == today,
+                    month = monthStr
                 )
             )
             calendar.add(Calendar.DAY_OF_MONTH, 1)
         }
         return days
+    }
+
+    fun onExportSummaryPdf(context: android.content.Context) {
+        viewModelScope.launch {
+            val healthRecords = repository.observeHealthRecords().first()
+            val dashboardData = repository.observeDashboardData().first()
+            cit.edu.primera.core.util.DataExportHelper.exportSummaryToPdf(
+                context,
+                healthRecords,
+                dashboardData
+            )
+        }
     }
 
 
@@ -338,6 +362,14 @@ class DashboardViewModel(
     fun onUpdateStepsGoal(goal: Long) {
         viewModelScope.launch {
             repository.updateStepsGoal(goal)
+        }
+    }
+
+    fun onPhotoUriSelected(photoUri: String) {
+        viewModelScope.launch {
+            val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
+            preferenceRepository.setProfilePictureUri(userId, photoUri)
+            repository.updatePhotoUri(photoUri)
         }
     }
 }

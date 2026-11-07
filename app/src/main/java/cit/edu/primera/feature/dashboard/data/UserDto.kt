@@ -5,6 +5,7 @@ import java.util.Date
 data class UserDto(
     val email: String? = null,
     val username: String? = null,
+    val photoUri: String? = null,
     val authProviders: List<String>? = null,
     val lastLoginProvider: String? = null,
     val firstName: String? = null,

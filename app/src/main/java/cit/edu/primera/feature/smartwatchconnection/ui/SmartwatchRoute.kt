@@ -14,6 +14,8 @@ import cit.edu.primera.core.di.ViewModelProvider
 
 @Composable
 fun SmartwatchRoute(
+    onOpenDrawer: () -> Unit = {},
+    onPrintQrClick: (() -> Unit)? = null,
     viewModel: SmartwatchViewModel = viewModel(factory = ViewModelProvider.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -55,6 +57,8 @@ fun SmartwatchRoute(
         },
         onOpenHealthConnect = {
             viewModel.onOpenHealthConnect()
-        }
+        },
+        onOpenDrawer = onOpenDrawer,
+        onPrintQrClick = onPrintQrClick
     )
 }

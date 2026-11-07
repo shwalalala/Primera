@@ -15,7 +15,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,11 +24,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cit.edu.primera.core.theme.CalendarDayBg
-import cit.edu.primera.core.theme.CalendarDaySelected
 import cit.edu.primera.core.theme.NauseaBg
 import cit.edu.primera.core.theme.NauseaText
 import cit.edu.primera.core.theme.PrimeraTheme
+import cit.edu.primera.core.theme.PrimeraViolet
+import cit.edu.primera.core.theme.SurfaceWhite
 import cit.edu.primera.core.theme.TextPrimary
 import cit.edu.primera.core.theme.TextSecondary
 
@@ -71,38 +70,36 @@ fun DayChip(
     initial: String,
     date: Int,
     isSelected: Boolean,
+    month: String = "",
     modifier: Modifier = Modifier
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
-            .width(40.dp)
-            .minimumInteractiveComponentSize()
     ) {
         Text(
             text = initial,
-            fontSize = 11.sp,
-            color = if (isSelected) CalendarDaySelected else TextSecondary,
-            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = TextSecondary
         )
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(6.dp))
         Box(
-            contentAlignment = Alignment.Center,
             modifier = Modifier
-                .size(36.dp)
+                .size(40.dp)
                 .clip(CircleShape)
-                .background(CalendarDayBg)
+                .background(SurfaceWhite)
                 .then(
-                    if (isSelected) {
-                        Modifier.border(1.5.dp, CalendarDaySelected, CircleShape)
-                    } else Modifier
-                )
+                    if (isSelected) Modifier.border(1.5.dp, PrimeraViolet, CircleShape)
+                    else Modifier.border(1.dp, Color.Transparent, CircleShape)
+                ),
+            contentAlignment = Alignment.Center
         ) {
             Text(
                 text = date.toString(),
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = if (isSelected) CalendarDaySelected else TextPrimary
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
             )
         }
     }
@@ -128,5 +125,3 @@ private fun TagsAndChipsPreview() {
         }
     }
 }
-
-

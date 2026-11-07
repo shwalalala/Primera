@@ -9,4 +9,5 @@ interface DashboardRepository {
     suspend fun updateHealthData(steps: Long, heartRate: Long, sleepHours: Long, sleepMinutes: Long, spO2: Long? = null): Result<Unit>
     suspend fun saveHistoricalRecord(record: cit.edu.primera.feature.smartwatchconnection.domain.SmartwatchHealth): Result<Unit>
     fun observeHealthRecords(): Flow<List<cit.edu.primera.feature.smartwatchconnection.domain.SmartwatchHealth>>
+    suspend fun updatePhotoUri(photoUri: String): Result<Unit>
 }

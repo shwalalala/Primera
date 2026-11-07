@@ -1,5 +1,8 @@
 package cit.edu.primera.feature.profile.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -90,6 +93,7 @@ import cit.edu.primera.ui.components.MonitoringDisclaimerFooter
 import cit.edu.primera.ui.components.PrimeraDatePicker
 import cit.edu.primera.ui.components.PrimeraOptionChip
 import cit.edu.primera.ui.components.PrimeraOutlinedButton
+import cit.edu.primera.ui.components.ProfileAvatar
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -270,6 +274,12 @@ fun ProfileContent(
         }
     }
 
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let { viewModel.onPhotoUriSelected(it.toString()) }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -277,6 +287,47 @@ fun ProfileContent(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Profile Photo Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                ProfileAvatar(
+                    userName = state.email.ifBlank { "User" },
+                    photoUri = state.photoUri,
+                    size = 68.dp,
+                    showEditBadge = true,
+                    onEditClick = {
+                        photoPickerLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    }
+                )
+                Spacer(Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = "Profile Picture",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = "Tap photo or camera icon to upload",
+                        fontSize = 13.sp,
+                        color = TextSecondary
+                    )
+                }
+            }
+        }
 
         // 1. Personal Information Section
         ProfileSectionCard(
@@ -804,6 +855,7 @@ private val previewProfileViewModel by lazy {
             override suspend fun updateHealthData(steps: Long, heartRate: Long, sleepHours: Long, sleepMinutes: Long, spO2: Long?) = Result.success(Unit)
             override suspend fun saveHistoricalRecord(record: cit.edu.primera.feature.smartwatchconnection.domain.SmartwatchHealth) = Result.success(Unit)
             override fun observeHealthRecords(): kotlinx.coroutines.flow.Flow<List<cit.edu.primera.feature.smartwatchconnection.domain.SmartwatchHealth>> = kotlinx.coroutines.flow.flowOf(emptyList())
+            override suspend fun updatePhotoUri(photoUri: String) = Result.success(Unit)
         },
         checkinsRepository = object : cit.edu.primera.feature.checkins.data.CheckinsRepository {
             override fun observeLogs(): kotlinx.coroutines.flow.Flow<List<cit.edu.primera.feature.checkins.data.CheckinLogDto>> = kotlinx.coroutines.flow.flowOf(emptyList())

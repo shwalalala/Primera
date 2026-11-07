@@ -58,7 +58,6 @@ import cit.edu.primera.feature.goals.data.GoalDto
 import cit.edu.primera.feature.goals.ui.AddGoalDialog
 import cit.edu.primera.ui.components.ChartContainer
 import cit.edu.primera.ui.components.DashboardSectionHeader
-import cit.edu.primera.ui.components.FeatureTopBar
 import cit.edu.primera.ui.components.FullScreenLoadingOverlay
 import cit.edu.primera.ui.components.GoalItemCard
 import cit.edu.primera.ui.components.InsightTipCard
@@ -69,7 +68,8 @@ import cit.edu.primera.ui.components.SimpleBarChart
 
 @Composable
 fun InsightsScreen(
-    onBack: () -> Unit,
+    onBack: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {},
     viewModel: InsightsViewModel = viewModel(factory = ViewModelProvider.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -86,6 +86,7 @@ fun InsightsScreen(
         showAddGoal = showAddGoal,
         editingGoal = editingGoal,
         onBack = onBack,
+        onOpenDrawer = onOpenDrawer,
         onPeriodSelected = viewModel::onPeriodSelected,
         onExport = { viewModel.onExportSummaryPdf(context) },
         onAddGoalClick = { showAddGoal = true },
@@ -134,7 +135,8 @@ fun InsightsScreenContent(
     isOnline: Boolean,
     showAddGoal: Boolean,
     editingGoal: GoalDto?,
-    onBack: () -> Unit,
+    onBack: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {},
     onPeriodSelected: (String) -> Unit,
     onExport: () -> Unit,
     onAddGoalClick: () -> Unit,
@@ -177,12 +179,12 @@ fun InsightsScreenContent(
             )
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            FeatureTopBar(
-                title = "Insights", 
-                onBack = onBack,
+            cit.edu.primera.ui.components.MainTopBar(
+                title = "Insights",
+                onOpenDrawer = onOpenDrawer,
                 selectedPeriod = activePeriod,
                 onPeriodSelected = onPeriodSelected,
-                onExport = onExport
+                onPrintQrClick = onExport
             )
 
             if (!isOnline) {
@@ -427,14 +429,6 @@ fun InsightsContent(
             backgroundColor = data.goalsCompletionTipColor,
             contentColor = TextPrimary.copy(alpha = 0.8f)
         )
-
-        data.healthWarningTip?.let {
-            InsightTipCard(
-                text = it,
-                backgroundColor = data.healthWarningTipColor,
-                contentColor = SurfaceWhite
-            )
-        }
 
         // 3. Wellness Goals Section
         Card(

@@ -333,13 +333,13 @@ class CheckinsViewModel(
     fun onSaveCheckin() {
         viewModelScope.launch {
             _dailyState.update {
-                it.copy(isSaving = true)
+                it.copy(isSaving = true, errorMessage = null)
             }
 
             try {
                 val weight = _dailyState.value.weightKg.toIntOrNull()
                 if (weight != null) {
-                    repository.updateUserWeight(weight)
+                    repository.updateUserWeight(weight).getOrThrow()
                 }
 
                 val state = _dailyState.value
@@ -381,20 +381,21 @@ class CheckinsViewModel(
                             description = descriptionParts.joinToString("; "),
                             timestamp = Date()
                         )
-                    )
+                    ).getOrThrow()
                 }
 
                 _dailyState.update {
                     it.copy(
                         isSaving = false,
-                        success = true
+                        success = true,
+                        errorMessage = null
                     )
                 }
             } catch (e: Exception) {
                 _dailyState.update {
                     it.copy(
                         isSaving = false,
-                        errorMessage = e.message
+                        errorMessage = e.message ?: "Failed to save check-in"
                     )
                 }
             }

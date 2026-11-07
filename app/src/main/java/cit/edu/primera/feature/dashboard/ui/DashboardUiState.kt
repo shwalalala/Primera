@@ -18,6 +18,8 @@ data class PrenatalReminderUiItem(
 
 data class DashboardUiModel(
     val userName: String,
+    val email: String? = null,
+    val photoUri: String? = null,
     val timeOfDay: String,
     val trimester: String,
     val weekNumber: Int,
@@ -57,5 +59,6 @@ data class DashboardLogUiItem(
 data class DashboardWeekDayItem(
     val initial: String,
     val date: Int,
-    val isSelected: Boolean
+    val isSelected: Boolean,
+    val month: String = ""
 )

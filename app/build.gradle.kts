@@ -94,4 +94,7 @@ dependencies {
 
     // Facebook Login
     implementation("com.facebook.android:facebook-login:19.0.1")
+
+    // Image Loading (Coil)
+    implementation(libs.coil.compose)
 }
