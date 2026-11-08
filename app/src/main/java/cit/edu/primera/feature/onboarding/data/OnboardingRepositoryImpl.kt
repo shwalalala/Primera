@@ -19,6 +19,7 @@ class OnboardingRepositoryImpl : OnboardingRepository {
 
             val profileData = hashMapOf<String, Any?>(
                 "email" to userEmail,
+                "username" to profile.username,
                 "birthday" to profile.birthday,
                 "weightKg" to profile.weightKg,
                 "heightCm" to profile.heightCm,

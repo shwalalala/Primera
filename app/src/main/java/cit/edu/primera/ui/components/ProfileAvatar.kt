@@ -52,10 +52,46 @@ fun ProfileAvatar(
             ),
         contentAlignment = Alignment.Center
     ) {
+        // Base Avatar Circle (Gradient background + Initial text fallback)
+        Box(
+            modifier = Modifier
+                .size(size)
+                .clip(CircleShape)
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(PrimeraLogoStart, PrimeraLogoEnd)
+                    )
+                )
+                .border(2.dp, SurfaceWhite, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = initial,
+                color = SurfaceWhite,
+                fontWeight = FontWeight.Bold,
+                fontSize = (size.value * 0.45f).sp
+            )
+        }
+
+        // Overlay AsyncImage if photoUri is provided
         if (!photoUri.isNullOrBlank()) {
+            val imageModel = androidx.compose.runtime.remember(photoUri) {
+                if (photoUri.startsWith("content://") || photoUri.startsWith("file://")) {
+                    try {
+                        Uri.parse(photoUri)
+                    } catch (_: Exception) {
+                        photoUri
+                    }
+                } else if (photoUri.startsWith("/")) {
+                    java.io.File(photoUri)
+                } else {
+                    photoUri
+                }
+            }
+
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data(Uri.parse(photoUri))
+                    .data(imageModel)
                     .crossfade(true)
                     .build(),
                 contentDescription = "Profile Picture",
@@ -65,26 +101,6 @@ fun ProfileAvatar(
                     .clip(CircleShape)
                     .border(2.dp, SurfaceWhite, CircleShape)
             )
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(size)
-                    .clip(CircleShape)
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(PrimeraLogoStart, PrimeraLogoEnd)
-                        )
-                    )
-                    .border(2.dp, SurfaceWhite, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = initial,
-                    color = SurfaceWhite,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = (size.value * 0.45f).sp
-                )
-            }
         }
 
         if (showEditBadge || onEditClick != null) {

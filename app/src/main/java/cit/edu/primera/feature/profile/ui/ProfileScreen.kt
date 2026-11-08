@@ -274,10 +274,22 @@ fun ProfileContent(
         }
     }
 
+    val context = LocalContext.current
+
+    if (state.showCropDialog && state.pendingPhotoUri != null) {
+        ProfilePhotoCropDialog(
+            imageUri = state.pendingPhotoUri,
+            onDismiss = viewModel::dismissCropDialog,
+            onConfirm = { uri ->
+                viewModel.confirmPhotoSelection(context, uri)
+            }
+        )
+    }
+
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
-        uri?.let { viewModel.onPhotoUriSelected(it.toString()) }
+        uri?.let { viewModel.onPhotoSelected(context, it) }
     }
 
     Column(
@@ -301,7 +313,7 @@ fun ProfileContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ProfileAvatar(
-                    userName = state.email.ifBlank { "User" },
+                    userName = state.username.ifBlank { state.email.ifBlank { "User" } },
                     photoUri = state.photoUri,
                     size = 68.dp,
                     showEditBadge = true,
@@ -321,8 +333,8 @@ fun ProfileContent(
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = "Tap photo or camera icon to upload",
-                        fontSize = 13.sp,
+                        text = "Tap photo to upload (PNG, JPG, JPEG up to 100 MB)",
+                        fontSize = 12.sp,
                         color = TextSecondary
                     )
                 }
@@ -340,6 +352,14 @@ fun ProfileContent(
             onEditClick = viewModel::toggleEdit,
             onSaveClick = viewModel::saveProfile
         ) {
+            ProfileField(
+                label = "Username",
+                value = state.username,
+                isEditing = state.isEditing,
+                onValueChange = viewModel::onUsernameChange,
+                placeholder = "Enter username"
+            )
+
             val birthdayStr = state.birthday?.let { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(it) } ?: "Not set"
             ProfileField(
                 label = "Birthday",
@@ -867,6 +887,25 @@ private val previewProfileViewModel by lazy {
         },
         onboardingRepository = object : cit.edu.primera.feature.onboarding.data.OnboardingRepository {
             override suspend fun saveProfile(profile: cit.edu.primera.feature.onboarding.domain.OnboardingProfile) = Result.success(Unit)
+        },
+        preferenceRepository = object : cit.edu.primera.core.data.PreferenceRepository {
+            override suspend fun shouldShowOnboarding(userId: String) = false
+            override fun setOnboardingCompleted(userId: String) {}
+            override fun getOnboardingLastStep(userId: String) = null
+            override fun setOnboardingLastStep(userId: String, step: String) {}
+            override fun isWatchSyncEnabled(userId: String) = false
+            override fun setWatchSyncEnabled(userId: String, enabled: Boolean) {}
+            override fun getCustomOptions(userId: String, category: String) = emptySet<String>()
+            override fun addCustomOption(userId: String, category: String, label: String) {}
+            override fun hasEverLoggedIn() = true
+            override fun setHasEverLoggedIn(hasLoggedIn: Boolean) {}
+            override fun getSavedEmail() = null
+            override fun setSavedEmail(email: String?) {}
+            override fun getProfilePictureUri(userId: String) = null
+            override fun setProfilePictureUri(userId: String, uri: String?) {}
+            override fun hasSeenMicCoachmark(userId: String) = true
+            override fun setMicCoachmarkDismissed(userId: String) {}
+            override fun clearLocalData() {}
         }
     )
 }

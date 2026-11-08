@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -39,6 +40,7 @@ import cit.edu.primera.core.theme.BackgroundCream
 import cit.edu.primera.core.theme.ErrorRed
 import cit.edu.primera.core.theme.PrimeraLilac
 import cit.edu.primera.core.theme.PrimeraTheme
+import cit.edu.primera.core.theme.PrimeraViolet
 import cit.edu.primera.core.theme.SurfaceWhite
 import cit.edu.primera.core.theme.TextPrimary
 import cit.edu.primera.feature.auth.ui.rememberFacebookLoginLauncher
@@ -129,49 +131,76 @@ fun SettingsContent(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
-                    .padding(24.dp)
+                    .padding(20.dp),
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Account Security",
-                    style = MaterialTheme.typography.titleLarge,
+                    text = "Account & Security Settings",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
                     color = TextPrimary
                 )
-                
-                Spacer(Modifier.height(16.dp))
 
-                SettingsCard(title = "Link Account") {
+                SettingsCard(title = "Link Accounts") {
                     Text(
                         text = "Add another sign-in method to access this account.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextPrimary
+                        fontSize = 13.sp,
+                        color = cit.edu.primera.core.theme.TextSecondary,
+                        lineHeight = 18.sp
                     )
                     Spacer(Modifier.height(12.dp))
                     if ("google.com" in state.authProviders) {
-                        Text("Google account linked", color = MaterialTheme.colorScheme.primary)
+                        Text(
+                            text = "✓ Google account linked",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = PrimeraViolet
+                        )
                     } else {
                         OutlinedButton(
                             onClick = onLinkGoogle,
                             enabled = !state.isLoading,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                cit.edu.primera.core.theme.MenuButtonBorder
+                            )
                         ) {
-                            Text("Link Google account")
+                            Text(
+                                "Link Google account",
+                                color = PrimeraViolet,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
                     Spacer(Modifier.height(8.dp))
                     if ("facebook.com" in state.authProviders) {
-                        Text("Facebook account linked", color = MaterialTheme.colorScheme.primary)
+                        Text(
+                            text = "✓ Facebook account linked",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = PrimeraViolet
+                        )
                     } else {
                         OutlinedButton(
                             onClick = onLinkFacebook,
                             enabled = !state.isLoading,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                cit.edu.primera.core.theme.MenuButtonBorder
+                            )
                         ) {
-                            Text("Link Facebook account")
+                            Text(
+                                "Link Facebook account",
+                                color = PrimeraViolet,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
                 }
-
-                Spacer(Modifier.height(24.dp))
 
                 // Update Email Section
                 SettingsCard(title = "Change Email") {
@@ -183,7 +212,12 @@ fun SettingsContent(
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !state.isLoading,
                             visualTransformation = PasswordVisualTransformation(),
-                            singleLine = true
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                                unfocusedBorderColor = cit.edu.primera.core.theme.InputBorder,
+                                focusedBorderColor = PrimeraViolet
+                            )
                         )
                         Spacer(Modifier.height(8.dp))
                     }
@@ -193,7 +227,12 @@ fun SettingsContent(
                         label = { Text("New Email") },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !state.isLoading,
-                        singleLine = true
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                            unfocusedBorderColor = cit.edu.primera.core.theme.InputBorder,
+                            focusedBorderColor = PrimeraViolet
+                        )
                     )
                     Spacer(Modifier.height(16.dp))
                     PrimeraGradientButton(
@@ -202,8 +241,6 @@ fun SettingsContent(
                         isLoading = state.isLoading
                     )
                 }
-
-                Spacer(Modifier.height(24.dp))
 
                 // Update Password Section
                 SettingsCard(title = "Change Password") {
@@ -215,7 +252,12 @@ fun SettingsContent(
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !state.isLoading,
                             visualTransformation = PasswordVisualTransformation(),
-                            singleLine = true
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                                unfocusedBorderColor = cit.edu.primera.core.theme.InputBorder,
+                                focusedBorderColor = PrimeraViolet
+                            )
                         )
                         Spacer(Modifier.height(8.dp))
                     }
@@ -226,7 +268,12 @@ fun SettingsContent(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !state.isLoading,
                         visualTransformation = PasswordVisualTransformation(),
-                        singleLine = true
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                            unfocusedBorderColor = cit.edu.primera.core.theme.InputBorder,
+                            focusedBorderColor = PrimeraViolet
+                        )
                     )
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
@@ -236,7 +283,12 @@ fun SettingsContent(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !state.isLoading,
                         visualTransformation = PasswordVisualTransformation(),
-                        singleLine = true
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                            unfocusedBorderColor = cit.edu.primera.core.theme.InputBorder,
+                            focusedBorderColor = PrimeraViolet
+                        )
                     )
                     Spacer(Modifier.height(16.dp))
                     PrimeraGradientButton(
@@ -246,7 +298,7 @@ fun SettingsContent(
                     )
                 }
 
-                Spacer(Modifier.height(32.dp))
+                Spacer(Modifier.height(8.dp))
 
                 // Logout Button
                 cit.edu.primera.ui.components.PrimeraOutlinedButton(

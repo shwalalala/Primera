@@ -5,7 +5,10 @@ import java.util.Date
 
 data class ProfileUiState(
     val email: String = "",
+    val username: String = "",
     val photoUri: String? = null,
+    val pendingPhotoUri: android.net.Uri? = null,
+    val showCropDialog: Boolean = false,
     val birthday: Date? = null,
     val weightKg: Int = 0,
     val heightCm: Int = 0,
