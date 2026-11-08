@@ -75,9 +75,22 @@ fun InsightsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val activePeriod by viewModel.activePeriod.collectAsStateWithLifecycle()
     val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
+    val summaryQrContent by viewModel.summaryQrContent.collectAsStateWithLifecycle()
     var showAddGoal by remember { mutableStateOf(value = false) }
     var editingGoal by remember { mutableStateOf<GoalDto?>(null) }
+    var showQrDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    if (showQrDialog) {
+        cit.edu.primera.ui.components.SummaryQrDialog(
+            onDismissRequest = { showQrDialog = false },
+            onSavePdf = { viewModel.onSaveSummaryPdf(context) },
+            onPrint = { viewModel.onPrintSummaryPdf(context) },
+            onShare = { viewModel.onShareSummaryPdf(context) },
+            onRequestPdfUrl = { viewModel.getSummaryPdfUrl(context) },
+            qrContent = summaryQrContent
+        )
+    }
 
     InsightsScreenContent(
         uiState = uiState,
@@ -88,7 +101,7 @@ fun InsightsScreen(
         onBack = onBack,
         onOpenDrawer = onOpenDrawer,
         onPeriodSelected = viewModel::onPeriodSelected,
-        onExport = { viewModel.onExportSummaryPdf(context) },
+        onExport = { showQrDialog = true },
         onAddGoalClick = { showAddGoal = true },
         onGoalClick = { goalId ->
             if (uiState is InsightsUiState.Success) {

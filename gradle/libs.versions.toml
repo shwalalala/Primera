@@ -17,6 +17,7 @@ healthConnect = "1.1.0"
 kotlinxCoroutines = "1.11.0"
 googleid = "1.2.1"
 coil = "2.6.0"
+zxing = "3.5.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -49,6 +50,7 @@ healthConnect = { group = "androidx.health.connect", name = "connect-client", ve
 coroutinesAndroid = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
 googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

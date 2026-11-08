@@ -70,6 +70,23 @@ fun SettingsScreen(
         }
     )
 
+    var showQrDialog by remember { mutableStateOf(false) }
+
+    if (showQrDialog) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val dashboardViewModel: cit.edu.primera.feature.dashboard.ui.DashboardViewModel =
+            viewModel(factory = ViewModelProvider.Factory)
+        val summaryQrContent by dashboardViewModel.summaryQrContent.collectAsStateWithLifecycle()
+        cit.edu.primera.ui.components.SummaryQrDialog(
+            onDismissRequest = { showQrDialog = false },
+            onSavePdf = { dashboardViewModel.onSaveSummaryPdf(context) },
+            onPrint = { dashboardViewModel.onPrintSummaryPdf(context) },
+            onShare = { dashboardViewModel.onShareSummaryPdf(context) },
+            onRequestPdfUrl = { dashboardViewModel.getSummaryPdfUrl(context) },
+            qrContent = summaryQrContent
+        )
+    }
+
     SettingsContent(
         state = state,
         onBack = onBack,
@@ -87,7 +104,8 @@ fun SettingsScreen(
         onPasswordCurrentPasswordChange = viewModel::onPasswordCurrentPasswordChange,
         onNewPasswordChange = viewModel::onNewPasswordChange,
         onConfirmPasswordChange = viewModel::onConfirmPasswordChange,
-        onUpdatePassword = viewModel::updatePassword
+        onUpdatePassword = viewModel::updatePassword,
+        onShowQrDialog = { showQrDialog = true }
     )
 }
 
@@ -107,6 +125,7 @@ fun SettingsContent(
     onNewPasswordChange: (String) -> Unit,
     onConfirmPasswordChange: (String) -> Unit,
     onUpdatePassword: () -> Unit,
+    onShowQrDialog: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -295,6 +314,22 @@ fun SettingsContent(
                         text = "Update Password",
                         onClick = onUpdatePassword,
                         isLoading = state.isLoading
+                    )
+                }
+
+                // Health Summary & QR Code Export Section
+                SettingsCard(title = "Health Summary & Sharing") {
+                    Text(
+                        text = "Generate your automatically updated QR code to share your health summary with care providers, or save as PDF, print, or share.",
+                        fontSize = 13.sp,
+                        color = cit.edu.primera.core.theme.TextSecondary,
+                        lineHeight = 18.sp
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    cit.edu.primera.ui.components.PrimeraOutlinedButton(
+                        text = "View Summary QR & Options",
+                        onClick = onShowQrDialog,
+                        color = PrimeraViolet
                     )
                 }
 
