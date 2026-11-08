@@ -8,9 +8,9 @@ import cit.edu.primera.feature.auth.ui.AuthViewModel
 import cit.edu.primera.feature.checkins.ui.CheckinsViewModel
 import cit.edu.primera.feature.dashboard.ui.DashboardViewModel
 import cit.edu.primera.feature.insights.ui.InsightsViewModel
+import cit.edu.primera.feature.onboarding.ui.OnboardingViewModel
 import cit.edu.primera.feature.profile.ui.ProfileViewModel
 import cit.edu.primera.feature.profile.ui.SettingsViewModel
-import cit.edu.primera.feature.onboarding.ui.OnboardingViewModel
 import cit.edu.primera.feature.smartwatchconnection.ui.SmartwatchViewModel
 import cit.edu.primera.feature.splash.ui.SplashViewModel
 import cit.edu.primera.feature.transcription.data.SpeechRecognitionManager
@@ -67,7 +67,8 @@ object ViewModelProvider {
                 ProfileViewModel::class.java -> ProfileViewModel(
                     container.dashboardRepository,
                     container.checkinsRepository,
-                    container.onboardingRepository
+                    container.onboardingRepository,
+                    container.preferenceRepository
                 )
                 SettingsViewModel::class.java -> SettingsViewModel(
                     container.authRepository

@@ -3,6 +3,8 @@ package cit.edu.primera.core.di
 import android.content.Context
 import cit.edu.primera.core.data.PreferenceRepository
 import cit.edu.primera.core.data.PreferenceRepositoryImpl
+import cit.edu.primera.core.util.ConnectivityManagerNetworkMonitor
+import cit.edu.primera.core.util.NetworkMonitor
 import cit.edu.primera.feature.auth.data.AuthDataSource
 import cit.edu.primera.feature.auth.data.AuthRepository
 import cit.edu.primera.feature.auth.data.AuthRepositoryImpl
@@ -12,19 +14,17 @@ import cit.edu.primera.feature.checkins.data.CheckinsRepositoryImpl
 import cit.edu.primera.feature.dashboard.data.DashboardDataSource
 import cit.edu.primera.feature.dashboard.data.DashboardRepository
 import cit.edu.primera.feature.dashboard.data.DashboardRepositoryImpl
+import cit.edu.primera.feature.goals.data.GoalsRepository
+import cit.edu.primera.feature.goals.data.GoalsRepositoryImpl
 import cit.edu.primera.feature.onboarding.data.OnboardingRepository
 import cit.edu.primera.feature.onboarding.data.OnboardingRepositoryImpl
+import cit.edu.primera.feature.smartwatchconnection.data.HealthConnectManager
 import cit.edu.primera.feature.transcription.data.TranscriptionDataSource
 import cit.edu.primera.feature.transcription.data.TranscriptionRepository
 import cit.edu.primera.feature.transcription.data.TranscriptionRepositoryImpl
-import cit.edu.primera.feature.goals.data.GoalsRepository
-import cit.edu.primera.feature.goals.data.GoalsRepositoryImpl
-import cit.edu.primera.feature.smartwatchconnection.data.HealthConnectManager
-import cit.edu.primera.core.util.NetworkMonitor
-import cit.edu.primera.core.util.ConnectivityManagerNetworkMonitor
-import cit.edu.primera.feature.transcription.domain.SymptomExtractor
-import cit.edu.primera.feature.transcription.domain.KeywordSymptomExtractor
 import cit.edu.primera.feature.transcription.domain.GeminiSymptomExtractor
+import cit.edu.primera.feature.transcription.domain.KeywordSymptomExtractor
+import cit.edu.primera.feature.transcription.domain.SymptomExtractor
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -86,7 +86,7 @@ class AppContainerImpl(private val context: Context) : AppContainer {
 
     // Dashboard dependencies
     private val dashboardDataSource: DashboardDataSource by lazy {
-        DashboardDataSource()
+        DashboardDataSource(preferenceRepository)
     }
 
     override val dashboardRepository: DashboardRepository by lazy {

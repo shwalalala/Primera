@@ -2,7 +2,6 @@ package cit.edu.primera.feature.dashboard.domain
 
 import java.util.Calendar
 import java.util.Date
-import java.util.concurrent.TimeUnit
 
 object DashboardBusinessLogic {
 
@@ -16,53 +15,19 @@ object DashboardBusinessLogic {
     }
 
     private fun getGestationalDays(dueDate: Date?): Int {
-        if (dueDate == null) return 280
-        val dueCal = Calendar.getInstance().apply {
-            time = dueDate
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        val currentCal = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        val diffMillis = dueCal.timeInMillis - currentCal.timeInMillis
-        val calculatedDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
-        val daysRemaining = calculatedDays.coerceIn(-14, 280)
-        return (280 - daysRemaining).coerceIn(0, 294)
+        return cit.edu.primera.core.util.PregnancyCalculator.getGestationalDays(dueDate)
     }
 
     fun getWeekNumber(dueDate: Date?): Int {
-        val totalDays = getGestationalDays(dueDate)
-        return (totalDays / 7).coerceIn(1, 42)
+        return cit.edu.primera.core.util.PregnancyCalculator.getGestationalWeeks(dueDate)
     }
 
     fun getDayNumber(dueDate: Date?): Int {
-        val totalDays = getGestationalDays(dueDate)
-        return (totalDays % 7).coerceIn(0, 6)
+        return cit.edu.primera.core.util.PregnancyCalculator.getGestationalDayOfCurrentWeek(dueDate)
     }
 
     fun getDaysLeft(dueDate: Date?): Int {
-        if (dueDate == null) return 0
-        val dueCal = Calendar.getInstance().apply {
-            time = dueDate
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        val currentCal = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        val diffMillis = dueCal.timeInMillis - currentCal.timeInMillis
-        return (diffMillis / (1000 * 60 * 60 * 24)).toInt()
+        return cit.edu.primera.core.util.PregnancyCalculator.getDaysLeft(dueDate)
     }
 
     fun getTrimester(week: Int): String {

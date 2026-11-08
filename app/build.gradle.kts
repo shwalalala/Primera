@@ -69,6 +69,7 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
+    implementation("com.google.firebase:firebase-storage")
     implementation(libs.googleid)
     implementation(libs.kotlinx.coroutines.play.services)
     testImplementation(libs.junit)

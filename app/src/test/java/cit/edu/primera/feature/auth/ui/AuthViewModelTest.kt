@@ -178,6 +178,12 @@ private class FakePreferenceRepository : PreferenceRepository {
         profilePictureUri = uri
     }
 
+    private var micCoachmarkSeen = false
+    override fun hasSeenMicCoachmark(userId: String): Boolean = micCoachmarkSeen
+    override fun setMicCoachmarkDismissed(userId: String) {
+        micCoachmarkSeen = true
+    }
+
     override fun clearLocalData() {
         onboardingCompleted = false
         onboardingStep = null

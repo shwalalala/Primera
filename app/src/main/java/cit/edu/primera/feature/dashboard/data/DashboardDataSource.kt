@@ -9,7 +9,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
-class DashboardDataSource {
+class DashboardDataSource(
+    private val preferenceRepository: cit.edu.primera.core.data.PreferenceRepository? = null
+) {
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
@@ -30,16 +32,41 @@ class DashboardDataSource {
                 
                 val userDto = if (snapshot != null && snapshot.exists()) {
                     try {
+                        val localPhoto = if (preferenceRepository != null) {
+                            preferenceRepository.getProfilePictureUri(userId)
+                        } else null
+                        val remotePhoto = snapshot.getString("photoUri")
+                        val resolvedPhotoUri = remotePhoto?.takeIf { it.isNotBlank() } ?: localPhoto
+
+                        val rawEdd = (snapshot.getTimestamp("eddDate")
+                            ?: snapshot.getTimestamp("dueDate"))?.toDate()
+                        val rawLmp = snapshot.getTimestamp("lmpDate")?.toDate()
+                        val rawScanDate = snapshot.getTimestamp("scanDate")?.toDate()
+                        val rawScanWeeks = snapshot.getLong("scanWeeks")?.toInt()
+                        val rawScanDays = snapshot.getLong("scanDays")?.toInt()
+                        val rawPositiveTestDate =
+                            snapshot.getTimestamp("positiveTestDate")?.toDate()
+
+                        val resolvedDueDate =
+                            cit.edu.primera.core.util.PregnancyCalculator.calculateEdd(
+                                eddDate = rawEdd,
+                                scanDate = rawScanDate,
+                                scanWeeks = rawScanWeeks,
+                                scanDays = rawScanDays,
+                                lmpDate = rawLmp,
+                                positiveTestDate = rawPositiveTestDate
+                            )
+
                         UserDto(
                             email = snapshot.getString("email"),
                             username = snapshot.getString("username"),
-                            photoUri = snapshot.getString("photoUri"),
+                            photoUri = resolvedPhotoUri,
                             firstName = snapshot.getString("firstName"),
                             lastName = snapshot.getString("lastName"),
                             middleName = snapshot.getString("middleName"),
                             fullName = snapshot.getString("fullName"),
                             birthday = snapshot.getTimestamp("birthday")?.toDate(),
-                            dueDate = (snapshot.getTimestamp("eddDate") ?: snapshot.getTimestamp("dueDate"))?.toDate(),
+                            dueDate = resolvedDueDate,
                             steps = snapshot.getLong("steps") ?: 0L,
                             stepsGoal = snapshot.getLong("stepsGoal") ?: 8000L,
                             heartRateBpm = snapshot.getLong("heartRateBpm") ?: 0L,

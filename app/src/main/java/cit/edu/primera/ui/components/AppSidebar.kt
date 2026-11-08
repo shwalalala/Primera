@@ -73,8 +73,8 @@ fun AppSidebar(
 ) {
     val entries = listOf(
         SidebarEntry.Header("PREFERENCES"),
-        SidebarEntry.Item(Routes.SETTINGS, "Settings", Icons.Default.Settings),
         SidebarEntry.Item(Routes.PROFILE, "My Profile", Icons.Default.Person),
+        SidebarEntry.Item(Routes.SETTINGS, "Settings", Icons.Default.Settings),
 
         SidebarEntry.Header("HEALTH & TRACKING"),
         SidebarEntry.Item(Routes.DASHBOARD, "Home", Icons.Default.Home),

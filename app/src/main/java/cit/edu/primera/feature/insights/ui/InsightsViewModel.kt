@@ -127,39 +127,17 @@ class InsightsViewModel(
         // Goal counts should match the period wording
         val totalGoalsCount = filteredGoals.size
         val completedGoalsCount = filteredGoals.count { it.currentValue >= it.targetValue }
-        
-        // Pregnancy & Gestational Age Calculation (Robust Calendar Day Truncation & Post-Term support up to 42 weeks / 294 days)
+
+        // Pregnancy & Gestational Age Calculation
         val dueDate = dashboardData?.dueDate
-        val totalDaysGestation: Int
-        val daysRemaining: Int
+        val totalDaysGestation =
+            cit.edu.primera.core.util.PregnancyCalculator.getGestationalDays(dueDate)
+        val daysRemaining = cit.edu.primera.core.util.PregnancyCalculator.getDaysLeft(dueDate)
 
-        if (dueDate != null) {
-            val dueCal = Calendar.getInstance().apply { 
-                time = dueDate
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-            val currentCal = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-
-            val diffMillis = dueCal.timeInMillis - currentCal.timeInMillis
-            val calculatedDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
-
-            daysRemaining = calculatedDays.coerceIn(-14, 280)
-            totalDaysGestation = (280 - daysRemaining).coerceIn(0, 294)
-        } else {
-            daysRemaining = 280
-            totalDaysGestation = 0
-        }
-
-        val gestationalAgeWeeks = totalDaysGestation / 7
-        val gestationalAgeDays = totalDaysGestation % 7
+        val gestationalAgeWeeks =
+            cit.edu.primera.core.util.PregnancyCalculator.getGestationalWeeks(dueDate)
+        val gestationalAgeDays =
+            cit.edu.primera.core.util.PregnancyCalculator.getGestationalDayOfCurrentWeek(dueDate)
         val pregnancyProgress = (totalDaysGestation.toFloat() / 280f).coerceIn(0f, 1f)
 
         val gestationalAgeText = if (gestationalAgeWeeks >= 40) {
