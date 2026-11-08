@@ -10,10 +10,14 @@ import androidx.core.content.FileProvider
 import cit.edu.primera.feature.checkins.data.CheckinLogDto
 import cit.edu.primera.feature.dashboard.domain.DashboardData
 import cit.edu.primera.feature.smartwatchconnection.domain.SmartwatchHealth
+import kotlinx.coroutines.tasks.await
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.EnumMap
+import java.util.Locale
 
 object DataExportHelper {
 
@@ -45,11 +49,11 @@ object DataExportHelper {
         shareFile(context, csvBuilder.toString(), "Primera_Health_Data.csv", "text/csv")
     }
 
-    fun exportSummaryToPdf(
+    fun createSummaryPdfFile(
         context: Context,
         healthRecords: List<SmartwatchHealth>,
         dashboardData: DashboardData? = null
-    ) {
+    ): File {
         val pdfDocument = PdfDocument()
         val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create() // A4 size
         var page = pdfDocument.startPage(pageInfo)
@@ -290,7 +294,7 @@ object DataExportHelper {
                     yPosition += 25f
                 }
                 
-                canvas.drawText(record.date ?: "--", col1, yPosition, textPaint)
+                canvas.drawText(record.date, col1, yPosition, textPaint)
                 canvas.drawText(record.steps.toString(), col2, yPosition, textPaint)
                 canvas.drawText("${record.averageHeartRate ?: "--"} bpm", col3, yPosition, textPaint)
                 val hours = record.sleepMinutes / 60
@@ -316,8 +320,436 @@ object DataExportHelper {
             e.printStackTrace()
         }
         pdfDocument.close()
-        
-        shareFile(context, "", fileName, "application/pdf", file)
+
+        return file
+    }
+
+    suspend fun uploadSummaryPdfAndGetUrl(
+        context: Context,
+        healthRecords: List<SmartwatchHealth>,
+        dashboardData: DashboardData? = null
+    ): String {
+        val pdfFile = createSummaryPdfFile(context, healthRecords, dashboardData)
+
+        val publicUrl = uploadPdfToPublicHost(pdfFile)
+        if (!publicUrl.isNullOrBlank()) {
+            android.util.Log.d("DataExportHelper", "Public PDF URL generated: $publicUrl")
+            return publicUrl
+        }
+
+        try {
+            val bytes = pdfFile.readBytes()
+            val userId =
+                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
+                    .ifBlank { "guest" }
+            val fileName = "summary_${userId}_${System.currentTimeMillis()}.pdf"
+
+            val storage = try {
+                com.google.firebase.storage.FirebaseStorage.getInstance("gs://primera-eafe6.firebasestorage.app")
+            } catch (_: Exception) {
+                com.google.firebase.storage.FirebaseStorage.getInstance()
+            }
+
+            val storageRef = storage.reference.child("profile_pictures/$fileName")
+            storageRef.putBytes(bytes).await()
+            val downloadUrl = storageRef.downloadUrl.await().toString()
+            if (downloadUrl.isNotBlank()) {
+                android.util.Log.d("DataExportHelper", "PDF Uploaded successfully: $downloadUrl")
+                return downloadUrl
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("DataExportHelper", "Firebase Storage upload failed", e)
+        }
+
+        val localServerUrl = LocalPdfServer.startServer(pdfFile)
+        if (!localServerUrl.isNullOrBlank()) {
+            android.util.Log.d("DataExportHelper", "Using Local PDF Server URL: $localServerUrl")
+            return localServerUrl
+        }
+
+        return "file://${pdfFile.absolutePath}"
+    }
+
+    private suspend fun uploadPdfToPublicHost(pdfFile: File): String? =
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            // Attempt 1: tmpfiles.org
+            try {
+                val boundary = "---PrimeraBoundary" + System.currentTimeMillis()
+                val url = java.net.URL("https://tmpfiles.org/api/v1/upload")
+                val conn = url.openConnection() as java.net.HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.doOutput = true
+                conn.setRequestProperty(
+                    "User-Agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                )
+                conn.setRequestProperty("Accept", "application/json")
+                conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
+                conn.connectTimeout = 12000
+                conn.readTimeout = 12000
+
+                conn.outputStream.use { os ->
+                    val writer = java.io.PrintWriter(java.io.OutputStreamWriter(os, "UTF-8"), true)
+                    writer.append("--$boundary\r\n")
+                    writer.append("Content-Disposition: form-data; name=\"file\"; filename=\"${pdfFile.name}\"\r\n")
+                    writer.append("Content-Type: application/pdf\r\n\r\n")
+                    writer.flush()
+
+                    pdfFile.inputStream().use { input ->
+                        input.copyTo(os)
+                    }
+                    os.flush()
+
+                    writer.append("\r\n--$boundary--\r\n")
+                    writer.flush()
+                }
+
+                val code = conn.responseCode
+                android.util.Log.d("DataExportHelper", "tmpfiles.org response code: $code")
+                if (code == 200) {
+                    val response = conn.inputStream.bufferedReader().use { it.readText() }
+                    android.util.Log.d("DataExportHelper", "tmpfiles.org response: $response")
+                    val urlIndex = response.indexOf("\"url\":\"")
+                    if (urlIndex != -1) {
+                        val start = urlIndex + 7
+                        val end = response.indexOf("\"", start)
+                        if (end != -1) {
+                            val rawUrl = response.substring(start, end).replace("\\/", "/")
+                            return@withContext rawUrl.replace("tmpfiles.org/", "tmpfiles.org/dl/")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("DataExportHelper", "tmpfiles.org upload failed", e)
+            }
+
+            // Attempt 2: file.io
+            try {
+                val boundary = "---PrimeraBoundary" + System.currentTimeMillis()
+                val url = java.net.URL("https://file.io")
+                val conn = url.openConnection() as java.net.HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.doOutput = true
+                conn.setRequestProperty(
+                    "User-Agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                )
+                conn.setRequestProperty("Accept", "application/json")
+                conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
+                conn.connectTimeout = 12000
+                conn.readTimeout = 12000
+
+                conn.outputStream.use { os ->
+                    val writer = java.io.PrintWriter(java.io.OutputStreamWriter(os, "UTF-8"), true)
+                    writer.append("--$boundary\r\n")
+                    writer.append("Content-Disposition: form-data; name=\"file\"; filename=\"${pdfFile.name}\"\r\n")
+                    writer.append("Content-Type: application/pdf\r\n\r\n")
+                    writer.flush()
+
+                    pdfFile.inputStream().use { input ->
+                        input.copyTo(os)
+                    }
+                    os.flush()
+
+                    writer.append("\r\n--$boundary--\r\n")
+                    writer.flush()
+                }
+
+                if (conn.responseCode == 200) {
+                    val response = conn.inputStream.bufferedReader().use { it.readText() }
+                    val linkIndex = response.indexOf("\"link\":\"")
+                    if (linkIndex != -1) {
+                        val start = linkIndex + 8
+                        val end = response.indexOf("\"", start)
+                        if (end != -1) {
+                            return@withContext response.substring(start, end).replace("\\/", "/")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("DataExportHelper", "file.io upload failed", e)
+            }
+
+            null
+        }
+
+    object LocalPdfServer {
+        private var serverSocket: java.net.ServerSocket? = null
+        private var currentPdfFile: File? = null
+
+        fun startServer(pdfFile: File): String? {
+            currentPdfFile = pdfFile
+            val ip = getLocalIpAddress() ?: return null
+            if (serverSocket != null && !serverSocket!!.isClosed) {
+                return "http://$ip:${serverSocket!!.localPort}/Primera_Summary.pdf"
+            }
+            return try {
+                val socket = java.net.ServerSocket(0)
+                serverSocket = socket
+                val port = socket.localPort
+
+                val thread = Thread {
+                    while (!socket.isClosed) {
+                        try {
+                            val client = socket.accept()
+                            handleClient(client)
+                        } catch (_: Exception) {
+                        }
+                    }
+                }
+                thread.isDaemon = true
+                thread.start()
+
+                "http://$ip:$port/Primera_Summary.pdf"
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
+
+        private fun handleClient(client: java.net.Socket) {
+            try {
+                val file = currentPdfFile ?: return
+                val bytes = file.readBytes()
+                val output = client.getOutputStream()
+                val header = "HTTP/1.1 200 OK\r\n" +
+                        "Content-Type: application/pdf\r\n" +
+                        "Content-Disposition: inline; filename=\"Primera_Summary.pdf\"\r\n" +
+                        "Content-Length: ${bytes.size}\r\n" +
+                        "Connection: close\r\n\r\n"
+                output.write(header.toByteArray())
+                output.write(bytes)
+                output.flush()
+                client.close()
+            } catch (_: Exception) {
+            }
+        }
+
+        private fun getLocalIpAddress(): String? {
+            try {
+                val interfaces = java.net.NetworkInterface.getNetworkInterfaces()
+                while (interfaces.hasMoreElements()) {
+                    val intf = interfaces.nextElement()
+                    val addrs = intf.inetAddresses
+                    while (addrs.hasMoreElements()) {
+                        val addr = addrs.nextElement()
+                        if (!addr.isLoopbackAddress && addr is java.net.Inet4Address) {
+                            val host = addr.hostAddress
+                            if (host != null && host != "127.0.0.1" && host != "10.0.2.15") {
+                                return host
+                            }
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+            }
+            return null
+        }
+    }
+
+    fun exportSummaryToPdf(
+        context: Context,
+        healthRecords: List<SmartwatchHealth>,
+        dashboardData: DashboardData? = null
+    ) {
+        val file = createSummaryPdfFile(context, healthRecords, dashboardData)
+        sharePdfFile(context, file)
+    }
+
+    fun generateSummaryText(
+        healthRecords: List<SmartwatchHealth>,
+        dashboardData: DashboardData? = null
+    ): String {
+        val sb = StringBuilder()
+        sb.append("PRIMERA HEALTH SUMMARY\n")
+        sb.append("======================\n")
+
+        dashboardData?.let { data ->
+            val fullName = listOfNotNull(data.firstName, data.lastName).joinToString(" ").trim()
+            if (fullName.isNotBlank()) {
+                sb.append("Patient: $fullName\n")
+            }
+            val stageAndSize = getPregnancyStageAndSize(data.lmpDate, data.dueDate)
+            if (stageAndSize != null) {
+                sb.append("Stage: ${stageAndSize.first}\n")
+                sb.append("Baby Size: ${stageAndSize.second}\n")
+            }
+            if (data.weightKg != null && data.heightCm != null && data.heightCm > 0) {
+                val heightM = data.heightCm / 100f
+                val bmi = data.weightKg / (heightM * heightM)
+                sb.append(
+                    "Pre-pregnancy Weight: ${data.weightKg} kg | Height: ${data.heightCm} cm | BMI: ${
+                        String.format(
+                            Locale.US,
+                            "%.1f",
+                            bmi
+                        )
+                    }\n"
+                )
+            }
+        }
+
+        if (healthRecords.isNotEmpty()) {
+            val latest = healthRecords.first()
+            sb.append("\nRecent Health Vitals:\n")
+            sb.append("• Steps: ${latest.steps}\n")
+            sb.append("• Heart Rate: ${latest.averageHeartRate ?: "--"} bpm\n")
+            val hours = latest.sleepMinutes / 60
+            val mins = latest.sleepMinutes % 60
+            sb.append("• Sleep: ${hours}h ${mins}m\n")
+            sb.append("• SpO2: ${latest.spO2 ?: "--"}%\n")
+        }
+
+        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+        sb.append("\nGenerated on: ${sdf.format(Date())}")
+        sb.append("\nPrimera App")
+        return sb.toString()
+    }
+
+    fun generateQrCodeBitmap(
+        content: String,
+        width: Int = 512,
+        height: Int = 512,
+        foregroundColor: Int = Color.parseColor("#6A4C93"),
+        backgroundColor: Int = Color.WHITE
+    ): android.graphics.Bitmap {
+        val hints =
+            EnumMap<com.google.zxing.EncodeHintType, Any>(com.google.zxing.EncodeHintType::class.java).apply {
+                put(com.google.zxing.EncodeHintType.MARGIN, 1)
+                put(com.google.zxing.EncodeHintType.CHARACTER_SET, "UTF-8")
+            }
+        val bitMatrix = com.google.zxing.qrcode.QRCodeWriter()
+            .encode(content, com.google.zxing.BarcodeFormat.QR_CODE, width, height, hints)
+        val bmp = android.graphics.Bitmap.createBitmap(
+            width,
+            height,
+            android.graphics.Bitmap.Config.ARGB_8888
+        )
+        for (x in 0 until width) {
+            for (y in 0 until height) {
+                bmp.setPixel(x, y, if (bitMatrix[x, y]) foregroundColor else backgroundColor)
+            }
+        }
+        return bmp
+    }
+
+    fun savePdfToDownloads(context: Context, pdfFile: File): Boolean {
+        return try {
+            val sdf = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
+            val fileName = "Primera_Summary_${sdf.format(Date())}.pdf"
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                val contentValues = android.content.ContentValues().apply {
+                    put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                    put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
+                    put(
+                        android.provider.MediaStore.MediaColumns.RELATIVE_PATH,
+                        android.os.Environment.DIRECTORY_DOWNLOADS
+                    )
+                }
+                val resolver = context.contentResolver
+                val uri = resolver.insert(
+                    android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                    contentValues
+                )
+                if (uri != null) {
+                    resolver.openOutputStream(uri)?.use { output ->
+                        pdfFile.inputStream().use { input ->
+                            input.copyTo(output)
+                        }
+                    }
+                    android.widget.Toast.makeText(
+                        context,
+                        "Summary saved to Downloads",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                    true
+                } else {
+                    android.widget.Toast.makeText(
+                        context,
+                        "Failed to save PDF",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                    false
+                }
+            } else {
+                val downloadsDir =
+                    android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+                val destFile = File(downloadsDir, fileName)
+                pdfFile.copyTo(destFile, overwrite = true)
+                android.widget.Toast.makeText(
+                    context,
+                    "Summary saved to Downloads",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+                true
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            android.widget.Toast.makeText(
+                context,
+                "Error saving PDF: ${e.localizedMessage}",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+            false
+        }
+    }
+
+    fun printPdfFile(context: Context, pdfFile: File) {
+        val printManager =
+            context.getSystemService(Context.PRINT_SERVICE) as? android.print.PrintManager
+        if (printManager == null) {
+            android.widget.Toast.makeText(
+                context,
+                "Printing unavailable on this device",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+        val jobName = "Primera Health Summary ${
+            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        }"
+        val printAdapter = object : android.print.PrintDocumentAdapter() {
+            override fun onLayout(
+                oldAttributes: android.print.PrintAttributes?,
+                newAttributes: android.print.PrintAttributes,
+                cancellationSignal: android.os.CancellationSignal?,
+                callback: LayoutResultCallback,
+                extras: android.os.Bundle?
+            ) {
+                if (cancellationSignal?.isCanceled == true) {
+                    callback.onLayoutCancelled()
+                    return
+                }
+                val builder = android.print.PrintDocumentInfo.Builder("Primera_Health_Summary.pdf")
+                    .setContentType(android.print.PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
+                    .setPageCount(android.print.PrintDocumentInfo.PAGE_COUNT_UNKNOWN)
+                    .build()
+                callback.onLayoutFinished(builder, true)
+            }
+
+            override fun onWrite(
+                pages: Array<out android.print.PageRange>?,
+                destination: android.os.ParcelFileDescriptor,
+                cancellationSignal: android.os.CancellationSignal?,
+                callback: WriteResultCallback
+            ) {
+                try {
+                    java.io.FileInputStream(pdfFile).use { input ->
+                        FileOutputStream(destination.fileDescriptor).use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    callback.onWriteFinished(arrayOf(android.print.PageRange.ALL_PAGES))
+                } catch (e: Exception) {
+                    callback.onWriteFailed(e.message)
+                }
+            }
+        }
+        printManager.print(jobName, printAdapter, null)
+    }
+
+    fun sharePdfFile(context: Context, pdfFile: File) {
+        shareFile(context, "", pdfFile.name, "application/pdf", pdfFile)
     }
 
     private fun shareFile(context: Context, content: String, fileName: String, mimeType: String, existingFile: File? = null) {

@@ -22,6 +22,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,7 +60,22 @@ fun DashboardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
+    val summaryQrContent by viewModel.summaryQrContent.collectAsStateWithLifecycle()
+    var showQrDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    if (showQrDialog) {
+        val patientName = (uiState as? DashboardUiState.Success)?.data?.userName
+        cit.edu.primera.ui.components.SummaryQrDialog(
+            onDismissRequest = { showQrDialog = false },
+            onSavePdf = { viewModel.onSaveSummaryPdf(context) },
+            onPrint = { viewModel.onPrintSummaryPdf(context) },
+            onShare = { viewModel.onShareSummaryPdf(context) },
+            onRequestPdfUrl = { viewModel.getSummaryPdfUrl(context) },
+            qrContent = summaryQrContent,
+            patientName = patientName
+        )
+    }
 
     when (val state = uiState) {
         is DashboardUiState.Loading -> FullScreenLoadingOverlay()
@@ -78,7 +96,7 @@ fun DashboardScreen(
                 Column(modifier = Modifier.fillMaxSize()) {
                     DashboardTopBar(
                         onOpenDrawer = onOpenDrawer,
-                        onPrintQrClick = { viewModel.onExportSummaryPdf(context) }
+                        onPrintQrClick = { showQrDialog = true }
                     )
 
                     if (!isOnline) {

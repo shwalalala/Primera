@@ -18,8 +18,10 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -91,6 +93,7 @@ fun AppNavGraph(
     val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
     val showMicCoachmark by dashboardViewModel.showMicCoachmark.collectAsStateWithLifecycle()
     val sidebarUserData = (dashboardUiState as? DashboardUiState.Success)?.data
+    var showSummaryQrDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         authViewModel.effect.collect { effect ->
@@ -394,13 +397,12 @@ fun AppNavGraph(
                 }
 
                 composable(Routes.DEVICE) {
-                    val context = androidx.compose.ui.platform.LocalContext.current
                     SmartwatchRoute(
                         onOpenDrawer = {
                             coroutineScope.launch { drawerState.open() }
                         },
                         onPrintQrClick = {
-                            dashboardViewModel.onExportSummaryPdf(context)
+                            showSummaryQrDialog = true
                         }
                     )
                 }
@@ -417,7 +419,6 @@ fun AppNavGraph(
                 }
 
                 composable(Routes.CHECKIN) {
-                    val context = androidx.compose.ui.platform.LocalContext.current
                     val parentEntry = remember(it) {
                         try {
                             navController.getBackStackEntry(Routes.CHECKIN)
@@ -442,7 +443,7 @@ fun AppNavGraph(
                             coroutineScope.launch { drawerState.open() }
                         },
                         onPrintQrClick = {
-                            dashboardViewModel.onExportSummaryPdf(context)
+                            showSummaryQrDialog = true
                         },
                         viewModel = checkinsViewModel
                     )
@@ -594,6 +595,20 @@ fun AppNavGraph(
                                 .offset(y = (-14.dp))
                         )
                     }
+                )
+            }
+
+            if (showSummaryQrDialog) {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val summaryQrContent by dashboardViewModel.summaryQrContent.collectAsStateWithLifecycle()
+                cit.edu.primera.ui.components.SummaryQrDialog(
+                    onDismissRequest = { showSummaryQrDialog = false },
+                    onSavePdf = { dashboardViewModel.onSaveSummaryPdf(context) },
+                    onPrint = { dashboardViewModel.onPrintSummaryPdf(context) },
+                    onShare = { dashboardViewModel.onShareSummaryPdf(context) },
+                    onRequestPdfUrl = { dashboardViewModel.getSummaryPdfUrl(context) },
+                    qrContent = summaryQrContent,
+                    patientName = sidebarUserData?.userName
                 )
             }
         }
