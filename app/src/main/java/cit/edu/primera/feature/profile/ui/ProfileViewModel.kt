@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.util.Date
 
 class ProfileViewModel(
@@ -32,38 +33,49 @@ class ProfileViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
-            val localPhotoUri = preferenceRepository.getProfilePictureUri(userId)
             
             combine(
                 dashboardRepository.observeDashboardData(),
                 checkinsRepository.observeUserWeight()
             ) { data, weightData ->
                 if (data != null) {
-                    _uiState.update { 
-                        it.copy(
-                            email = data.email ?: "",
-                            username = data.userName,
-                            photoUri = data.photoUri ?: localPhotoUri,
-                            birthday = data.birthday,
-                            weightKg = data.weightKg ?: weightData?.weightKg ?: 0,
-                            heightCm = data.heightCm ?: 0,
-                            lmpDate = data.lmpDate,
-                            eddDate = data.dueDate,
-                            isFirstPregnancy = data.isFirstPregnancy ?: true,
-                            isCycleRegular = data.isCycleRegular,
-                            shortestCycleDays = data.shortestCycleDays,
-                            longestCycleDays = data.longestCycleDays,
-                            hasHadUltrasound = data.hasHadUltrasound,
-                            positiveTestDate = data.positiveTestDate,
-                            scanDate = data.scanDate,
-                            scanWeeks = data.scanWeeks,
-                            scanDays = data.scanDays,
-                            pregnancyHistories = data.pregnancyHistories,
+                    val currentLocalPhoto = preferenceRepository.getProfilePictureUri(userId)
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            email = data.email ?: currentState.email,
+                            username = data.userName.ifBlank { currentState.username },
+                            photoUri = data.photoUri?.takeIf { u -> u.isNotBlank() }
+                                ?: currentLocalPhoto
+                                ?: currentState.photoUri,
+                            birthday = data.birthday ?: currentState.birthday,
+                            weightKg = if (data.weightKg != null && data.weightKg != 0) data.weightKg else (weightData?.weightKg
+                                ?: currentState.weightKg),
+                            heightCm = if (data.heightCm != null && data.heightCm != 0) data.heightCm else currentState.heightCm,
+                            lmpDate = data.lmpDate ?: currentState.lmpDate,
+                            eddDate = data.dueDate ?: currentState.eddDate,
+                            isFirstPregnancy = data.isFirstPregnancy
+                                ?: currentState.isFirstPregnancy,
+                            isCycleRegular = data.isCycleRegular ?: currentState.isCycleRegular,
+                            shortestCycleDays = data.shortestCycleDays
+                                ?: currentState.shortestCycleDays,
+                            longestCycleDays = data.longestCycleDays
+                                ?: currentState.longestCycleDays,
+                            hasHadUltrasound = data.hasHadUltrasound
+                                ?: currentState.hasHadUltrasound,
+                            positiveTestDate = data.positiveTestDate
+                                ?: currentState.positiveTestDate,
+                            scanDate = data.scanDate ?: currentState.scanDate,
+                            scanWeeks = data.scanWeeks ?: currentState.scanWeeks,
+                            scanDays = data.scanDays ?: currentState.scanDays,
+                            pregnancyHistories = if (data.pregnancyHistories.isNotEmpty()) data.pregnancyHistories else currentState.pregnancyHistories,
                             emergencyContact = cit.edu.primera.feature.profile.domain.EmergencyContact(
-                                name = data.iceName ?: "",
-                                relationship = data.iceRelationship ?: "",
-                                primaryPhone = data.icePrimaryPhone ?: "",
-                                secondaryPhone = data.iceSecondaryPhone ?: ""
+                                name = data.iceName ?: currentState.emergencyContact.name,
+                                relationship = data.iceRelationship
+                                    ?: currentState.emergencyContact.relationship,
+                                primaryPhone = data.icePrimaryPhone
+                                    ?: currentState.emergencyContact.primaryPhone,
+                                secondaryPhone = data.iceSecondaryPhone
+                                    ?: currentState.emergencyContact.secondaryPhone
                             ),
                             isLoading = false
                         )
@@ -290,22 +302,55 @@ class ProfileViewModel(
     fun confirmPhotoSelection(context: android.content.Context, uri: android.net.Uri) {
         val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
-        // Save persistent copy to internal app storage so content:// permissions never expire
-        val persistentPhotoUriStr = savePhotoLocally(context, uri, userId)
-
-        preferenceRepository.setProfilePictureUri(userId, persistentPhotoUriStr)
+        // 1. Immediately show loading overlay & dismiss dialog
         _uiState.update {
             it.copy(
-                photoUri = persistentPhotoUriStr,
+                isSaving = true,
                 showCropDialog = false,
                 pendingPhotoUri = null,
-                error = null,
-                successMessage = "Profile picture updated"
+                error = null
             )
         }
-        
+
+        // 2. Save locally first so UI updates immediately & upload to Storage in background
         viewModelScope.launch {
-            dashboardRepository.updatePhotoUri(persistentPhotoUriStr)
+            val localUri = savePhotoLocally(context, uri, userId)
+            preferenceRepository.setProfilePictureUri(userId, localUri)
+            dashboardRepository.updatePhotoUri(localUri)
+
+            _uiState.update {
+                it.copy(
+                    photoUri = localUri,
+                    isSaving = false,
+                    error = null,
+                    successMessage = "Profile picture updated successfully"
+                )
+            }
+
+            try {
+                val storageRef = com.google.firebase.storage.FirebaseStorage.getInstance().reference
+                    .child("profile_pictures/${if (userId.isBlank()) "guest" else userId}.png")
+
+                val inputStream = context.contentResolver.openInputStream(uri)
+                if (inputStream != null) {
+                    val bytes = inputStream.use { it.readBytes() }
+                    storageRef.putBytes(bytes).await()
+                    val downloadUrl = storageRef.downloadUrl.await().toString()
+
+                    // Upload successful! Save Firebase Storage HTTPS URL
+                    preferenceRepository.setProfilePictureUri(userId, downloadUrl)
+                    dashboardRepository.updatePhotoUri(downloadUrl)
+
+                    _uiState.update {
+                        it.copy(
+                            photoUri = downloadUrl,
+                            error = null
+                        )
+                    }
+                }
+            } catch (_: Exception) {
+                // Background upload exception ignored as localUri is already saved and active
+            }
         }
     }
 
@@ -324,8 +369,9 @@ class ProfileViewModel(
                     inputStream.copyTo(outputStream)
                 }
             }
-            android.net.Uri.fromFile(file).toString()
-        } catch (e: Exception) {
+            val timestamp = System.currentTimeMillis()
+            "${android.net.Uri.fromFile(file)}?t=$timestamp"
+        } catch (_: Exception) {
             uri.toString()
         }
     }

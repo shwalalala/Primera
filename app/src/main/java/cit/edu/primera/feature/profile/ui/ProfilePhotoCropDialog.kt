@@ -166,9 +166,13 @@ fun ProfilePhotoCropDialog(
             }
         },
         confirmButton = {
+            val context = LocalContext.current
             PrimeraGradientButton(
                 text = "Confirm & Save",
-                onClick = { onConfirm(imageUri) },
+                onClick = {
+                    val croppedUri = cropImage(context, imageUri, scale, offsetX, offsetY)
+                    onConfirm(croppedUri)
+                },
                 modifier = Modifier.fillMaxWidth()
             )
         },
@@ -183,4 +187,54 @@ fun ProfilePhotoCropDialog(
             }
         }
     )
+}
+
+private fun cropImage(
+    context: android.content.Context,
+    sourceUri: Uri,
+    scale: Float,
+    offsetX: Float,
+    offsetY: Float
+): Uri {
+    return try {
+        val inputStream = context.contentResolver.openInputStream(sourceUri) ?: return sourceUri
+        val originalBitmap = android.graphics.BitmapFactory.decodeStream(inputStream)
+        inputStream.close()
+        if (originalBitmap == null) return sourceUri
+
+        val viewportSizePx = 220f * context.resources.displayMetrics.density
+        val srcW = originalBitmap.width.toFloat()
+        val srcH = originalBitmap.height.toFloat()
+
+        val baseScale = viewportSizePx / minOf(srcW, srcH)
+        val totalScale = baseScale * scale
+
+        val centerXSrc = srcW / 2f - offsetX / totalScale
+        val centerYSrc = srcH / 2f - offsetY / totalScale
+
+        val cropSizeSrc = viewportSizePx / totalScale
+
+        val left = (centerXSrc - cropSizeSrc / 2f).toInt().coerceIn(0, (srcW - 1).toInt())
+        val top = (centerYSrc - cropSizeSrc / 2f).toInt().coerceIn(0, (srcH - 1).toInt())
+        val width = cropSizeSrc.toInt().coerceAtMost((srcW - left).toInt())
+        val height = cropSizeSrc.toInt().coerceAtMost((srcH - top).toInt())
+        val side = minOf(width, height).coerceAtLeast(1)
+
+        val croppedBitmap = android.graphics.Bitmap.createBitmap(
+            originalBitmap,
+            left,
+            top,
+            side,
+            side
+        )
+
+        val croppedFile = java.io.File(context.cacheDir, "cropped_avatar_temp.png")
+        java.io.FileOutputStream(croppedFile).use { out ->
+            croppedBitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+        }
+
+        Uri.fromFile(croppedFile)
+    } catch (e: Exception) {
+        sourceUri
+    }
 }

@@ -26,13 +26,6 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-enum class DashboardCoachmarkStep {
-    MIC,
-    BABY,
-    STATS,
-    SYNC
-}
-
 class DashboardViewModel(
     private val repository: DashboardRepository,
     private val goalsRepository: cit.edu.primera.feature.goals.data.GoalsRepository,
@@ -45,8 +38,8 @@ class DashboardViewModel(
     private val _weeklyContent = MutableStateFlow<cit.edu.primera.feature.dashboard.domain.WeeklyInfo?>(null)
     private var currentLoadedWeek: Int? = null
 
-    private val _coachmarkStep = MutableStateFlow<DashboardCoachmarkStep?>(null)
-    val coachmarkStep: StateFlow<DashboardCoachmarkStep?> = _coachmarkStep.asStateFlow()
+    private val _showMicCoachmark = MutableStateFlow(false)
+    val showMicCoachmark: StateFlow<Boolean> = _showMicCoachmark.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -59,28 +52,7 @@ class DashboardViewModel(
         viewModelScope.launch {
             val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
             val hasSeen = preferenceRepository.hasSeenMicCoachmark(userId)
-            if (!hasSeen) {
-                _coachmarkStep.value = DashboardCoachmarkStep.MIC
-            } else {
-                _coachmarkStep.value = null
-            }
-        }
-    }
-
-    fun nextCoachmarkStep() {
-        viewModelScope.launch {
-            val current = _coachmarkStep.value
-            val next = when (current) {
-                DashboardCoachmarkStep.MIC -> DashboardCoachmarkStep.BABY
-                DashboardCoachmarkStep.BABY -> DashboardCoachmarkStep.STATS
-                DashboardCoachmarkStep.STATS -> DashboardCoachmarkStep.SYNC
-                DashboardCoachmarkStep.SYNC -> null
-                null -> null
-            }
-            _coachmarkStep.value = next
-            if (next == null) {
-                dismissMicCoachmark()
-            }
+            _showMicCoachmark.value = !hasSeen
         }
     }
 
@@ -88,7 +60,7 @@ class DashboardViewModel(
         viewModelScope.launch {
             val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
             preferenceRepository.setMicCoachmarkDismissed(userId)
-            _coachmarkStep.value = null
+            _showMicCoachmark.value = false
         }
     }
 
@@ -147,12 +119,12 @@ class DashboardViewModel(
         return DashboardUiModel(
             userName = "Guest",
             timeOfDay = DashboardBusinessLogic.getTimeOfDay(),
-            trimester = "Unknown",
+            trimester = DashboardBusinessLogic.getTrimester(1),
             weekNumber = 1,
             dayNumber = 0,
-            daysLeft = 0,
-            babySize = "Unknown",
-            babyEmoji = "👶",
+            daysLeft = 280,
+            babySize = DashboardBusinessLogic.getBabySize(1),
+            babyEmoji = DashboardBusinessLogic.getBabyEmoji(1),
             babyIllustration = null,
             heartRateBpm = 0,
             heartRateTrendingUp = false,
@@ -161,7 +133,7 @@ class DashboardViewModel(
             stepsGoal = 8000,
             sleepHours = 0,
             sleepMinutes = 0,
-            sleepQuality = "Unknown",
+            sleepQuality = DashboardBusinessLogic.getSleepQuality(0, 0),
             spO2 = null,
             isWatchSynced = false,
             isGestationalAgeTentative = false,
