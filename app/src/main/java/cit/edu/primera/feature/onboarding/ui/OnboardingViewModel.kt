@@ -305,6 +305,16 @@ class OnboardingViewModel(
             // BUG-003 Fix: Use a sensible default (25 years ago) if birthday is missing
             val defaultBirthday = Calendar.getInstance().apply { add(Calendar.YEAR, -25) }.time
 
+            // Resolve EDD date to prevent "Unknown" gestational age
+            val resolvedEddDate: Date = s.eddDate
+                ?: s.lmpDate?.let {
+                    Calendar.getInstance().apply { time = it; add(Calendar.DAY_OF_YEAR, 280) }.time
+                }
+                ?: s.positiveTestDate?.let {
+                    Calendar.getInstance().apply { time = it; add(Calendar.WEEK_OF_YEAR, 36) }.time
+                }
+                ?: Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 140) }.time
+
             val currentUserEmail =
                 com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.email
 
@@ -319,7 +329,7 @@ class OnboardingViewModel(
                 hasHadUltrasound = s.hasHadUltrasound,
                 positiveTestDate = s.positiveTestDate,
                 lmpDate = s.lmpDate,
-                eddDate = s.eddDate,
+                eddDate = resolvedEddDate,
                 isFirstPregnancy = s.isFirstPregnancy ?: false,
                 pregnancyHistories = if (s.isFirstPregnancy == true) emptyList() else s.pregnancyHistories,
                 scanDate = s.scanDate,

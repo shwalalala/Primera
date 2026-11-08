@@ -89,7 +89,7 @@ fun AppNavGraph(
 
     val dashboardViewModel: DashboardViewModel = viewModel(factory = ViewModelProvider.Factory)
     val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
-    val coachmarkStep by dashboardViewModel.coachmarkStep.collectAsStateWithLifecycle()
+    val showMicCoachmark by dashboardViewModel.showMicCoachmark.collectAsStateWithLifecycle()
     val sidebarUserData = (dashboardUiState as? DashboardUiState.Success)?.data
 
     LaunchedEffect(Unit) {
@@ -135,10 +135,19 @@ fun AppNavGraph(
         gesturesEnabled = currentRoute in bottomNavRoutes,
         scrimColor = Color.Black.copy(alpha = 0.6f),
         drawerContent = {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val currentUserId =
+                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
+            val appContainer =
+                (context.applicationContext as? cit.edu.primera.PrimeraApplication)?.container
+            val localPhoto = appContainer?.preferenceRepository?.getProfilePictureUri(currentUserId)
+            val unifiedPhotoUri =
+                sidebarUserData?.photoUri?.takeIf { it.isNotBlank() } ?: localPhoto
+
             AppSidebar(
                 userName = sidebarUserData?.userName ?: "",
                 email = sidebarUserData?.email ?: "",
-                photoUri = sidebarUserData?.photoUri,
+                photoUri = unifiedPhotoUri,
                 currentRoute = currentRoute ?: Routes.DASHBOARD,
                 onNavigate = { route ->
                     coroutineScope.launch { drawerState.close() }
@@ -191,7 +200,7 @@ fun AppNavGraph(
                                 }
                             },
                             onFabClicked = {
-                                if (coachmarkStep != null) {
+                                if (showMicCoachmark) {
                                     dashboardViewModel.dismissMicCoachmark()
                                 }
                                 navController.navigate(Routes.TRANSCRIPTION)
@@ -559,177 +568,33 @@ fun AppNavGraph(
             }
         }
 
-            if (currentRoute == Routes.DASHBOARD && coachmarkStep != null) {
-                val step = coachmarkStep
-                val dashboardData = (dashboardUiState as? DashboardUiState.Success)?.data
-
-                when (step) {
-                    cit.edu.primera.feature.dashboard.ui.DashboardCoachmarkStep.MIC -> {
-                        CoachmarkTooltip(
-                            visible = true,
-                            onDismiss = { dashboardViewModel.dismissMicCoachmark() },
-                            title = "Voice Check-in",
-                            text = "Tap to record your daily check-in thoughts or symptoms with your voice!",
-                            stepText = "1 of 4",
-                            primaryActionLabel = "Next",
-                            skipActionLabel = "Skip",
-                            iconRes = cit.edu.primera.R.drawable.mic,
-                            arrowPosition = cit.edu.primera.ui.components.ArrowPosition.BOTTOM,
-                            cardAlignment = Alignment.BottomCenter,
-                            targetAlignment = Alignment.BottomCenter,
-                            cardModifier = Modifier.padding(
-                                bottom = 92.dp,
-                                start = 24.dp,
-                                end = 24.dp
-                            ),
-                            targetModifier = Modifier.padding(bottom = 12.dp),
-                            onPrimaryAction = { dashboardViewModel.nextCoachmarkStep() },
-                            targetContent = {
-                                FabButton(
-                                    onClick = {
-                                        dashboardViewModel.nextCoachmarkStep()
-                                        navController.navigate(Routes.TRANSCRIPTION)
-                                    },
-                                    modifier = Modifier
-                                        .padding(bottom = 12.dp)
-                                        .offset(y = (-14.dp))
-                                )
-                            }
+            if (currentRoute == Routes.DASHBOARD && showMicCoachmark) {
+                CoachmarkTooltip(
+                    visible = true,
+                    onDismiss = { dashboardViewModel.dismissMicCoachmark() },
+                    title = "Voice Check-in",
+                    text = "Tap to record your daily check-in thoughts or symptoms with your voice!",
+                    primaryActionLabel = "Got it",
+                    skipActionLabel = "Skip",
+                    iconRes = cit.edu.primera.R.drawable.mic,
+                    arrowPosition = cit.edu.primera.ui.components.ArrowPosition.BOTTOM,
+                    cardAlignment = Alignment.BottomCenter,
+                    targetAlignment = Alignment.BottomCenter,
+                    cardModifier = Modifier.padding(bottom = 92.dp, start = 24.dp, end = 24.dp),
+                    targetModifier = Modifier.padding(bottom = 12.dp),
+                    onPrimaryAction = { dashboardViewModel.dismissMicCoachmark() },
+                    targetContent = {
+                        FabButton(
+                            onClick = {
+                                dashboardViewModel.dismissMicCoachmark()
+                                navController.navigate(Routes.TRANSCRIPTION)
+                            },
+                            modifier = Modifier
+                                .padding(bottom = 12.dp)
+                                .offset(y = (-14.dp))
                         )
                     }
-
-                    cit.edu.primera.feature.dashboard.ui.DashboardCoachmarkStep.BABY -> {
-                        CoachmarkTooltip(
-                            visible = true,
-                            onDismiss = { dashboardViewModel.dismissMicCoachmark() },
-                            title = "Baby's Growth & Status",
-                            text = "Track your baby's gestational age, size comparison, and weekly development milestones here!",
-                            stepText = "2 of 4",
-                            primaryActionLabel = "Next",
-                            skipActionLabel = "Skip",
-                            iconEmoji = "👶",
-                            arrowPosition = cit.edu.primera.ui.components.ArrowPosition.TOP,
-                            cardAlignment = Alignment.Center,
-                            targetAlignment = Alignment.TopCenter,
-                            cardModifier = Modifier.padding(
-                                top = 220.dp,
-                                start = 24.dp,
-                                end = 24.dp
-                            ),
-                            targetModifier = Modifier.padding(
-                                top = 90.dp,
-                                start = 20.dp,
-                                end = 20.dp
-                            ),
-                            onPrimaryAction = { dashboardViewModel.nextCoachmarkStep() },
-                            targetContent = {
-                                cit.edu.primera.feature.dashboard.ui.BabyRingCard(
-                                    weekNumber = dashboardData?.weekNumber ?: 28,
-                                    dayNumber = dashboardData?.dayNumber ?: 3,
-                                    daysLeft = dashboardData?.daysLeft ?: 88,
-                                    babySize = dashboardData?.babySize ?: "Large eggplant",
-                                    babyEmoji = dashboardData?.babyEmoji ?: "👶",
-                                    babyIllustration = dashboardData?.babyIllustration
-                                )
-                            }
-                        )
-                    }
-
-                    cit.edu.primera.feature.dashboard.ui.DashboardCoachmarkStep.STATS -> {
-                        CoachmarkTooltip(
-                            visible = true,
-                            onDismiss = { dashboardViewModel.dismissMicCoachmark() },
-                            title = "Mama's Health Vitals",
-                            text = "Monitor your daily vitals—heart rate, steps, sleep hours, and blood oxygen (SpO2)—all in one place.",
-                            stepText = "3 of 4",
-                            primaryActionLabel = "Next",
-                            skipActionLabel = "Skip",
-                            iconRes = cit.edu.primera.R.drawable.heart,
-                            arrowPosition = cit.edu.primera.ui.components.ArrowPosition.TOP,
-                            cardAlignment = Alignment.Center,
-                            targetAlignment = Alignment.Center,
-                            cardModifier = Modifier.padding(
-                                top = 180.dp,
-                                start = 24.dp,
-                                end = 24.dp
-                            ),
-                            targetModifier = Modifier.padding(
-                                bottom = 120.dp,
-                                start = 0.dp,
-                                end = 0.dp
-                            ),
-                            onPrimaryAction = { dashboardViewModel.nextCoachmarkStep() },
-                            targetContent = {
-                                cit.edu.primera.feature.dashboard.ui.StatsGrid(
-                                    state = dashboardData
-                                        ?: cit.edu.primera.feature.dashboard.ui.DashboardUiModel(
-                                            userName = "Mama",
-                                            timeOfDay = "Morning",
-                                            trimester = "Third Trimester",
-                                            weekNumber = 28,
-                                            dayNumber = 3,
-                                            daysLeft = 88,
-                                            babySize = "Large eggplant",
-                                            babyEmoji = "👶",
-                                            heartRateBpm = 75,
-                                            heartRateTrendingUp = false,
-                                            heartRateVsLastWeek = 0,
-                                            steps = 5400,
-                                            stepsGoal = 8000,
-                                            sleepHours = 7,
-                                            sleepMinutes = 30,
-                                            sleepQuality = "Good quality",
-                                            spO2 = 98,
-                                            isWatchSynced = true,
-                                            isGestationalAgeTentative = false,
-                                            inaccuracyWarning = null,
-                                            recentLogs = emptyList(),
-                                            weekDays = emptyList()
-                                        ),
-                                    onInputManually = {},
-                                    onSyncWatch = {}
-                                )
-                            }
-                        )
-                    }
-
-                    cit.edu.primera.feature.dashboard.ui.DashboardCoachmarkStep.SYNC -> {
-                        CoachmarkTooltip(
-                            visible = true,
-                            onDismiss = { dashboardViewModel.dismissMicCoachmark() },
-                            title = "Sync Smartwatch",
-                            text = "Tap 'Sync Watch Now' to sync real-time health data directly from your smartwatch or Health Connect!",
-                            stepText = "4 of 4",
-                            primaryActionLabel = "Got it",
-                            skipActionLabel = "Skip",
-                            iconRes = cit.edu.primera.R.drawable.device,
-                            arrowPosition = cit.edu.primera.ui.components.ArrowPosition.BOTTOM,
-                            cardAlignment = Alignment.BottomCenter,
-                            targetAlignment = Alignment.BottomCenter,
-                            cardModifier = Modifier.padding(
-                                bottom = 140.dp,
-                                start = 24.dp,
-                                end = 24.dp
-                            ),
-                            targetModifier = Modifier.padding(
-                                bottom = 75.dp,
-                                start = 20.dp,
-                                end = 20.dp
-                            ),
-                            onPrimaryAction = { dashboardViewModel.dismissMicCoachmark() },
-                            targetContent = {
-                                cit.edu.primera.feature.dashboard.ui.SyncWatchButton(
-                                    onClick = {
-                                        dashboardViewModel.dismissMicCoachmark()
-                                        dashboardViewModel.onSyncWatch()
-                                    }
-                                )
-                            }
-                        )
-                    }
-
-                    null -> {}
-                }
+                )
             }
         }
     }
