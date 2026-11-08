@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.MaterialTheme
@@ -62,6 +63,7 @@ import cit.edu.primera.feature.transcription.ui.TranscriptionScreen
 import cit.edu.primera.feature.transcription.ui.TranscriptionViewModel
 import cit.edu.primera.feature.welcome.ui.WelcomeScreen
 import cit.edu.primera.ui.components.AppSidebar
+import cit.edu.primera.ui.components.CoachmarkTooltip
 import kotlinx.coroutines.launch
 
 private val bottomNavRoutes = setOf(
@@ -87,6 +89,7 @@ fun AppNavGraph(
 
     val dashboardViewModel: DashboardViewModel = viewModel(factory = ViewModelProvider.Factory)
     val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
+    val showMicCoachmark by dashboardViewModel.showMicCoachmark.collectAsStateWithLifecycle()
     val sidebarUserData = (dashboardUiState as? DashboardUiState.Success)?.data
 
     LaunchedEffect(Unit) {
@@ -162,37 +165,41 @@ fun AppNavGraph(
             )
         }
     ) {
-        Scaffold(
-            contentWindowInsets = WindowInsets(0, 0, 0, 0),
-            bottomBar = {
-                if (currentRoute in bottomNavRoutes) {
-                    PrimeraBottomNav(
-                        currentRoute = currentRoute ?: Routes.DASHBOARD,
-                        onDestinationSelected = { dest ->
-                            if (dest == NavDestination.CHECKIN && (currentRoute == Routes.DAILY_CHECKIN || currentRoute == Routes.CHECKIN_PREVIEW || currentRoute == Routes.CHECKIN)) {
-                                navController.navigate(Routes.CHECKIN) {
-                                    popUpTo(Routes.CHECKIN) {
-                                        inclusive = false
+        Box(modifier = Modifier.fillMaxSize()) {
+            Scaffold(
+                contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                bottomBar = {
+                    if (currentRoute in bottomNavRoutes) {
+                        PrimeraBottomNav(
+                            currentRoute = currentRoute ?: Routes.DASHBOARD,
+                            onDestinationSelected = { dest ->
+                                if (dest == NavDestination.CHECKIN && (currentRoute == Routes.DAILY_CHECKIN || currentRoute == Routes.CHECKIN_PREVIEW || currentRoute == Routes.CHECKIN)) {
+                                    navController.navigate(Routes.CHECKIN) {
+                                        popUpTo(Routes.CHECKIN) {
+                                            inclusive = false
+                                        }
+                                        launchSingleTop = true
                                     }
-                                    launchSingleTop = true
-                                }
-                            } else {
-                                navController.navigate(dest.route) {
-                                    popUpTo(Routes.DASHBOARD) {
-                                        saveState = true
+                                } else {
+                                    navController.navigate(dest.route) {
+                                        popUpTo(Routes.DASHBOARD) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
+                            },
+                            onFabClicked = {
+                                if (showMicCoachmark) {
+                                    dashboardViewModel.dismissMicCoachmark()
+                                }
+                                navController.navigate(Routes.TRANSCRIPTION)
                             }
-                        },
-                        onFabClicked = {
-                            navController.navigate(Routes.TRANSCRIPTION)
-                        }
-                    )
+                        )
+                    }
                 }
-            }
-        ) { innerPadding ->
+            ) { innerPadding ->
             NavHost(
                 navController = navController,
                 startDestination = startDestination,
@@ -549,6 +556,30 @@ fun AppNavGraph(
                         }
                     )
                 }
+            }
+        }
+
+            if (currentRoute == Routes.DASHBOARD && showMicCoachmark) {
+                CoachmarkTooltip(
+                    visible = true,
+                    onDismiss = { dashboardViewModel.dismissMicCoachmark() },
+                    title = "Voice Check-in",
+                    text = "Tap to record your daily check-in thoughts or symptoms with your voice!",
+                    primaryActionLabel = "Got it",
+                    skipActionLabel = "Skip",
+                    onPrimaryAction = { dashboardViewModel.dismissMicCoachmark() },
+                    targetContent = {
+                        FabButton(
+                            onClick = {
+                                dashboardViewModel.dismissMicCoachmark()
+                                navController.navigate(Routes.TRANSCRIPTION)
+                            },
+                            modifier = Modifier
+                                .padding(bottom = 12.dp)
+                                .offset(y = (-14.dp))
+                        )
+                    }
+                )
             }
         }
     }

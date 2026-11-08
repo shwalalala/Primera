@@ -60,7 +60,6 @@ import cit.edu.primera.ui.components.LogCard
 import cit.edu.primera.ui.components.PrimeraGradientButton
 import cit.edu.primera.ui.components.TrimesterBadge
 import java.text.SimpleDateFormat
-import java.util.Locale
 
 @Composable
 fun DashboardTopBar(
@@ -79,17 +78,20 @@ fun DashboardTopBar(
 @Composable
 fun WeekCalendarRow(days: List<DashboardWeekDayItem>) {
     val selectedDay = days.find { it.isSelected } ?: days.firstOrNull()
-    val fullMonthName = if (selectedDay != null && selectedDay.month.isNotBlank()) {
-        try {
-            val dateObj = SimpleDateFormat("MMM", Locale.getDefault()).parse(selectedDay.month)
-            if (dateObj != null) SimpleDateFormat(
-                "MMMM",
-                Locale.getDefault()
-            ).format(dateObj) else selectedDay.month
-        } catch (_: Exception) {
-            selectedDay.month
-        }
-    } else "October"
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+    val fullMonthName = androidx.compose.runtime.remember(selectedDay?.month, locale) {
+        if (selectedDay != null && selectedDay.month.isNotBlank()) {
+            try {
+                val dateObj = SimpleDateFormat("MMM", locale).parse(selectedDay.month)
+                if (dateObj != null) SimpleDateFormat(
+                    "MMMM",
+                    locale
+                ).format(dateObj) else selectedDay.month
+            } catch (_: Exception) {
+                selectedDay.month
+            }
+        } else "October"
+    }
 
     val dateNum = selectedDay?.date ?: 23
     val headerDateText = "$fullMonthName $dateNum"

@@ -14,6 +14,7 @@ import cit.edu.primera.feature.smartwatchconnection.data.HealthConnectManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -37,9 +38,29 @@ class DashboardViewModel(
     private val _weeklyContent = MutableStateFlow<cit.edu.primera.feature.dashboard.domain.WeeklyInfo?>(null)
     private var currentLoadedWeek: Int? = null
 
+    private val _showMicCoachmark = MutableStateFlow(false)
+    val showMicCoachmark: StateFlow<Boolean> = _showMicCoachmark.asStateFlow()
+
     init {
         viewModelScope.launch {
             goalsRepository.ensureMandatoryGoals()
+            checkMicCoachmark()
+        }
+    }
+
+    fun checkMicCoachmark() {
+        viewModelScope.launch {
+            val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
+            val hasSeen = preferenceRepository.hasSeenMicCoachmark(userId)
+            _showMicCoachmark.value = !hasSeen
+        }
+    }
+
+    fun dismissMicCoachmark() {
+        viewModelScope.launch {
+            val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
+            preferenceRepository.setMicCoachmarkDismissed(userId)
+            _showMicCoachmark.value = false
         }
     }
 

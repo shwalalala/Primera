@@ -21,6 +21,8 @@ interface PreferenceRepository {
     fun setSavedEmail(email: String?)
     fun getProfilePictureUri(userId: String): String?
     fun setProfilePictureUri(userId: String, uri: String?)
+    fun hasSeenMicCoachmark(userId: String): Boolean
+    fun setMicCoachmarkDismissed(userId: String)
     fun clearLocalData()
 }
 
@@ -36,6 +38,7 @@ class PreferenceRepositoryImpl(context: Context) : PreferenceRepository {
         private const val KEY_HAS_EVER_LOGGED_IN = "has_ever_logged_in"
         private const val KEY_SAVED_EMAIL = "saved_remember_me_email"
         private const val KEY_PROFILE_PICTURE_URI = "profile_picture_uri_"
+        private const val KEY_MIC_COACHMARK_SEEN = "mic_coachmark_seen_"
     }
 
     override suspend fun shouldShowOnboarding(userId: String): Boolean {
@@ -132,6 +135,18 @@ class PreferenceRepositoryImpl(context: Context) : PreferenceRepository {
                 putString(KEY_PROFILE_PICTURE_URI + userId, uri)
             }
         }
+    }
+
+    override fun hasSeenMicCoachmark(userId: String): Boolean {
+        val key =
+            if (userId.isBlank()) KEY_MIC_COACHMARK_SEEN + "guest" else KEY_MIC_COACHMARK_SEEN + userId
+        return sharedPreferences.getBoolean(key, false)
+    }
+
+    override fun setMicCoachmarkDismissed(userId: String) {
+        val key =
+            if (userId.isBlank()) KEY_MIC_COACHMARK_SEEN + "guest" else KEY_MIC_COACHMARK_SEEN + userId
+        sharedPreferences.edit { putBoolean(key, true) }
     }
 
     override fun clearLocalData() {
