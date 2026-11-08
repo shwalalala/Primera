@@ -26,6 +26,13 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+enum class DashboardCoachmarkStep {
+    MIC,
+    BABY,
+    STATS,
+    SYNC
+}
+
 class DashboardViewModel(
     private val repository: DashboardRepository,
     private val goalsRepository: cit.edu.primera.feature.goals.data.GoalsRepository,
@@ -38,8 +45,8 @@ class DashboardViewModel(
     private val _weeklyContent = MutableStateFlow<cit.edu.primera.feature.dashboard.domain.WeeklyInfo?>(null)
     private var currentLoadedWeek: Int? = null
 
-    private val _showMicCoachmark = MutableStateFlow(false)
-    val showMicCoachmark: StateFlow<Boolean> = _showMicCoachmark.asStateFlow()
+    private val _coachmarkStep = MutableStateFlow<DashboardCoachmarkStep?>(null)
+    val coachmarkStep: StateFlow<DashboardCoachmarkStep?> = _coachmarkStep.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -52,7 +59,28 @@ class DashboardViewModel(
         viewModelScope.launch {
             val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
             val hasSeen = preferenceRepository.hasSeenMicCoachmark(userId)
-            _showMicCoachmark.value = !hasSeen
+            if (!hasSeen) {
+                _coachmarkStep.value = DashboardCoachmarkStep.MIC
+            } else {
+                _coachmarkStep.value = null
+            }
+        }
+    }
+
+    fun nextCoachmarkStep() {
+        viewModelScope.launch {
+            val current = _coachmarkStep.value
+            val next = when (current) {
+                DashboardCoachmarkStep.MIC -> DashboardCoachmarkStep.BABY
+                DashboardCoachmarkStep.BABY -> DashboardCoachmarkStep.STATS
+                DashboardCoachmarkStep.STATS -> DashboardCoachmarkStep.SYNC
+                DashboardCoachmarkStep.SYNC -> null
+                null -> null
+            }
+            _coachmarkStep.value = next
+            if (next == null) {
+                dismissMicCoachmark()
+            }
         }
     }
 
@@ -60,7 +88,7 @@ class DashboardViewModel(
         viewModelScope.launch {
             val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
             preferenceRepository.setMicCoachmarkDismissed(userId)
-            _showMicCoachmark.value = false
+            _coachmarkStep.value = null
         }
     }
 

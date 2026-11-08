@@ -45,11 +45,17 @@ import cit.edu.primera.core.theme.TextPrimary
 import cit.edu.primera.core.theme.TextSecondary
 import cit.edu.primera.core.utils.clickableNoRipple
 
+enum class ArrowPosition {
+    BOTTOM,
+    TOP,
+    NONE
+}
+
 /**
  * Reusable Onboarding Coachmark / Tooltip component.
  *
- * Darkens the screen background behind it, displays a rounded dialog box with a downward-pointing
- * arrow tip, highlights an optional target component (e.g. FAB), and provides "Skip" & primary action buttons.
+ * Darkens the screen background behind it, displays a rounded dialog box with an arrow tip,
+ * highlights an optional target component, and provides "Skip" & primary action buttons.
  */
 @Composable
 fun CoachmarkTooltip(
@@ -60,6 +66,14 @@ fun CoachmarkTooltip(
     text: String = "Tap to record your daily check-in thoughts or symptoms with your voice!",
     primaryActionLabel: String = "Got it",
     skipActionLabel: String = "Skip",
+    stepText: String? = null,
+    iconRes: Int? = R.drawable.mic,
+    iconEmoji: String? = null,
+    arrowPosition: ArrowPosition = ArrowPosition.BOTTOM,
+    cardAlignment: Alignment = Alignment.BottomCenter,
+    targetAlignment: Alignment = Alignment.BottomCenter,
+    cardModifier: Modifier = Modifier.padding(bottom = 92.dp, start = 24.dp, end = 24.dp),
+    targetModifier: Modifier = Modifier.padding(bottom = 12.dp),
     onPrimaryAction: () -> Unit = onDismiss,
     targetContent: (@Composable () -> Unit)? = null
 ) {
@@ -74,13 +88,18 @@ fun CoachmarkTooltip(
                 .background(Color.Black.copy(alpha = 0.65f))
                 .clickableNoRipple { /* Intercept clicks on dark backdrop */ }
         ) {
-            // Floating Tooltip Dialog Card + Arrow Pointer above target
+            // Floating Tooltip Dialog Card + Arrow Pointer
             Column(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 92.dp, start = 24.dp, end = 24.dp),
+                modifier = cardModifier.align(cardAlignment),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                if (arrowPosition == ArrowPosition.TOP) {
+                    TooltipArrowUp(
+                        color = SurfaceWhite,
+                        modifier = Modifier.offset(y = 1.dp)
+                    )
+                }
+
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
@@ -93,29 +112,56 @@ fun CoachmarkTooltip(
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = PrimeraLilac.copy(alpha = 0.5f),
-                                modifier = Modifier.size(36.dp)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.mic),
-                                        contentDescription = null,
-                                        tint = PrimeraViolet,
-                                        modifier = Modifier.size(20.dp)
+                                Surface(
+                                    shape = CircleShape,
+                                    color = PrimeraLilac.copy(alpha = 0.5f),
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        if (iconEmoji != null) {
+                                            Text(text = iconEmoji, fontSize = 20.sp)
+                                        } else if (iconRes != null) {
+                                            Icon(
+                                                painter = painterResource(iconRes),
+                                                contentDescription = null,
+                                                tint = PrimeraViolet,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                                Text(
+                                    text = title,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimary
+                                )
+                            }
+
+                            if (stepText != null) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = PrimeraLilac.copy(alpha = 0.35f)
+                                ) {
+                                    Text(
+                                        text = stepText,
+                                        modifier = Modifier.padding(
+                                            horizontal = 8.dp,
+                                            vertical = 4.dp
+                                        ),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = PrimeraViolet
                                     )
                                 }
                             }
-                            Text(
-                                text = title,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
-                            )
                         }
 
                         Spacer(Modifier.height(10.dp))
@@ -160,19 +206,18 @@ fun CoachmarkTooltip(
                     }
                 }
 
-                // Downward pointing arrow tip pointing at the target element below
-                TooltipArrowDown(
-                    color = SurfaceWhite,
-                    modifier = Modifier.offset(y = (-1).dp)
-                )
+                if (arrowPosition == ArrowPosition.BOTTOM) {
+                    TooltipArrowDown(
+                        color = SurfaceWhite,
+                        modifier = Modifier.offset(y = (-1).dp)
+                    )
+                }
             }
 
             // Highlighted target rendered clearly over the dimmed background
             if (targetContent != null) {
                 Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 12.dp)
+                    modifier = targetModifier.align(targetAlignment)
                 ) {
                     targetContent()
                 }
@@ -200,6 +245,25 @@ private fun TooltipArrowDown(
     }
 }
 
+/**
+ * Small triangle Canvas path pointing upwards.
+ */
+@Composable
+private fun TooltipArrowUp(
+    modifier: Modifier = Modifier,
+    color: Color = SurfaceWhite
+) {
+    Canvas(modifier = modifier.size(width = 20.dp, height = 12.dp)) {
+        val path = Path().apply {
+            moveTo(size.width / 2, 0f)
+            lineTo(size.width, size.height)
+            lineTo(0f, size.height)
+            close()
+        }
+        drawPath(path = path, color = color)
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun CoachmarkTooltipPreview() {
@@ -211,7 +275,8 @@ private fun CoachmarkTooltipPreview() {
                 title = "Voice Check-in",
                 text = "Tap to record your daily check-in thoughts or symptoms with your voice!",
                 primaryActionLabel = "Got it",
-                skipActionLabel = "Skip"
+                skipActionLabel = "Skip",
+                stepText = "1 of 4"
             )
         }
     }
