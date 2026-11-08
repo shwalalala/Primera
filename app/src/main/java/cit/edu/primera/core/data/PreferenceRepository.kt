@@ -52,17 +52,21 @@ class PreferenceRepositoryImpl(context: Context) : PreferenceRepository {
                 .get()
                 .await()
 
+            if (!snapshot.exists()) return true
+
             val isCompletedInFirestore = (snapshot.getBoolean("onboardingCompleted") == true)
                     || (snapshot.get("birthday") != null)
+                    || (snapshot.get("eddDate") != null)
+                    || (snapshot.get("dueDate") != null)
 
             if (isCompletedInFirestore) {
                 setOnboardingCompleted(userId)
                 false
             } else {
-                true
+                snapshot.getBoolean("onboardingCompleted") == false
             }
         } catch (_: Exception) {
-            true
+            false
         }
     }
 

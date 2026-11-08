@@ -1,7 +1,6 @@
 package cit.edu.primera.feature.profile.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -287,7 +286,7 @@ fun ProfileContent(
     }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
+        contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let { viewModel.onPhotoSelected(context, it) }
     }
@@ -318,9 +317,7 @@ fun ProfileContent(
                     size = 68.dp,
                     showEditBadge = true,
                     onEditClick = {
-                        photoPickerLauncher.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                        )
+                        photoPickerLauncher.launch("image/*")
                     }
                 )
                 Spacer(Modifier.width(16.dp))

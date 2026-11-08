@@ -8,8 +8,8 @@ interface AuthRepository {
     fun hasPasswordAuthProvider(): Boolean
     fun getAuthProviders(): Set<String>
     suspend fun login(email: String, password: String): Result<Unit>
-    suspend fun loginWithGoogle(idToken: String): Result<Unit>
-    suspend fun loginWithFacebook(accessToken: String): Result<Unit>
+    suspend fun loginWithGoogle(idToken: String): Result<Boolean>
+    suspend fun loginWithFacebook(accessToken: String): Result<Boolean>
     suspend fun linkCredential(credential: AuthCredential): Result<Unit>
     suspend fun unlinkProvider(providerId: String): Result<Unit>
     suspend fun signUp(username: String, email: String, password: String): Result<Unit>

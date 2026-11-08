@@ -260,34 +260,54 @@ class ProfileViewModel(
 
     fun onUsernameChange(username: String) = _uiState.update { it.copy(username = username) }
 
+    private fun openUriInputStream(
+        context: android.content.Context,
+        uri: android.net.Uri
+    ): java.io.InputStream? {
+        return try {
+            if (uri.scheme == "file" && uri.path != null) {
+                java.io.File(uri.path!!).inputStream()
+            } else {
+                context.contentResolver.openInputStream(uri)
+                    ?: uri.path?.let { java.io.File(it).inputStream() }
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     fun onPhotoSelected(context: android.content.Context, uri: android.net.Uri) {
         try {
             val contentResolver = context.contentResolver
             val mimeType = contentResolver.getType(uri) ?: ""
 
-            // 1. Validate image type (PNG, JPG, JPEG)
+            // 1. Validate image format
             val uriString = uri.toString().lowercase()
-            val isAllowedFormat = mimeType.equals("image/png", ignoreCase = true) ||
-                    mimeType.equals("image/jpeg", ignoreCase = true) ||
-                    mimeType.equals("image/jpg", ignoreCase = true) ||
-                    mimeType.equals("image/pjpeg", ignoreCase = true) ||
+            val isAllowedFormat = mimeType.startsWith("image/", ignoreCase = true) ||
+                    mimeType.isEmpty() ||
                     uriString.endsWith(".png") ||
                     uriString.endsWith(".jpg") ||
-                    uriString.endsWith(".jpeg")
+                    uriString.endsWith(".jpeg") ||
+                    uriString.endsWith(".webp") ||
+                    uriString.endsWith(".heic") ||
+                    uriString.endsWith(".heif")
 
             if (!isAllowedFormat) {
-                _uiState.update { it.copy(error = "Only PNG, JPG, and JPEG images are allowed.") }
+                _uiState.update { it.copy(error = "Only PNG, JPG, JPEG, WEBP, and HEIC images are allowed.") }
                 return
             }
 
             // 2. Validate max file size <= 100 MB
             var fileSize = 0L
-            contentResolver.openAssetFileDescriptor(uri, "r")?.use { afd ->
-                fileSize = afd.length
+            try {
+                contentResolver.openAssetFileDescriptor(uri, "r")?.use { afd ->
+                    fileSize = afd.length
+                }
+            } catch (_: Exception) {
             }
 
             val maxSizeBytes = 100L * 1024L * 1024L // 100 MB
-            if (fileSize > maxSizeBytes) {
+            if (fileSize > maxSizeBytes && fileSize > 0) {
                 _uiState.update { it.copy(error = "File size exceeds limit: Maximum allowed image size is 100 MB.") }
                 return
             }
@@ -331,7 +351,7 @@ class ProfileViewModel(
                 val storageRef = com.google.firebase.storage.FirebaseStorage.getInstance().reference
                     .child("profile_pictures/${if (userId.isBlank()) "guest" else userId}.png")
 
-                val inputStream = context.contentResolver.openInputStream(uri)
+                val inputStream = openUriInputStream(context, uri)
                 if (inputStream != null) {
                     val bytes = inputStream.use { it.readBytes() }
                     storageRef.putBytes(bytes).await()
@@ -359,20 +379,24 @@ class ProfileViewModel(
         uri: android.net.Uri,
         userId: String
     ): String {
-        return try {
-            val file = java.io.File(
-                context.filesDir,
-                "profile_avatar_${if (userId.isBlank()) "guest" else userId}.png"
-            )
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+        val timestamp = System.currentTimeMillis()
+        val file = java.io.File(
+            context.filesDir,
+            "profile_avatar_${if (userId.isBlank()) "guest" else userId}.png"
+        )
+        try {
+            openUriInputStream(context, uri)?.use { inputStream ->
                 file.outputStream().use { outputStream ->
                     inputStream.copyTo(outputStream)
                 }
             }
-            val timestamp = System.currentTimeMillis()
-            "${android.net.Uri.fromFile(file)}?t=$timestamp"
+            return "${android.net.Uri.fromFile(file)}?t=$timestamp"
         } catch (_: Exception) {
-            uri.toString()
+            return if (file.exists()) {
+                "${android.net.Uri.fromFile(file)}?t=$timestamp"
+            } else {
+                "$uri?t=$timestamp"
+            }
         }
     }
 

@@ -1,16 +1,17 @@
 package cit.edu.primera.feature.auth.data
 
-import com.google.firebase.auth.FacebookAuthProvider
+import android.util.Log
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.EmailAuthProvider
+import com.google.firebase.auth.FacebookAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.tasks.await
-import android.util.Log
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 class AuthDataSource {
     private val auth = FirebaseAuth.getInstance()
@@ -67,9 +68,9 @@ class AuthDataSource {
         return user.uid
     }
 
-    suspend fun loginWithGoogle(idToken: String): String {
+    suspend fun loginWithGoogle(idToken: String): Pair<String, Boolean> {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
-        val user = linkOrSignIn(credential, GoogleAuthProvider.PROVIDER_ID, "Google")
+        val (user, isNewUser) = linkOrSignIn(credential, GoogleAuthProvider.PROVIDER_ID, "Google")
 
         try {
             syncUserDocument(
@@ -80,12 +81,16 @@ class AuthDataSource {
         } catch (e: Exception) {
             Log.e(TAG, "Google authentication succeeded, but profile sync failed", e)
         }
-        return user.uid
+        return Pair(user.uid, isNewUser)
     }
 
-    suspend fun loginWithFacebook(accessToken: String): String {
+    suspend fun loginWithFacebook(accessToken: String): Pair<String, Boolean> {
         val credential = FacebookAuthProvider.getCredential(accessToken)
-        val user = linkOrSignIn(credential, FacebookAuthProvider.PROVIDER_ID, "Facebook")
+        val (user, isNewUser) = linkOrSignIn(
+            credential,
+            FacebookAuthProvider.PROVIDER_ID,
+            "Facebook"
+        )
 
         try {
             syncUserDocument(
@@ -96,7 +101,7 @@ class AuthDataSource {
         } catch (e: Exception) {
             Log.e(TAG, "Facebook authentication succeeded, but profile sync failed", e)
         }
-        return user.uid
+        return Pair(user.uid, isNewUser)
     }
 
     suspend fun linkCredential(credential: AuthCredential) {
@@ -119,18 +124,21 @@ class AuthDataSource {
         credential: AuthCredential,
         providerId: String,
         providerName: String
-    ): com.google.firebase.auth.FirebaseUser {
+    ): Pair<FirebaseUser, Boolean> {
         val currentUser = auth.currentUser
         if (currentUser != null) {
             if (currentUser.providerData.any { it.providerId == providerId }) {
-                return currentUser
+                return Pair(currentUser, false)
             }
-            return currentUser.linkWithCredential(credential).await().user
+            val linkedUser = currentUser.linkWithCredential(credential).await().user
                 ?: throw Exception("$providerName account linking failed")
+            return Pair(linkedUser, false)
         }
 
-        return auth.signInWithCredential(credential).await().user
-            ?: throw Exception("$providerName login failed")
+        val authResult = auth.signInWithCredential(credential).await()
+        val user = authResult.user ?: throw Exception("$providerName login failed")
+        val isNewUser = authResult.additionalUserInfo?.isNewUser == true
+        return Pair(user, isNewUser)
     }
 
     private suspend fun syncUserDocument(
@@ -217,6 +225,7 @@ class AuthDataSource {
             "username" to username,
             "email" to normalizeEmail(email),
             "role" to "patient",
+            "onboardingCompleted" to false,
             "createdAt" to Date()
         )
         firestore.collection("users").document(userId).set(userData, SetOptions.merge()).await()

@@ -189,6 +189,19 @@ fun ProfilePhotoCropDialog(
     )
 }
 
+private fun openUriInputStream(context: android.content.Context, uri: Uri): java.io.InputStream? {
+    return try {
+        if (uri.scheme == "file" && uri.path != null) {
+            java.io.File(uri.path!!).inputStream()
+        } else {
+            context.contentResolver.openInputStream(uri)
+                ?: uri.path?.let { java.io.File(it).inputStream() }
+        }
+    } catch (_: Exception) {
+        null
+    }
+}
+
 private fun cropImage(
     context: android.content.Context,
     sourceUri: Uri,
@@ -197,7 +210,7 @@ private fun cropImage(
     offsetY: Float
 ): Uri {
     return try {
-        val inputStream = context.contentResolver.openInputStream(sourceUri) ?: return sourceUri
+        val inputStream = openUriInputStream(context, sourceUri) ?: return sourceUri
         val originalBitmap = android.graphics.BitmapFactory.decodeStream(inputStream)
         inputStream.close()
         if (originalBitmap == null) return sourceUri
@@ -234,7 +247,7 @@ private fun cropImage(
         }
 
         Uri.fromFile(croppedFile)
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         sourceUri
     }
 }
