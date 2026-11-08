@@ -1,13 +1,17 @@
 package cit.edu.primera.feature.goals.data
 
+import cit.edu.primera.core.util.currentUserIdFlow
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.tasks.await
 import java.util.Calendar
 import java.util.Date
@@ -16,50 +20,51 @@ class GoalsRepositoryImpl : GoalsRepository {
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
-    override fun observeGoals(): Flow<List<GoalDto>> = callbackFlow {
-        val userId = auth.currentUser?.uid
-        if (userId == null) {
-            trySend(emptyList())
-            close()
-            return@callbackFlow
-        }
-
-        val registration: ListenerRegistration = firestore.collection("goals")
-            .whereEqualTo("userId", userId)
-            .orderBy("timestamp", Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    trySend(emptyList())
-                    return@addSnapshotListener
-                }
-                val goals = snapshot?.documents?.mapNotNull { doc ->
-                    try {
-                        val timestamp = when (val rawTimestamp = doc.get("timestamp")) {
-                            is com.google.firebase.Timestamp -> rawTimestamp.toDate()
-                            is Date -> rawTimestamp
-                            is Long -> Date(rawTimestamp)
-                            else -> Date()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun observeGoals(): Flow<List<GoalDto>> =
+        auth.currentUserIdFlow().flatMapLatest { userId ->
+            if (userId.isNullOrBlank()) {
+                flowOf(emptyList())
+            } else {
+                callbackFlow {
+                    val registration: ListenerRegistration = firestore.collection("goals")
+                        .whereEqualTo("userId", userId)
+                        .orderBy("timestamp", Query.Direction.DESCENDING)
+                        .addSnapshotListener { snapshot, error ->
+                            if (error != null) {
+                                trySend(emptyList())
+                                return@addSnapshotListener
+                            }
+                            val goals = snapshot?.documents?.mapNotNull { doc ->
+                                try {
+                                    val timestamp = when (val rawTimestamp = doc.get("timestamp")) {
+                                        is com.google.firebase.Timestamp -> rawTimestamp.toDate()
+                                        is Date -> rawTimestamp
+                                        is Long -> Date(rawTimestamp)
+                                        else -> Date()
+                                    }
+                                    GoalDto(
+                                        id = doc.id,
+                                        userId = doc.getString("userId"),
+                                        title = doc.getString("title"),
+                                        icon = doc.getString("icon"),
+                                        currentValue = doc.getDouble("currentValue") ?: 0.0,
+                                        targetValue = doc.getDouble("targetValue") ?: 0.0,
+                                        unit = doc.getString("unit"),
+                                        category = doc.getString("category"),
+                                        period = doc.getString("period") ?: "Weekly",
+                                        accentColorHex = doc.getString("accentColorHex"),
+                                        timestamp = timestamp,
+                                    )
+                                } catch (_: Exception) {
+                                    null
+                                }
+                            } ?: emptyList()
+                            trySend(goals)
                         }
-                        GoalDto(
-                            id = doc.id,
-                            userId = doc.getString("userId"),
-                            title = doc.getString("title"),
-                            icon = doc.getString("icon"),
-                            currentValue = doc.getDouble("currentValue") ?: 0.0,
-                            targetValue = doc.getDouble("targetValue") ?: 0.0,
-                            unit = doc.getString("unit"),
-                            category = doc.getString("category"),
-                            period = doc.getString("period") ?: "Weekly",
-                            accentColorHex = doc.getString("accentColorHex"),
-                            timestamp = timestamp,
-                        )
-                    } catch (_: Exception) {
-                        null
-                    }
-                } ?: emptyList()
-                trySend(goals)
+                    awaitClose(registration::remove)
+                }
             }
-        awaitClose(registration::remove)
     }
 
     override suspend fun addGoal(goal: GoalDto): Result<Unit> {

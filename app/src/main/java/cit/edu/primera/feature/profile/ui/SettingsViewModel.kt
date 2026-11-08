@@ -32,14 +32,14 @@ class SettingsViewModel(
     fun linkGoogleAccount(idToken: String) {
         linkAccount(
             providerName = "Google",
-            action = { authRepository.loginWithGoogle(idToken) }
+            action = { authRepository.loginWithGoogle(idToken).map { } }
         )
     }
 
     fun linkFacebookAccount(accessToken: String) {
         linkAccount(
             providerName = "Facebook",
-            action = { authRepository.loginWithFacebook(accessToken) }
+            action = { authRepository.loginWithFacebook(accessToken).map { } }
         )
     }
 

@@ -24,21 +24,21 @@ class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun loginWithGoogle(idToken: String): Result<Unit> {
+    override suspend fun loginWithGoogle(idToken: String): Result<Boolean> {
         return try {
-            val userId = dataSource.loginWithGoogle(idToken)
+            val (userId, isNewUser) = dataSource.loginWithGoogle(idToken)
             dataSource.logActivity("Login", "User logged in with Google", userId)
-            Result.success(Unit)
+            Result.success(isNewUser)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    override suspend fun loginWithFacebook(accessToken: String): Result<Unit> {
+    override suspend fun loginWithFacebook(accessToken: String): Result<Boolean> {
         return try {
-            val userId = dataSource.loginWithFacebook(accessToken)
+            val (userId, isNewUser) = dataSource.loginWithFacebook(accessToken)
             dataSource.logActivity("Login", "User logged in with Facebook", userId)
-            Result.success(Unit)
+            Result.success(isNewUser)
         } catch (e: Exception) {
             Result.failure(e)
         }

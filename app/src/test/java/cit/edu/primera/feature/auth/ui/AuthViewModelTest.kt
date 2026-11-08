@@ -210,16 +210,16 @@ private class FakeAuthRepository : AuthRepository {
         return Result.success(Unit)
     }
 
-    override suspend fun loginWithGoogle(idToken: String): Result<Unit> {
+    override suspend fun loginWithGoogle(idToken: String): Result<Boolean> {
         authenticated = true
         providers.add("google.com")
-        return Result.success(Unit)
+        return Result.success(false)
     }
 
-    override suspend fun loginWithFacebook(accessToken: String): Result<Unit> {
+    override suspend fun loginWithFacebook(accessToken: String): Result<Boolean> {
         authenticated = true
         providers.add("facebook.com")
-        return Result.success(Unit)
+        return Result.success(false)
     }
 
     override suspend fun linkCredential(credential: AuthCredential): Result<Unit> {

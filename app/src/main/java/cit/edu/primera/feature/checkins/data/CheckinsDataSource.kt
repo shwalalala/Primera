@@ -1,12 +1,16 @@
 package cit.edu.primera.feature.checkins.data
 
+import cit.edu.primera.core.util.currentUserIdFlow
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.tasks.await
 import java.util.Calendar
 import java.util.Date
@@ -15,74 +19,74 @@ class CheckinsDataSource {
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
-    fun observeLogs(): Flow<List<CheckinLogDto>> = callbackFlow {
-        val userId = auth.currentUser?.uid
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observeLogs(): Flow<List<CheckinLogDto>> =
+        auth.currentUserIdFlow().flatMapLatest { userId ->
+            if (userId.isNullOrBlank()) {
+                flowOf(emptyList())
+            } else {
+                callbackFlow {
+                    val registration: ListenerRegistration = firestore.collection("checkins")
+                        .whereEqualTo("userId", userId)
+                        .addSnapshotListener { snapshot, error ->
+                            if (error != null) {
+                                trySend(emptyList())
+                                return@addSnapshotListener
+                            }
 
-        if (userId == null) {
-            trySend(emptyList())
-            close()
-            return@callbackFlow
-        }
+                            val logs = snapshot?.documents?.mapNotNull { doc ->
+                                try {
+                                    CheckinLogDto(
+                                        id = doc.id,
+                                        type = doc.getString("type") ?: "Check-in",
+                                        category = doc.getString("category") ?: "Fetal Movement",
+                                        message = doc.getString("message"),
+                                        description = doc.getString("description"),
+                                        timestamp = doc.getTimestamp("timestamp")?.toDate(),
+                                        hasWarning = doc.getBoolean("hasWarning") ?: false,
+                                        warningMessage = doc.getString("warningMessage")
+                                    )
+                                } catch (_: Exception) {
+                                    null
+                                }
+                            }?.sortedByDescending { it.timestamp ?: Date(0) } ?: emptyList()
 
-        val registration: ListenerRegistration = firestore.collection("checkins")
-            .whereEqualTo("userId", userId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    trySend(emptyList())
-                    return@addSnapshotListener
-                }
+                            trySend(logs)
+                        }
 
-                val logs = snapshot?.documents?.mapNotNull { doc ->
-                    try {
-                        CheckinLogDto(
-                            id = doc.id,
-                            type = doc.getString("type") ?: "Check-in",
-                            category = doc.getString("category") ?: "Fetal Movement",
-                            message = doc.getString("message"),
-                            description = doc.getString("description"),
-                            timestamp = doc.getTimestamp("timestamp")?.toDate(),
-                            hasWarning = doc.getBoolean("hasWarning") ?: false,
-                            warningMessage = doc.getString("warningMessage")
-                        )
-                    } catch (_: Exception) {
-                        null
-                    }
-                }?.sortedByDescending { it.timestamp ?: Date(0) } ?: emptyList()
-
-                trySend(logs)
-            }
-
-        awaitClose(registration::remove)
-    }
-
-    fun observeUserWeight(): Flow<CheckinUserDto?> = callbackFlow {
-        val userId = auth.currentUser?.uid
-
-        if (userId == null) {
-            trySend(null)
-            close()
-            return@callbackFlow
-        }
-
-        val registration: ListenerRegistration = firestore.collection("users")
-            .document(userId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    trySend(null)
-                    return@addSnapshotListener
-                }
-
-                if (snapshot != null && snapshot.exists()) {
-                    val weightKg = snapshot.getLong("weightKg")?.toInt()
-                    val updatedAt = snapshot.getTimestamp("updatedAt")?.toDate()
-
-                    trySend(CheckinUserDto(weightKg, updatedAt))
-                } else {
-                    trySend(null)
+                    awaitClose(registration::remove)
                 }
             }
+        }
 
-        awaitClose(registration::remove)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observeUserWeight(): Flow<CheckinUserDto?> =
+        auth.currentUserIdFlow().flatMapLatest { userId ->
+            if (userId.isNullOrBlank()) {
+                flowOf(null)
+            } else {
+                callbackFlow {
+                    val registration: ListenerRegistration = firestore.collection("users")
+                        .document(userId)
+                        .addSnapshotListener { snapshot, error ->
+                            if (error != null) {
+                                trySend(null)
+                                return@addSnapshotListener
+                            }
+
+                            if (snapshot != null && snapshot.exists()) {
+                                val weightKg = snapshot.getLong("weightKg")?.toInt()
+                                val updatedAt = snapshot.getTimestamp("updatedAt")?.toDate()
+
+                                trySend(CheckinUserDto(weightKg, updatedAt))
+                            } else {
+                                trySend(null)
+                            }
+                        }
+
+                    awaitClose(registration::remove)
+                }
+            }
     }
 
     suspend fun saveLog(log: CheckinLogDto): Result<Unit> {

@@ -161,7 +161,11 @@ class AuthViewModel(
 
             result.fold(
                 onSuccess = {
-                    handleSuccessfulAuthentication(trimmedEmail, currentState.rememberMe)
+                    handleSuccessfulAuthentication(
+                        trimmedEmail,
+                        currentState.rememberMe,
+                        isSignUp = false
+                    )
                 },
                 onFailure = { error ->
                     handleAuthenticationFailure(error, "Invalid email or password")
@@ -187,7 +191,7 @@ class AuthViewModel(
 
             result.fold(
                 onSuccess = {
-                    handleSuccessfulAuthentication(trimmedEmail, false)
+                    handleSuccessfulAuthentication(trimmedEmail, false, isSignUp = true)
                 },
                 onFailure = { error ->
                     val specificMessage = when {
@@ -278,8 +282,12 @@ class AuthViewModel(
             val result = authRepository.loginWithFacebook(accessToken)
 
             result.fold(
-                onSuccess = {
-                    handleSuccessfulAuthentication(_state.value.email, currentState.rememberMe)
+                onSuccess = { isNewUser ->
+                    handleSuccessfulAuthentication(
+                        _state.value.email,
+                        currentState.rememberMe,
+                        isSignUp = isNewUser
+                    )
                 },
                 onFailure = { error ->
                     if (error is FirebaseAuthUserCollisionException) {
@@ -320,8 +328,12 @@ class AuthViewModel(
             val result = authRepository.loginWithGoogle(idToken)
 
             result.fold(
-                onSuccess = {
-                    handleSuccessfulAuthentication(_state.value.email, currentState.rememberMe)
+                onSuccess = { isNewUser ->
+                    handleSuccessfulAuthentication(
+                        _state.value.email,
+                        currentState.rememberMe,
+                        isSignUp = isNewUser
+                    )
                 },
                 onFailure = { error ->
                     if (error is FirebaseAuthUserCollisionException) {
@@ -365,7 +377,11 @@ class AuthViewModel(
         }
     }
 
-    private fun handleSuccessfulAuthentication(email: String, rememberMe: Boolean) {
+    private fun handleSuccessfulAuthentication(
+        email: String,
+        rememberMe: Boolean,
+        isSignUp: Boolean
+    ) {
         preferenceRepository.setHasEverLoggedIn(true)
         if (rememberMe && email.isNotBlank()) {
             preferenceRepository.setSavedEmail(email)
@@ -393,9 +409,10 @@ class AuthViewModel(
                 )
             }
 
-            if (preferenceRepository.shouldShowOnboarding(userId)) {
+            if (isSignUp) {
                 _effect.send(AuthEffect.NavigateToOnboarding)
             } else {
+                preferenceRepository.setOnboardingCompleted(userId)
                 _effect.send(AuthEffect.NavigateToDashboard)
             }
         }
