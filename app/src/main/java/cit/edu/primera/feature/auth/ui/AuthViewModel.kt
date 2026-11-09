@@ -244,7 +244,7 @@ class AuthViewModel(
             _state.update { it.copy(emailError = "Email is required to reset password") }
             return
         }
-        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+        if (!isValidEmail(email)) {
             _state.update { it.copy(emailError = "Invalid email format") }
             return
         }
@@ -488,6 +488,19 @@ class AuthViewModel(
         }
     }
 
+    private fun isValidEmail(email: String): Boolean {
+        return try {
+            val pattern = android.util.Patterns.EMAIL_ADDRESS
+            if (pattern != null) {
+                pattern.matcher(email).matches()
+            } else {
+                email.contains("@") && email.contains(".")
+            }
+        } catch (e: Throwable) {
+            email.contains("@") && email.contains(".")
+        }
+    }
+
     private fun validateLoginForm(): Boolean {
         val email = _state.value.email.trim()
         val password = _state.value.password
@@ -496,7 +509,7 @@ class AuthViewModel(
         if (email.isBlank()) {
             _state.update { it.copy(emailError = "Email is required") }
             isValid = false
-        } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+        } else if (!isValidEmail(email)) {
             _state.update { it.copy(emailError = "Invalid email format") }
             isValid = false
         }
@@ -523,7 +536,7 @@ class AuthViewModel(
         if (email.isBlank()) {
             _state.update { it.copy(emailError = "Email is required") }
             isValid = false
-        } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+        } else if (!isValidEmail(email)) {
             _state.update { it.copy(emailError = "Invalid email format") }
             isValid = false
         }

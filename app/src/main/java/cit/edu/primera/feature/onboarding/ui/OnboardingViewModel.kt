@@ -26,8 +26,24 @@ class OnboardingViewModel(
         loadSavedStep()
     }
 
+    private fun getFirebaseUserId(): String? {
+        return try {
+            com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        } catch (e: Throwable) {
+            null
+        }
+    }
+
+    private fun getFirebaseUserEmail(): String? {
+        return try {
+            com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.email
+        } catch (e: Throwable) {
+            null
+        }
+    }
+
     private fun loadSavedStep() {
-        val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val userId = getFirebaseUserId() ?: return
         val savedStepName = preferenceRepository.getOnboardingLastStep(userId)
         if (savedStepName != null) {
             try {
@@ -43,7 +59,7 @@ class OnboardingViewModel(
     }
 
     private fun saveCurrentStep(step: OnboardingStep) {
-        val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val userId = getFirebaseUserId() ?: return
         preferenceRepository.setOnboardingLastStep(userId, step.name)
     }
 
@@ -315,8 +331,7 @@ class OnboardingViewModel(
                 }
                 ?: Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 140) }.time
 
-            val currentUserEmail =
-                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.email
+            val currentUserEmail = getFirebaseUserEmail()
 
             val profile = OnboardingProfile(
                 email = currentUserEmail,
@@ -338,7 +353,7 @@ class OnboardingViewModel(
             )
             
             repository.saveProfile(profile)
-            val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
+            val userId = getFirebaseUserId() ?: ""
             preferenceRepository.setOnboardingCompleted(userId)
             
             for (i in 0..100 step 10) {
