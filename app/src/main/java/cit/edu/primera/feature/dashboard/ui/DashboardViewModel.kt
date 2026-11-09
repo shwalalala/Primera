@@ -136,7 +136,7 @@ class DashboardViewModel(
             daysLeft = 280,
             babySize = DashboardBusinessLogic.getBabySize(1),
             babyEmoji = DashboardBusinessLogic.getBabyEmoji(1),
-            babyIllustration = null,
+            babyIllustration = DashboardBusinessLogic.getBabyIllustration(1),
             heartRateBpm = 0,
             heartRateTrendingUp = false,
             heartRateVsLastWeek = 0,
