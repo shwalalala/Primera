@@ -73,6 +73,11 @@ object ViewModelProvider {
                 SettingsViewModel::class.java -> SettingsViewModel(
                     container.authRepository
                 )
+                cit.edu.primera.feature.notification.ui.NotificationsViewModel::class.java -> cit.edu.primera.feature.notification.ui.NotificationsViewModel(
+                    container.notificationRepository,
+                    container.preferenceRepository,
+                    container.reminderManager
+                )
                 else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             } as T
         }

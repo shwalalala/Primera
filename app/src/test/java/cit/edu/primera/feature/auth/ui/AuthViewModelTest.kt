@@ -184,6 +184,11 @@ private class FakePreferenceRepository : PreferenceRepository {
         micCoachmarkSeen = true
     }
 
+    override fun isReminderEnabled(category: String): Boolean = true
+    override fun setReminderEnabled(category: String, enabled: Boolean) {}
+    override fun getReminderTime(category: String): Pair<Int, Int> = Pair(9, 0)
+    override fun setReminderTime(category: String, hour: Int, minute: Int) {}
+
     override fun clearLocalData() {
         onboardingCompleted = false
         onboardingStep = null

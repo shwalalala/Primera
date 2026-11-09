@@ -53,6 +53,7 @@ import cit.edu.primera.ui.components.PrimeraGradientButton
 fun SettingsScreen(
     onBack: () -> Unit,
     onLogout: () -> Unit,
+    onOpenReminderSettings: () -> Unit = {},
     viewModel: SettingsViewModel = viewModel(factory = ViewModelProvider.Factory)
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -105,7 +106,8 @@ fun SettingsScreen(
         onNewPasswordChange = viewModel::onNewPasswordChange,
         onConfirmPasswordChange = viewModel::onConfirmPasswordChange,
         onUpdatePassword = viewModel::updatePassword,
-        onShowQrDialog = { showQrDialog = true }
+        onShowQrDialog = { showQrDialog = true },
+        onOpenReminderSettings = onOpenReminderSettings
     )
 }
 
@@ -126,6 +128,7 @@ fun SettingsContent(
     onConfirmPasswordChange: (String) -> Unit,
     onUpdatePassword: () -> Unit,
     onShowQrDialog: () -> Unit = {},
+    onOpenReminderSettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -159,6 +162,32 @@ fun SettingsContent(
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary
                 )
+
+                // Reminder Settings Section
+                SettingsCard(title = "Notification & Reminder Preferences") {
+                    Text(
+                        text = "Customize daily check-in alerts, hydration reminders, and evening wind-down schedules.",
+                        fontSize = 13.sp,
+                        color = cit.edu.primera.core.theme.TextSecondary,
+                        lineHeight = 18.sp
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedButton(
+                        onClick = onOpenReminderSettings,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            cit.edu.primera.core.theme.MenuButtonBorder
+                        )
+                    ) {
+                        Text(
+                            "Manage Reminder Preferences",
+                            color = PrimeraViolet,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
 
                 SettingsCard(title = "Link Accounts") {
                     Text(
