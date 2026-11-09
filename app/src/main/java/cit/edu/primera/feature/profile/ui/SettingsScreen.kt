@@ -328,13 +328,25 @@ fun SettingsContent(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorRed),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, ErrorRed)
+                    border = androidx.compose.foundation.BorderStroke(1.dp, ErrorRed),
                 ) {
                     Text(
                         text = "Delete Account",
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
                     )
                 }
+
+                // Medical & Fetal Size Data Source Attribution Footer
+                Text(
+                    text = "Fetal growth & week-by-week baby size comparisons referenced from Healthdirect Australia Limited (pregnancybirthbaby.org.au).",
+                    fontSize = 11.sp,
+                    color = cit.edu.primera.core.theme.TextSecondary,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    lineHeight = 16.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp, bottom = 8.dp),
+                )
             }
         }
 

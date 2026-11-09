@@ -13,14 +13,20 @@ import cit.edu.primera.core.theme.TextSecondary
 @Composable
 fun BabySizeText(
     babySize: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
+    val text = if (babySize.startsWith("Your baby", ignoreCase = true)) {
+        babySize
+    } else {
+        "Your baby is the size of a $babySize!"
+    }
+
     Text(
-        text = "Your baby is the size of a $babySize!",
+        text = text,
         fontSize = 14.sp,
         color = TextSecondary,
         textAlign = TextAlign.Center,
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     )
 }
 

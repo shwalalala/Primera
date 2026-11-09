@@ -53,15 +53,20 @@ fun CircularPregnancyRing(
         else -> "$daysLeft Days Left"
     }
 
+    val calculatedProgress = when {
+        (daysLeft <= 0) || (weekNumber >= 40) -> 1.0f
+        else -> (((weekNumber * 7) + dayNumber) / 280f).coerceIn(0f, 1f)
+    }
+
     InsightCircularProgress(
-        progress = ((weekNumber - 1) + (dayNumber / 7f)) / 40f,
+        progress = calculatedProgress,
         centerContent = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 if (babyIllustration != null) {
                     androidx.compose.foundation.Image(
                         painter = androidx.compose.ui.res.painterResource(babyIllustration),
                         contentDescription = null,
-                        modifier = Modifier.size(80.dp)
+                        modifier = Modifier.size(80.dp),
                     )
                 } else {
                     Text(babyEmoji, fontSize = 72.sp)
@@ -71,19 +76,19 @@ fun CircularPregnancyRing(
 
                 Surface(
                     shape = RoundedCornerShape(50),
-                    color = DaysLeftBg
+                    color = DaysLeftBg,
                 ) {
                     Text(
                         text = daysLeftText,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
-                        color = PrimeraViolet
+                        color = PrimeraViolet,
                     )
                 }
             }
         },
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
@@ -95,11 +100,11 @@ fun InsightCircularProgress(
     progressColor: Color = RingProgressColor,
     trackColor: Color = RingTrackColor,
 ) {
-    val sweepAngle = (progress.coerceIn(0f, 1f)) * 300f
+    val sweepAngle = (progress.coerceIn(0f, 1f)) * 360f
 
     Column(
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
             contentAlignment = Alignment.Center,
@@ -110,11 +115,11 @@ fun InsightCircularProgress(
                     elevation = 18.dp,
                     shape = CircleShape,
                     ambientColor = Color.Black.copy(alpha = 0.12f),
-                    spotColor = Color.Black.copy(alpha = 0.12f)
+                    spotColor = Color.Black.copy(alpha = 0.12f),
                 )
                 .background(
                     color = SurfaceWhite,
-                    shape = CircleShape
+                    shape = CircleShape,
                 )
         ) {
             Box(
