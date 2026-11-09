@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import cit.edu.primera.R
 import cit.edu.primera.core.theme.PrimeraTheme
 import cit.edu.primera.core.theme.PrimeraViolet
+import cit.edu.primera.core.theme.TextSecondary
 
 // ---------------------------------------------------------------------------
 // Nav destinations — maps 1:1 to the HTML nav items
@@ -44,11 +45,11 @@ import cit.edu.primera.core.theme.PrimeraViolet
 enum class NavDestination(
     val label: String,
     val iconRes: Int,
-    val route: String
+    val route: String,
 ) {
     HOME    ("Home",     R.drawable.home,         Routes.DASHBOARD),
     CHECKIN ("Check-in", R.drawable.log,          Routes.CHECKIN),
-    INSIGHT ("Insight",  R.drawable.calendar,        Routes.INSIGHT),
+    INSIGHT("Insight", R.drawable.calendar, Routes.INSIGHT),
     DEVICE  ("Device",   R.drawable.device,       Routes.DEVICE)
 }
 
@@ -150,7 +151,7 @@ private fun NavItem(
         Icon(
             painter = painterResource(destination.iconRes),
             contentDescription = destination.label,
-            tint = if (isSelected) PrimeraViolet else Color(0xFF8B8FA8),
+            tint = if (isSelected) PrimeraViolet else TextSecondary,
             modifier = Modifier.size(24.dp)
         )
         Spacer(Modifier.height(4.dp))
@@ -158,7 +159,7 @@ private fun NavItem(
             text       = destination.label,
             fontSize   = 11.sp,
             fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
-            color      = if (isSelected) PrimeraViolet else Color(0xFF8B8FA8)
+            color = if (isSelected) PrimeraViolet else TextSecondary
         )
     }
 }
@@ -177,7 +178,7 @@ fun FabButton(
         modifier = modifier
             .size(64.dp)
             .shadow(elevation = 12.dp, shape = CircleShape)
-            .background(Color(0xFFB7A6D8), CircleShape)
+            .background(PrimeraViolet, CircleShape)
             .border(width = 4.dp, color = Color.White, shape = CircleShape)
             .clip(CircleShape)
             .clickable { onClick() }

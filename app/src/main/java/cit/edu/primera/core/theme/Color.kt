@@ -18,7 +18,7 @@ val PrimeraLogoEnd = Color(0xFF9333EA)
 // ── Text ─────────────────────────────────────────────────────────────────────
 val TextPrimary = Color(0xFF1A1829)
 val TextSecondary = Color(0xFF5E627D)
-val TextHint = Color(0xFF8E91AA)
+val TextHint = Color(0xFF636782)
 val TextLink = Color(0xFF7039C9)
 val TextBlueLink = Color(0xFF2563EB)
 
@@ -51,7 +51,7 @@ val MenuButtonBorder = Color(0xFFEAE3F7)
 
 // ── Symptom Colors ──────────────────────────────────────────────────────────
 val NauseaBg = Color(0xFFFFEDD5)
-val NauseaText = Color(0xFFEA580C)
+val NauseaText = Color(0xFFC2410C)
 val BackPainBg = Color(0xFFE0E7FF)
 val BackPainText = Color(0xFF4338CA)
 val FatigueBg = Color(0xFFF3E8FF)
@@ -59,9 +59,9 @@ val FatigueText = Color(0xFF9333EA)
 
 // ── Log Colors ──────────────────────────────────────────────────────────────
 val LogPain = Color(0xFFF87171)
-val LogNutrition = Color(0xFF4ADE80)
-val LogBaby = Color(0xFF818CF8)
-val LogOther = Color(0xFF94A3B8)
+val LogNutrition = Color(0xFF16A34A)
+val LogBaby = Color(0xFF4F46E5)
+val LogOther = Color(0xFF5E627D)
 
 // ── Indicator Colors ────────────────────────────────────────────────────────
 val Good = Color(0xFF22C55E)
