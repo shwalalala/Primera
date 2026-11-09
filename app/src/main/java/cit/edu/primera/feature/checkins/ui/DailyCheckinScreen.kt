@@ -265,7 +265,6 @@ private fun CheckinSection(
             items(options) { option ->
                 CheckinItemChip(
                     label = option.label,
-                    emoji = option.emoji,
                     isSelected = selectedOptions.contains(option.label),
                     onClick = { onOptionToggle(option.label) }
                 )

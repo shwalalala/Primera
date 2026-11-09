@@ -36,23 +36,23 @@ class CheckinsViewModel(
     val dailyState: StateFlow<DailyCheckinUiState> = _dailyState.asStateFlow()
 
     private val defaultSymptoms = listOf(
-        CheckinOption("Aching Head", "🤕", "Symptom"),
-        CheckinOption("Nausea", "🤢", "Symptom"),
-        CheckinOption("Back Pain", "😣", "Symptom"),
-        CheckinOption("Fatigue", "😴", "Symptom")
+        CheckinOption("Aching Head", "Symptom"),
+        CheckinOption("Nausea", "Symptom"),
+        CheckinOption("Back Pain", "Symptom"),
+        CheckinOption("Fatigue", "Symptom"),
     )
 
     private val defaultMoods = listOf(
-        CheckinOption("Normal", "😊", "Mood"),
-        CheckinOption("Angry", "😡", "Mood"),
-        CheckinOption("Happy", "😁", "Mood"),
-        CheckinOption("Sad", "😢", "Mood")
+        CheckinOption("Normal", "Mood"),
+        CheckinOption("Angry", "Mood"),
+        CheckinOption("Happy", "Mood"),
+        CheckinOption("Sad", "Mood"),
     )
 
     private val defaultMedicines = listOf(
-        CheckinOption("Med Pills", "💊", "Medicine"),
-        CheckinOption("Gauze", "🩹", "Medicine"),
-        CheckinOption("Syringe", "💉", "Medicine")
+        CheckinOption("Med Pills", "Medicine"),
+        CheckinOption("Gauze", "Medicine"),
+        CheckinOption("Syringe", "Medicine"),
     )
 
     init {
@@ -64,13 +64,13 @@ class CheckinsViewModel(
 
     private fun loadOptions() {
         val customSymptoms = repository.getCustomOptions("Symptom")
-            .map { CheckinOption(it, "✨", "Symptom") }
+            .map { CheckinOption(it, "Symptom") }
 
         val customMoods = repository.getCustomOptions("Mood")
-            .map { CheckinOption(it, "✨", "Mood") }
+            .map { CheckinOption(it, "Mood") }
 
         val customMedicines = repository.getCustomOptions("Medicine")
-            .map { CheckinOption(it, "✨", "Medicine") }
+            .map { CheckinOption(it, "Medicine") }
 
         _dailyState.update {
             it.copy(

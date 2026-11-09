@@ -32,6 +32,6 @@ data class DailyCheckinUiState(
 
 data class CheckinOption(
     val label: String,
-    val emoji: String,
-    val category: String
+    val category: String,
+    val emoji: String = ""
 )
