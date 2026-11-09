@@ -255,11 +255,20 @@ private class FakeAuthRepository : AuthRepository {
         return Result.success(Unit)
     }
 
+    override suspend fun requestEmailChange(newEmail: String): Result<Unit> {
+        return Result.success(Unit)
+    }
+
     override suspend fun updateEmail(currentPassword: String, newEmail: String): Result<Unit> {
         return Result.success(Unit)
     }
 
     override suspend fun updatePassword(currentPassword: String, newPassword: String): Result<Unit> {
+        return Result.success(Unit)
+    }
+
+    override suspend fun deleteAccount(): Result<Unit> {
+        authenticated = false
         return Result.success(Unit)
     }
 }

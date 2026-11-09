@@ -28,7 +28,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -58,6 +57,8 @@ fun SettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var showDeleteAccountDialog by remember { mutableStateOf(false) }
+
     val launchFacebookLogin = rememberFacebookLoginLauncher(
         onAuthComplete = viewModel::linkFacebookAccount,
         onAuthError = { error ->
@@ -93,19 +94,20 @@ fun SettingsScreen(
         onBack = onBack,
         showLogoutDialog = showLogoutDialog,
         onShowLogoutDialogChange = { showLogoutDialog = it },
+        showDeleteAccountDialog = showDeleteAccountDialog,
+        onShowDeleteAccountDialogChange = { showDeleteAccountDialog = it },
         onLogout = {
             viewModel.logout()
             onLogout()
         },
+        onDeleteAccountConfirm = {
+            viewModel.deleteAccount(onLogout)
+        },
         onLinkGoogle = launchGoogleLogin,
         onLinkFacebook = launchFacebookLogin,
-        onEmailCurrentPasswordChange = viewModel::onEmailCurrentPasswordChange,
         onNewEmailChange = viewModel::onNewEmailChange,
-        onUpdateEmail = viewModel::updateEmail,
-        onPasswordCurrentPasswordChange = viewModel::onPasswordCurrentPasswordChange,
-        onNewPasswordChange = viewModel::onNewPasswordChange,
-        onConfirmPasswordChange = viewModel::onConfirmPasswordChange,
-        onUpdatePassword = viewModel::updatePassword,
+        onRequestEmailChange = viewModel::requestEmailChange,
+        onRequestPasswordReset = viewModel::sendPasswordResetEmail,
         onShowQrDialog = { showQrDialog = true },
         onOpenReminderSettings = onOpenReminderSettings
     )
@@ -117,16 +119,15 @@ fun SettingsContent(
     onBack: () -> Unit,
     showLogoutDialog: Boolean,
     onShowLogoutDialogChange: (Boolean) -> Unit,
+    showDeleteAccountDialog: Boolean = false,
+    onShowDeleteAccountDialogChange: (Boolean) -> Unit = {},
     onLogout: () -> Unit,
+    onDeleteAccountConfirm: () -> Unit = {},
     onLinkGoogle: () -> Unit,
     onLinkFacebook: () -> Unit,
-    onEmailCurrentPasswordChange: (String) -> Unit,
     onNewEmailChange: (String) -> Unit,
-    onUpdateEmail: () -> Unit,
-    onPasswordCurrentPasswordChange: (String) -> Unit,
-    onNewPasswordChange: (String) -> Unit,
-    onConfirmPasswordChange: (String) -> Unit,
-    onUpdatePassword: () -> Unit,
+    onRequestEmailChange: () -> Unit,
+    onRequestPasswordReset: () -> Unit,
     onShowQrDialog: () -> Unit = {},
     onOpenReminderSettings: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -250,29 +251,19 @@ fun SettingsContent(
                     }
                 }
 
-                // Update Email Section
-                SettingsCard(title = "Change Email") {
-                    if (state.hasPasswordAuthProvider) {
-                        OutlinedTextField(
-                            value = state.emailCurrentPassword,
-                            onValueChange = onEmailCurrentPasswordChange,
-                            label = { Text("Current Password") },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !state.isLoading,
-                            visualTransformation = PasswordVisualTransformation(),
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                                unfocusedBorderColor = cit.edu.primera.core.theme.InputBorder,
-                                focusedBorderColor = PrimeraViolet
-                            )
-                        )
-                        Spacer(Modifier.height(8.dp))
-                    }
+                // Request Email Change Section
+                SettingsCard(title = "Request Email Change") {
+                    Text(
+                        text = "Enter your desired new email address below. We will send a confirmation verification link to that address.",
+                        fontSize = 13.sp,
+                        color = cit.edu.primera.core.theme.TextSecondary,
+                        lineHeight = 18.sp
+                    )
+                    Spacer(Modifier.height(12.dp))
                     OutlinedTextField(
                         value = state.newEmail,
                         onValueChange = onNewEmailChange,
-                        label = { Text("New Email") },
+                        label = { Text("New Email Address") },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !state.isLoading,
                         singleLine = true,
@@ -284,64 +275,24 @@ fun SettingsContent(
                     )
                     Spacer(Modifier.height(16.dp))
                     PrimeraGradientButton(
-                        text = "Update Email",
-                        onClick = onUpdateEmail,
+                        text = "Send Email Change Link",
+                        onClick = onRequestEmailChange,
                         isLoading = state.isLoading
                     )
                 }
 
-                // Update Password Section
-                SettingsCard(title = "Change Password") {
-                    if (state.hasPasswordAuthProvider) {
-                        OutlinedTextField(
-                            value = state.passwordCurrentPassword,
-                            onValueChange = onPasswordCurrentPasswordChange,
-                            label = { Text("Current Password") },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !state.isLoading,
-                            visualTransformation = PasswordVisualTransformation(),
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                                unfocusedBorderColor = cit.edu.primera.core.theme.InputBorder,
-                                focusedBorderColor = PrimeraViolet
-                            )
-                        )
-                        Spacer(Modifier.height(8.dp))
-                    }
-                    OutlinedTextField(
-                        value = state.newPassword,
-                        onValueChange = onNewPasswordChange,
-                        label = { Text("New Password") },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !state.isLoading,
-                        visualTransformation = PasswordVisualTransformation(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = cit.edu.primera.core.theme.InputBorder,
-                            focusedBorderColor = PrimeraViolet
-                        )
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = state.confirmPassword,
-                        onValueChange = onConfirmPasswordChange,
-                        label = { Text("Confirm New Password") },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !state.isLoading,
-                        visualTransformation = PasswordVisualTransformation(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = cit.edu.primera.core.theme.InputBorder,
-                            focusedBorderColor = PrimeraViolet
-                        )
+                // Request Password Reset Section
+                SettingsCard(title = "Reset Password") {
+                    Text(
+                        text = "To update your password, request a password reset link sent directly to your registered email address.",
+                        fontSize = 13.sp,
+                        color = cit.edu.primera.core.theme.TextSecondary,
+                        lineHeight = 18.sp
                     )
                     Spacer(Modifier.height(16.dp))
                     PrimeraGradientButton(
-                        text = "Update Password",
-                        onClick = onUpdatePassword,
+                        text = "Request Password Reset Link",
+                        onClick = onRequestPasswordReset,
                         isLoading = state.isLoading
                     )
                 }
@@ -370,6 +321,20 @@ fun SettingsContent(
                     onClick = { onShowLogoutDialogChange(true) },
                     color = ErrorRed
                 )
+
+                // Delete Account Button
+                OutlinedButton(
+                    onClick = { onShowDeleteAccountDialogChange(true) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorRed),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, ErrorRed)
+                ) {
+                    Text(
+                        text = "Delete Account",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
 
@@ -422,6 +387,32 @@ fun SettingsContent(
                 }
             )
         }
+
+        if (showDeleteAccountDialog) {
+            AlertDialog(
+                onDismissRequest = { onShowDeleteAccountDialogChange(false) },
+                title = { Text("Delete Account?") },
+                text = {
+                    Text("Are you sure you want to delete your account? All your personal health records, profile details, and account data will be permanently deleted. This action cannot be undone.")
+                },
+                confirmButton = {
+                    OutlinedButton(
+                        onClick = {
+                            onShowDeleteAccountDialogChange(false)
+                            onDeleteAccountConfirm()
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorRed)
+                    ) {
+                        Text("Delete Account permanently")
+                    }
+                },
+                dismissButton = {
+                    OutlinedButton(onClick = { onShowDeleteAccountDialogChange(false) }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -465,13 +456,9 @@ private fun SettingsScreenPreview() {
             onLogout = {},
             onLinkGoogle = {},
             onLinkFacebook = {},
-            onEmailCurrentPasswordChange = {},
             onNewEmailChange = {},
-            onUpdateEmail = {},
-            onPasswordCurrentPasswordChange = {},
-            onNewPasswordChange = {},
-            onConfirmPasswordChange = {},
-            onUpdatePassword = {}
+            onRequestEmailChange = {},
+            onRequestPasswordReset = {}
         )
     }
 }

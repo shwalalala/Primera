@@ -196,6 +196,19 @@ class AuthDataSource {
         auth.currentUser?.verifyBeforeUpdateEmail(normalizeEmail(newEmail))?.await()
     }
 
+    suspend fun requestEmailChange(newEmail: String) {
+        val user = auth.currentUser ?: throw Exception("User is not authenticated")
+        val normalizedEmail = normalizeEmail(newEmail)
+        user.verifyBeforeUpdateEmail(normalizedEmail).await()
+    }
+
+    suspend fun deleteAccount() {
+        val user = auth.currentUser ?: throw Exception("User is not authenticated")
+        val userId = user.uid
+        firestore.collection("users").document(userId).delete().await()
+        user.delete().await()
+    }
+
     suspend fun updateEmail(currentPassword: String, newEmail: String) {
         if (hasPasswordAuthProvider()) {
             reauthenticate(currentPassword)
