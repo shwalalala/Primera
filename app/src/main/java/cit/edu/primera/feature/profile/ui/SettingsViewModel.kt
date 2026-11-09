@@ -13,21 +13,23 @@ class SettingsViewModel(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
+    private val userEmail: String
+        get() = try {
+            com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.email ?: ""
+        } catch (_: Exception) {
+            ""
+        }
+
     private val _uiState = MutableStateFlow(
         SettingsUiState(
             hasPasswordAuthProvider = authRepository.hasPasswordAuthProvider(),
-            authProviders = authRepository.getAuthProviders()
+            authProviders = authRepository.getAuthProviders(),
+            email = userEmail
         )
     )
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     fun onNewEmailChange(value: String) = _uiState.update { it.copy(newEmail = value) }
-    fun onEmailCurrentPasswordChange(value: String) =
-        _uiState.update { it.copy(emailCurrentPassword = value) }
-    fun onPasswordCurrentPasswordChange(value: String) =
-        _uiState.update { it.copy(passwordCurrentPassword = value) }
-    fun onNewPasswordChange(value: String) = _uiState.update { it.copy(newPassword = value) }
-    fun onConfirmPasswordChange(value: String) = _uiState.update { it.copy(confirmPassword = value) }
 
     fun linkGoogleAccount(idToken: String) {
         linkAccount(
@@ -69,58 +71,89 @@ class SettingsViewModel(
         }
     }
 
-    fun updateEmail() {
-        val currentPassword = _uiState.value.emailCurrentPassword
-        val newEmail = _uiState.value.newEmail
-        if (_uiState.value.hasPasswordAuthProvider && currentPassword.isBlank()) {
-            _uiState.update { it.copy(error = "Current password is required") }
-            return
+    private fun isValidEmail(email: String): Boolean {
+        return try {
+            val pattern = android.util.Patterns.EMAIL_ADDRESS
+            if (pattern != null) {
+                pattern.matcher(email).matches()
+            } else {
+                email.contains("@") && email.substringAfter("@").contains(".")
+            }
+        } catch (_: Throwable) {
+            email.contains("@") && email.substringAfter("@").contains(".")
         }
+    }
+
+    fun requestEmailChange() {
+        val newEmail = _uiState.value.newEmail.trim()
         if (newEmail.isBlank()) {
-            _uiState.update { it.copy(error = "Email cannot be empty") }
+            _uiState.update { it.copy(error = "Please enter a valid new email address") }
             return
         }
-        
+        if (!isValidEmail(newEmail)) {
+            _uiState.update { it.copy(error = "Invalid email format") }
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, successMessage = null) }
-            authRepository.updateEmail(currentPassword, newEmail).fold(
+            authRepository.requestEmailChange(newEmail).fold(
                 onSuccess = {
-                    _uiState.update { it.copy(isLoading = false, successMessage = "Email updated successfully") }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            newEmail = "",
+                            successMessage = "A verification link has been sent to $newEmail. Please check your inbox to confirm the change."
+                        )
+                    }
                 },
                 onFailure = { error ->
-                    _uiState.update { it.copy(isLoading = false, error = error.message) }
+                    _uiState.update { it.copy(isLoading = false, error = error.message ?: "Failed to request email change") }
                 }
             )
         }
     }
 
-    fun updatePassword() {
-        val currentPassword = _uiState.value.passwordCurrentPassword
-        val newPassword = _uiState.value.newPassword
-        val confirmPassword = _uiState.value.confirmPassword
-        if (_uiState.value.hasPasswordAuthProvider && currentPassword.isBlank()) {
-            _uiState.update { it.copy(error = "Current password is required") }
+    fun sendPasswordResetEmail() {
+        val emailToSend = userEmail.ifBlank { _uiState.value.email }
+        if (emailToSend.isBlank()) {
+            _uiState.update { it.copy(error = "No registered email address found for this account.") }
             return
         }
-        
-        if (newPassword.length < 6) {
-            _uiState.update { it.copy(error = "Password must be at least 6 characters") }
-            return
-        }
-        
-        if (newPassword != confirmPassword) {
-            _uiState.update { it.copy(error = "Passwords do not match") }
-            return
-        }
-        
+
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, successMessage = null) }
-            authRepository.updatePassword(currentPassword, newPassword).fold(
+            authRepository.sendPasswordResetEmail(emailToSend).fold(
                 onSuccess = {
-                    _uiState.update { it.copy(isLoading = false, successMessage = "Password updated successfully") }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            successMessage = "A password reset link has been sent to $emailToSend."
+                        )
+                    }
                 },
                 onFailure = { error ->
-                    _uiState.update { it.copy(isLoading = false, error = error.message) }
+                    _uiState.update { it.copy(isLoading = false, error = error.message ?: "Failed to send password reset email") }
+                }
+            )
+        }
+    }
+
+    fun deleteAccount(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null, successMessage = null) }
+            authRepository.deleteAccount().fold(
+                onSuccess = {
+                    _uiState.update { it.copy(isLoading = false) }
+                    onSuccess()
+                },
+                onFailure = { error ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = error.message ?: "Account deletion failed. Re-authenticating by logging out and logging back in may be required."
+                        )
+                    }
                 }
             )
         }

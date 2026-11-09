@@ -109,6 +109,16 @@ class AuthRepositoryImpl(
         }
     }
 
+    override suspend fun requestEmailChange(newEmail: String): Result<Unit> {
+        return try {
+            dataSource.requestEmailChange(newEmail)
+            dataSource.logActivity("Email Change Request", "Verification link sent to new email", dataSource.getCurrentUserId())
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun updateEmail(currentPassword: String, newEmail: String): Result<Unit> {
         return try {
             dataSource.updateEmail(currentPassword, newEmail)
@@ -123,6 +133,17 @@ class AuthRepositoryImpl(
         return try {
             dataSource.updatePassword(currentPassword, newPassword)
             dataSource.logActivity("Password Update", "User updated password", dataSource.getCurrentUserId())
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun deleteAccount(): Result<Unit> {
+        return try {
+            val userId = dataSource.getCurrentUserId()
+            dataSource.logActivity("Account Deletion", "User deleted account", userId)
+            dataSource.deleteAccount()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

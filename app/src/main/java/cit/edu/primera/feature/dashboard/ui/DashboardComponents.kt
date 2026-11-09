@@ -213,8 +213,7 @@ fun StatsGrid(
                 unit = "",
                 icon = painterResource(R.drawable.sleep),
                 iconBgColor = SleepBg,
-                trendText = if (state.isWatchSynced) state.sleepQuality.ifBlank { "—" } else "--",
-                trendColor = TrendGreen,
+                trendText = null,
                 modifier = Modifier.weight(1f)
             )
             HealthStatCard(
@@ -223,8 +222,7 @@ fun StatsGrid(
                 unit = "%",
                 icon = painterResource(R.drawable.sp02),
                 iconBgColor = Color(0xFFFFEBEE),
-                trendText = if (state.isWatchSynced) "Normal" else null,
-                trendColor = TrendGreen,
+                trendText = null,
                 modifier = Modifier.weight(1f)
             )
         }
