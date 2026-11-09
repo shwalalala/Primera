@@ -37,6 +37,8 @@ interface AppContainer {
     val checkinsRepository: CheckinsRepository
     val goalsRepository: GoalsRepository
     val preferenceRepository: PreferenceRepository
+    val notificationRepository: cit.edu.primera.feature.notification.data.NotificationRepository
+    val reminderManager: cit.edu.primera.core.notification.ReminderManager
     val healthConnectManager: HealthConnectManager
     val networkMonitor: NetworkMonitor
     val symptomExtractor: SymptomExtractor
@@ -121,6 +123,14 @@ class AppContainerImpl(private val context: Context) : AppContainer {
 
     override val preferenceRepository: PreferenceRepository by lazy {
         PreferenceRepositoryImpl(context)
+    }
+
+    override val notificationRepository: cit.edu.primera.feature.notification.data.NotificationRepository by lazy {
+        cit.edu.primera.feature.notification.data.NotificationRepositoryImpl(context)
+    }
+
+    override val reminderManager: cit.edu.primera.core.notification.ReminderManager by lazy {
+        cit.edu.primera.core.notification.ReminderManager(context)
     }
 
     override val healthConnectManager: HealthConnectManager by lazy {

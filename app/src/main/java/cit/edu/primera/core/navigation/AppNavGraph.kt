@@ -80,7 +80,9 @@ private val bottomNavRoutes = setOf(
 @Composable
 fun AppNavGraph(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Routes.SPLASH
+    startDestination: String = Routes.SPLASH,
+    pendingDestinationRoute: String? = null,
+    onPendingRouteHandled: () -> Unit = {}
 ) {
     val authViewModel: AuthViewModel = viewModel(factory = ViewModelProvider.Factory)
     val currentBackStack by navController.currentBackStackEntryAsState()
@@ -94,6 +96,23 @@ fun AppNavGraph(
     val showMicCoachmark by dashboardViewModel.showMicCoachmark.collectAsStateWithLifecycle()
     val sidebarUserData = (dashboardUiState as? DashboardUiState.Success)?.data
     var showSummaryQrDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(pendingDestinationRoute, currentRoute) {
+        if (!pendingDestinationRoute.isNullOrBlank() && currentRoute != null && currentRoute != Routes.SPLASH) {
+            val target = pendingDestinationRoute
+            onPendingRouteHandled()
+            val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+            if (currentUser != null || target == Routes.LOGIN || target == Routes.WELCOME) {
+                navController.navigate(target) {
+                    launchSingleTop = true
+                }
+            } else {
+                navController.navigate(Routes.LOGIN) {
+                    launchSingleTop = true
+                }
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         authViewModel.effect.collect { effect ->
@@ -169,6 +188,9 @@ fun AppNavGraph(
                 },
                 onNotificationClick = {
                     coroutineScope.launch { drawerState.close() }
+                    navController.navigate(Routes.NOTIFICATIONS) {
+                        launchSingleTop = true
+                    }
                 },
                 onLogoutClick = {
                     coroutineScope.launch { drawerState.close() }
@@ -241,9 +263,19 @@ fun AppNavGraph(
                             }
                         },
                         onNavigateToDashboard = {
-                            navController.navigate(Routes.DASHBOARD) {
-                                popUpTo(Routes.SPLASH) {
-                                    inclusive = true
+                            if (!pendingDestinationRoute.isNullOrBlank()) {
+                                val target = pendingDestinationRoute
+                                onPendingRouteHandled()
+                                navController.navigate(target) {
+                                    popUpTo(Routes.SPLASH) {
+                                        inclusive = true
+                                    }
+                                }
+                            } else {
+                                navController.navigate(Routes.DASHBOARD) {
+                                    popUpTo(Routes.SPLASH) {
+                                        inclusive = true
+                                    }
                                 }
                             }
                         },
@@ -555,6 +587,33 @@ fun AppNavGraph(
                         },
                         onLogout = {
                             authViewModel.logout()
+                        },
+                        onOpenReminderSettings = {
+                            navController.navigate(Routes.REMINDER_SETTINGS)
+                        }
+                    )
+                }
+
+                composable(Routes.NOTIFICATIONS) {
+                    cit.edu.primera.feature.notification.ui.NotificationsScreen(
+                        onBack = {
+                            navController.popBackStack()
+                        },
+                        onNavigate = { route ->
+                            navController.navigate(route) {
+                                launchSingleTop = true
+                            }
+                        },
+                        onOpenSettings = {
+                            navController.navigate(Routes.REMINDER_SETTINGS)
+                        }
+                    )
+                }
+
+                composable(Routes.REMINDER_SETTINGS) {
+                    cit.edu.primera.feature.notification.ui.ReminderSettingsScreen(
+                        onBack = {
+                            navController.popBackStack()
                         }
                     )
                 }

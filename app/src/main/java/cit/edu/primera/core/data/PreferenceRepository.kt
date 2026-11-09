@@ -23,6 +23,10 @@ interface PreferenceRepository {
     fun setProfilePictureUri(userId: String, uri: String?)
     fun hasSeenMicCoachmark(userId: String): Boolean
     fun setMicCoachmarkDismissed(userId: String)
+    fun isReminderEnabled(category: String): Boolean
+    fun setReminderEnabled(category: String, enabled: Boolean)
+    fun getReminderTime(category: String): Pair<Int, Int>
+    fun setReminderTime(category: String, hour: Int, minute: Int)
     fun clearLocalData()
 }
 
@@ -151,6 +155,34 @@ class PreferenceRepositoryImpl(context: Context) : PreferenceRepository {
         val key =
             if (userId.isBlank()) KEY_MIC_COACHMARK_SEEN + "guest" else KEY_MIC_COACHMARK_SEEN + userId
         sharedPreferences.edit { putBoolean(key, true) }
+    }
+
+    override fun isReminderEnabled(category: String): Boolean {
+        return sharedPreferences.getBoolean("reminder_enabled_${category.lowercase()}", true)
+    }
+
+    override fun setReminderEnabled(category: String, enabled: Boolean) {
+        sharedPreferences.edit { putBoolean("reminder_enabled_${category.lowercase()}", enabled) }
+    }
+
+    override fun getReminderTime(category: String): Pair<Int, Int> {
+        val defaultHour = when (category.lowercase()) {
+            "checkin" -> 9
+            "hydration" -> 14
+            "wellness" -> 20
+            else -> 9
+        }
+        val defaultMinute = 0
+        val hour = sharedPreferences.getInt("reminder_hour_${category.lowercase()}", defaultHour)
+        val minute = sharedPreferences.getInt("reminder_minute_${category.lowercase()}", defaultMinute)
+        return Pair(hour, minute)
+    }
+
+    override fun setReminderTime(category: String, hour: Int, minute: Int) {
+        sharedPreferences.edit {
+            putInt("reminder_hour_${category.lowercase()}", hour)
+            putInt("reminder_minute_${category.lowercase()}", minute)
+        }
     }
 
     override fun clearLocalData() {

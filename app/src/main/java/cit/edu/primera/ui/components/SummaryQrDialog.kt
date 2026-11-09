@@ -326,7 +326,7 @@ fun SummaryQrDialog(
 
                 // Option 4: Copy Link or Summary Text
                 val context = LocalContext.current
-                val clipboardManager = LocalClipboard.current
+                val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
                 SummaryOptionCard(
                     icon = Icons.Default.ContentCopy,
                     title = if (!pdfUrl.isNullOrBlank()) "Copy PDF Link" else "Copy Summary Text",

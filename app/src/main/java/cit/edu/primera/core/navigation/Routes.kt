@@ -18,4 +18,6 @@ object Routes {
     const val PROFILE       = "profile"
     const val SETTINGS      = "settings"
     const val NEWS_EDUCATION = "news_education"
+    const val NOTIFICATIONS = "notifications"
+    const val REMINDER_SETTINGS = "reminder_settings"
 }

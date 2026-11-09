@@ -902,6 +902,10 @@ private val previewProfileViewModel by lazy {
             override fun setProfilePictureUri(userId: String, uri: String?) {}
             override fun hasSeenMicCoachmark(userId: String) = true
             override fun setMicCoachmarkDismissed(userId: String) {}
+            override fun isReminderEnabled(category: String) = true
+            override fun setReminderEnabled(category: String, enabled: Boolean) {}
+            override fun getReminderTime(category: String) = Pair(9, 0)
+            override fun setReminderTime(category: String, hour: Int, minute: Int) {}
             override fun clearLocalData() {}
         }
     )
