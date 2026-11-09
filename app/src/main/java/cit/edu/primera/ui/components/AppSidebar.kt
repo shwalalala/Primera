@@ -69,7 +69,7 @@ fun AppSidebar(
     onEditProfilePicture: () -> Unit,
     onNotificationClick: () -> Unit,
     onLogoutClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val entries = listOf(
         SidebarEntry.Header("PREFERENCES"),
@@ -84,8 +84,8 @@ fun AppSidebar(
         SidebarEntry.Item(
             Routes.NEWS_EDUCATION,
             "News & Education",
-            Icons.AutoMirrored.Filled.MenuBook
-        )
+            Icons.AutoMirrored.Filled.MenuBook,
+        ),
     )
 
     Surface(
@@ -94,15 +94,15 @@ fun AppSidebar(
             .width(300.dp)
             .clip(RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp)),
         color = SurfaceWhite,
-        tonalElevation = 8.dp
+        tonalElevation = 8.dp,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxHeight()
-                .background(BackgroundCream)
+                .background(SurfaceWhite)
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .padding(vertical = 16.dp, horizontal = 16.dp)
+                .padding(vertical = 16.dp, horizontal = 16.dp),
         ) {
             // Top Bar: Back Button
             Row(
@@ -110,16 +110,16 @@ fun AppSidebar(
                     .fillMaxWidth()
                     .padding(bottom = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(CircleShape)
-                        .background(SurfaceWhite)
+                        .background(BackgroundCream)
                         .border(1.dp, MenuButtonBorder, CircleShape)
                         .clickable { onClose() },
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBackIos,
@@ -127,7 +127,7 @@ fun AppSidebar(
                         tint = PrimeraViolet,
                         modifier = Modifier
                             .size(14.dp)
-                            .padding(start = 3.dp)
+                            .padding(start = 3.dp),
                     )
                 }
 
@@ -135,7 +135,7 @@ fun AppSidebar(
                     text = "Menu",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = TextPrimary,
                 )
 
                 Spacer(modifier = Modifier.size(36.dp))
@@ -145,9 +145,9 @@ fun AppSidebar(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                color = SurfaceWhite,
+                color = BackgroundCream,
                 border = BorderStroke(1.dp, MenuButtonBorder),
-                tonalElevation = 2.dp
+                tonalElevation = 0.dp,
             ) {
                 Row(
                     modifier = Modifier

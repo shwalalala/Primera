@@ -3,68 +3,67 @@ package cit.edu.primera.core.theme
 import androidx.compose.ui.graphics.Color
 
 // ── Backgrounds ──────────────────────────────────────────────────────────────
-val BackgroundCream    = Color(0xFFF5F1FB)
+val BackgroundCream = Color(0xFFF6F3FC)
 val SurfaceWhite       = Color(0xFFFFFFFF)
-val ArchFill           = Color(0xFFEDE8F8)
+val ArchFill = Color(0xFFEAE3F7)
 
-val BackgroundSection  = Color(0x1A9C62C0)
+val BackgroundSection = Color(0x1F7E42D5)
 
 // ── Brand / Primary ──────────────────────────────────────────────────────────
-val PrimeraViolet      = Color(0xFFB8A8D9)  // gradient start
-val PrimeraLilac       = Color(0xFFF1DCDB)  // gradient end
-val PrimeraLogoStart   = Color(0xFF8C62C0)
-val PrimeraLogoEnd     = Color(0xFFA855F7)
+val PrimeraViolet = Color(0xFF7B4BC0)  // gradient start / primary action
+val PrimeraLilac = Color(0xFFE8D7F7)  // gradient end / soft accent
+val PrimeraLogoStart = Color(0xFF7C3AED)
+val PrimeraLogoEnd = Color(0xFF9333EA)
 
 // ── Text ─────────────────────────────────────────────────────────────────────
-val TextPrimary        = Color(0xFF1C1C2E)
-val TextSecondary      = Color(0xFF8B8FA8)
-val TextHint           = Color(0xFFBBB8CC)
-val TextLink           = Color(0xFF7C5CBF)
-val TextBlueLink       = Color(0xFF5C9DFF)
+val TextPrimary = Color(0xFF1A1829)
+val TextSecondary = Color(0xFF5E627D)
+val TextHint = Color(0xFF8E91AA)
+val TextLink = Color(0xFF7039C9)
+val TextBlueLink = Color(0xFF2563EB)
 
 // ── Input / Toggle / UI ───────────────────────────────────────────────────────
-val InputBorder        = Color(0xFFE8E4F0)
-val ToggleTrack        = Color(0xFFEEEBF5)
-val CheckboxBorder     = Color(0xFFCBBEE8)
-val ErrorRed = Color(0xFF7E2420)
-val DividerColor       = Color(0xFFE0DCF0)
-val IconTint           = Color(0xFF6B7280)
-val SectionHeaderBorder = Color(0xFFDDDDDD)
-val PagerIndicatorInactive = Color(0xFFD3D3D3)
-val OnboardingRingTrack = Color(0xFFE0E0E0)
+val InputBorder = Color(0xFFE2DDF0)
+val ToggleTrack = Color(0xFFECE7F5)
+val CheckboxBorder = Color(0xFFA78BFA)
+val ErrorRed = Color(0xFFDC2626)
+val DividerColor = Color(0xFFE7E2F2)
+val IconTint = Color(0xFF5E627D)
+val SectionHeaderBorder = Color(0xFFE2DDF0)
+val PagerIndicatorInactive = Color(0xFFCBD5E1)
+val OnboardingRingTrack = Color(0xFFE2E8F0)
 
 // ── Dashboard Specific ───────────────────────────────────────────────────────
-val DashboardCardBorder = Color(0xFFF0F0F0)
-val DashboardLogBorder  = Color(0xFFF5F5F5)
-val CalendarDaySelected = Color(0xFFB8A8D9)
+val DashboardCardBorder = Color(0xFFECE7F5)
+val DashboardLogBorder = Color(0xFFF1EDF8)
+val CalendarDaySelected = Color(0xFF7E42D5)
 val CalendarDayBg       = Color(0xFFFFFDFD)
-val RingTrackColor      = Color(0x4DDEDEDE)
-val RingProgressColor   = Color(0xFFC5B4E3)
-val DaysLeftBg          = Color(0xFFF5F0FF)
-val HeartRateBg         = Color(0xFFFFEBEE)
-val StepsBg             = Color(0xFFF1F8E9)
-val SleepBg             = Color(0xFFF3E5F5)
-val TrendGreen          = Color(0xFF4CAF50)
-val TrendRed = Color(0xFF7E2420)
-val MenuButtonBg        = Color(0xFFF5ECEC)
-val MenuButtonBorder    = Color(0xFFF0F0F0)
+val RingTrackColor = Color(0x207E42D5)
+val RingProgressColor = Color(0xFF7E42D5)
+val DaysLeftBg = Color(0xFFF3E8FF)
+val HeartRateBg = Color(0xFFFEE2E2)
+val StepsBg = Color(0xFFDCFCE7)
+val SleepBg = Color(0xFFF3E8FF)
+val TrendGreen = Color(0xFF22C55E)
+val TrendRed = Color(0xFFDC2626)
+val MenuButtonBg = Color(0xFFF6F0FA)
+val MenuButtonBorder = Color(0xFFEAE3F7)
 
 // ── Symptom Colors ──────────────────────────────────────────────────────────
-val NauseaBg            = Color(0xFFFFF3E0)
-val NauseaText          = Color(0xFFE65100)
-val BackPainBg          = Color(0xFFE8EAF6)
-val BackPainText        = Color(0xFF3949AB)
-val FatigueBg           = Color(0xFFF3E5F5)
-val FatigueText         = Color(0xFF7B1FA2)
+val NauseaBg = Color(0xFFFFEDD5)
+val NauseaText = Color(0xFFEA580C)
+val BackPainBg = Color(0xFFE0E7FF)
+val BackPainText = Color(0xFF4338CA)
+val FatigueBg = Color(0xFFF3E8FF)
+val FatigueText = Color(0xFF9333EA)
 
 // ── Log Colors ──────────────────────────────────────────────────────────────
-val LogPain             = Color(0xFFEF9A9A)
-val LogNutrition        = Color(0xFFA5D6A7)
-val LogBaby             = Color(0xFF9FA8DA)
-val LogOther            = Color(0xFFB0BEC5)
+val LogPain = Color(0xFFF87171)
+val LogNutrition = Color(0xFF4ADE80)
+val LogBaby = Color(0xFF818CF8)
+val LogOther = Color(0xFF94A3B8)
 
-//  ── Indicator Colors ──────────────────────────────────────────────────────────
-
-val Good = Color(0xFFA1D386)
-val Moderate = Color(0xFFFBBB67)
-val Warning = Color(0xFFF28B82)
+// ── Indicator Colors ────────────────────────────────────────────────────────
+val Good = Color(0xFF22C55E)
+val Moderate = Color(0xFFF59E0B)
+val Warning = Color(0xFFEF4444)
