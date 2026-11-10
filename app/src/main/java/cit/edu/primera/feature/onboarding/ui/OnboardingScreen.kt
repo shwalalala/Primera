@@ -1,12 +1,27 @@
 package cit.edu.primera.feature.onboarding.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,8 +29,24 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,10 +65,30 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cit.edu.primera.core.di.ViewModelProvider
-import cit.edu.primera.core.theme.*
-import cit.edu.primera.ui.components.*
+import cit.edu.primera.core.theme.BackgroundCream
+import cit.edu.primera.core.theme.ErrorRed
+import cit.edu.primera.core.theme.InputBorder
+import cit.edu.primera.core.theme.PrimeraLilac
+import cit.edu.primera.core.theme.PrimeraTheme
+import cit.edu.primera.core.theme.PrimeraViolet
+import cit.edu.primera.core.theme.SurfaceWhite
+import cit.edu.primera.core.theme.TextHint
+import cit.edu.primera.core.theme.TextPrimary
+import cit.edu.primera.core.theme.TextSecondary
+import cit.edu.primera.ui.components.LabeledField
+import cit.edu.primera.ui.components.PrimeraDatePicker
+import cit.edu.primera.ui.components.PrimeraGradientButton
+import cit.edu.primera.ui.components.PrimeraLabel
+import cit.edu.primera.ui.components.PrimeraOptionButton
+import cit.edu.primera.ui.components.PrimeraOptionCard
+import cit.edu.primera.ui.components.PrimeraOptionChip
+import cit.edu.primera.ui.components.PrimeraOutlinedButton
+import cit.edu.primera.ui.components.PrimeraSubheader
+import cit.edu.primera.ui.components.PrimeraTitle
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun OnboardingHostScreen(
@@ -46,6 +97,14 @@ fun OnboardingHostScreen(
     viewModel: OnboardingViewModel = viewModel(factory = ViewModelProvider.Factory)
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    BackHandler {
+        if (state.currentStep == OnboardingStep.BIRTHDAY) {
+            onBack()
+        } else {
+            viewModel.previousStep()
+        }
+    }
 
     if (state.isCompleted) {
         LaunchedEffect(Unit) {
@@ -662,7 +721,9 @@ fun EddStep(
     ) {
         if (isTentative) {
             Card(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
                 colors = CardDefaults.cardColors(containerColor = PrimeraViolet.copy(alpha = 0.05f)),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.dp, PrimeraViolet.copy(alpha = 0.2f))
@@ -828,7 +889,11 @@ fun PregnancyHistoryStep(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(if (isSel) PrimeraViolet else if (isCompleted) PrimeraViolet.copy(alpha = 0.2f) else SurfaceWhite)
+                            .background(
+                                if (isSel) PrimeraViolet else if (isCompleted) PrimeraViolet.copy(
+                                    alpha = 0.2f
+                                ) else SurfaceWhite
+                            )
                             .border(1.dp, if (isSel) PrimeraViolet else InputBorder, CircleShape)
                             .clickable { onSelectPregnancy(index) },
                         contentAlignment = Alignment.Center
@@ -860,8 +925,16 @@ fun PregnancyHistoryStep(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(if (canAdd) PrimeraViolet.copy(alpha = 0.1f) else SurfaceWhite.copy(alpha = 0.5f))
-                    .border(1.dp, if (canAdd) PrimeraViolet else InputBorder.copy(alpha = 0.5f), CircleShape)
+                    .background(
+                        if (canAdd) PrimeraViolet.copy(alpha = 0.1f) else SurfaceWhite.copy(
+                            alpha = 0.5f
+                        )
+                    )
+                    .border(
+                        1.dp,
+                        if (canAdd) PrimeraViolet else InputBorder.copy(alpha = 0.5f),
+                        CircleShape
+                    )
                     .clickable(enabled = canAdd) { onAddPregnancy() },
                 contentAlignment = Alignment.Center
             ) {

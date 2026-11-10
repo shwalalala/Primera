@@ -379,6 +379,7 @@ fun AppNavGraph(
                             }
                         },
                         onBack = {
+                            authViewModel.deleteIncompleteAccountAndLogout()
                             navController.navigate(Routes.LOGIN) {
                                 popUpTo(Routes.ONBOARDING) {
                                     inclusive = true

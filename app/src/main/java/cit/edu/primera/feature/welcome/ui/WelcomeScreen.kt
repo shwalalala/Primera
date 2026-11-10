@@ -50,12 +50,12 @@ val defaultWelcomePages = listOf(
         description = "Follow baby growth week by week with fruit size comparisons, trimester milestones, and progress updates."
     ),
     WelcomePageData(
-        imageRes = R.drawable.welcome_2,
+        imageRes = R.drawable.welcome_3,
         title = "Daily Health & Voice Logging",
         description = "Log symptoms, mood, sleep, and hydration effortlessly with AI-assisted voice check-ins."
     ),
     WelcomePageData(
-        imageRes = R.drawable.welcome_3,
+        imageRes = R.drawable.welcome_2,
         title = "Smartwatch Sync & Insights",
         description = "Sync heart rate, steps, and sleep from Health Connect, view health trends, and set personal goals."
     )
