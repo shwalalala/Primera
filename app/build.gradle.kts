@@ -98,6 +98,7 @@ dependencies {
 
     // Image Loading (Coil)
     implementation(libs.coil.compose)
+    implementation(libs.coil.gif)
 
     // QR Code Generation
     implementation(libs.zxing.core)
