@@ -1,47 +1,76 @@
 package cit.edu.primera.feature.welcome.ui
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cit.edu.primera.R
 import cit.edu.primera.core.di.ViewModelProvider
-import cit.edu.primera.ui.components.PrimeraGradientButton
-import cit.edu.primera.core.theme.*
+import cit.edu.primera.core.theme.BackgroundCream
+import cit.edu.primera.core.theme.PrimeraLilac
+import cit.edu.primera.core.theme.PrimeraTheme
+import cit.edu.primera.core.theme.TextPrimary
 import kotlinx.coroutines.launch
 
+/**
+ * Actual main features of Primera present in the codebase:
+ * 1. Pregnancy & Baby Progress (week by week fruit sizes, trimester milestones, days left)
+ * 2. Daily Health & Voice Logging (symptom tracker, mood, hydration, AI speech-to-text logging)
+ * 3. Smartwatch Sync & Insights (steps, heart rate, sleep via Health Connect, wellness goals)
+ */
+val defaultWelcomePages = listOf(
+    WelcomePageData(
+        imageRes = R.drawable.welcome_1,
+        title = "Track Your Pregnancy",
+        description = "Follow baby growth week by week with fruit size comparisons, trimester milestones, and progress updates."
+    ),
+    WelcomePageData(
+        imageRes = R.drawable.welcome_2,
+        title = "Daily Health & Voice Logging",
+        description = "Log symptoms, mood, sleep, and hydration effortlessly with AI-assisted voice check-ins."
+    ),
+    WelcomePageData(
+        imageRes = R.drawable.welcome_3,
+        title = "Smartwatch Sync & Insights",
+        description = "Sync heart rate, steps, and sleep from Health Connect, view health trends, and set personal goals."
+    )
+)
+
+/**
+ * Stateful entry point for WelcomeScreen that manages ViewModel effects and navigation.
+ */
 @Composable
 fun WelcomeScreen(
     onNavigateToRegister: () -> Unit = {},
     onNavigateToLogin: () -> Unit = {},
     onNavigateToAuth: () -> Unit = onNavigateToRegister,
-    viewModel: WelcomeViewModel = viewModel(factory = ViewModelProvider.Factory)
+    viewModel: WelcomeViewModel = viewModel(factory = ViewModelProvider.Factory),
 ) {
-    val pagerState = rememberPagerState(pageCount = { 3 })
-    val coroutineScope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(Unit) {
@@ -54,26 +83,49 @@ fun WelcomeScreen(
         }
     }
 
-    val onboardingPages = listOf(
-        OnboardingPageData(
-            imageRes = R.drawable.welcome_1,
-            title = "Welcome to Primera",
-            description = "Your personalized companion for a healthy and happy pregnancy journey."
-        ),
-        OnboardingPageData(
-            imageRes = R.drawable.welcome_2,
-            title = "Track Your Progress",
-            description = "Easily monitor your baby's growth and your health milestones every step of the way."
-        ),
-        OnboardingPageData(
-            imageRes = R.drawable.welcome_3,
-            title = "Personalized Insights",
-            description = "Get expert advice and tips tailored to your specific stage of pregnancy."
-        )
+    val pagerState = rememberPagerState(pageCount = { defaultWelcomePages.size })
+    val coroutineScope = rememberCoroutineScope()
+
+    WelcomeScreenContent(
+        pages = defaultWelcomePages,
+        pagerState = pagerState,
+        onContinueClick = {
+            keyboardController?.hide()
+            if (pagerState.currentPage < (defaultWelcomePages.size - 1)) {
+                coroutineScope.launch {
+                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                }
+            } else {
+                viewModel.onGetStarted()
+            }
+        },
+        onSkipClick = {
+            keyboardController?.hide()
+            viewModel.onSkip()
+        },
+        onLoginClick = {
+            keyboardController?.hide()
+            viewModel.onLoginClicked()
+        }
     )
+}
+
+/**
+ * Minimalist stateless screen layout component.
+ */
+@Composable
+fun WelcomeScreenContent(
+    pages: List<WelcomePageData>,
+    pagerState: PagerState,
+    onContinueClick: () -> Unit,
+    onSkipClick: () -> Unit,
+    onLoginClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val isLastPage = pagerState.currentPage == (pages.size - 1)
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(
                 brush = Brush.verticalGradient(
@@ -83,150 +135,128 @@ fun WelcomeScreen(
                     )
                 )
             )
+            .statusBarsPadding()
+            .navigationBarsPadding()
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Top Bar with Skip Button
+            WelcomeTopBar(
+                onSkipClick = onSkipClick,
+                showSkip = !isLastPage
+            )
+
+            // Horizontal Pager for Feature Pages
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
             ) { page ->
-                OnboardingPage(data = onboardingPages[page])
+                WelcomePageCard(data = pages[page])
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Minimalist Page Indicator Dots
+            WelcomePagerIndicator(
+                pageCount = pages.size,
+                currentPage = pagerState.currentPage,
+                modifier = Modifier.padding(vertical = 12.dp)
+            )
 
-            // Page Indicators
-            Row(
-                Modifier
-                    .height(30.dp)
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                repeat(3) { iteration ->
-                    val color = if (pagerState.currentPage == iteration) PrimeraViolet else Color.LightGray
-                    Box(
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .clip(CircleShape)
-                            .background(color)
-                            .size(10.dp)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Bottom CTA Section
+            WelcomeBottomActions(
+                isLastPage = isLastPage,
+                onContinueClick = onContinueClick,
+                onLoginClick = onLoginClick
+            )
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// PREVIEWS - Show individual slides and a combined preview of ALL slides at once
+// ---------------------------------------------------------------------------
+
+@Preview(showBackground = true, name = "ALL SLIDES AT A GLANCE", widthDp = 380, heightDp = 1800)
+@Composable
+private fun WelcomeScreen_AllPagesPreview() {
+    PrimeraTheme {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(BackgroundCream)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            defaultWelcomePages.forEachIndexed { index, page ->
+                Text(
+                    text = "Slide ${index + 1} of ${defaultWelcomePages.size}: ${page.title}",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(520.dp)
+                ) {
+                    WelcomeScreenContent(
+                        pages = defaultWelcomePages,
+                        pagerState = rememberPagerState(initialPage = index, pageCount = { defaultWelcomePages.size }),
+                        onContinueClick = {},
+                        onSkipClick = {},
+                        onLoginClick = {}
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Navigation Button
-            PrimeraGradientButton(
-                text = if (pagerState.currentPage == 2) "Get Started" else "Continue",
-                onClick = {
-                    keyboardController?.hide()
-                    if (pagerState.currentPage < 2) {
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                        }
-                    } else {
-                        viewModel.onGetStarted()
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth(0.85f)
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 32.dp)
-            ) {
-                Text(
-                    text = "Already have an account? ",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary
-                )
-                Text(
-                    text = "Log In",
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = PrimeraViolet,
-                    modifier = Modifier.clickable { viewModel.onLoginClicked() }
-                )
-            }
-        }
-
-        // Skip Button
-        if (pagerState.currentPage < 2) {
-            TextButton(
-                onClick = { viewModel.onSkip() },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 16.dp, end = 16.dp)
-            ) {
-                Text(
-                    text = "Skip",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary
-                )
-            }
         }
     }
 }
 
-@Composable
-fun OnboardingPage(data: OnboardingPageData) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Image(
-            painter = painterResource(id = data.imageRes),
-            contentDescription = null,
-            modifier = Modifier
-                .fillMaxWidth(0.85f)
-                .aspectRatio(1f),
-            contentScale = ContentScale.Fit
-        )
-
-        Spacer(modifier = Modifier.height(40.dp))
-
-        Text(
-            text = data.title,
-            style = MaterialTheme.typography.displayLarge.copy(
-                fontWeight = FontWeight.Bold,
-                fontSize = 28.sp
-            ),
-            color = TextPrimary,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = data.description,
-            style = MaterialTheme.typography.bodyLarge,
-            color = TextSecondary,
-            textAlign = TextAlign.Center,
-            lineHeight = 24.sp
-        )
-    }
-}
-
-data class OnboardingPageData(
-    val imageRes: Int,
-    val title: String,
-    val description: String
-)
-
-@Preview(showBackground = true, name = "Welcome Screen - Page 1")
+@Preview(showBackground = true, name = "Slide 1: Track Your Pregnancy")
 @Composable
 private fun WelcomeScreenPreview1() {
     PrimeraTheme {
-        WelcomeScreen()
+        WelcomeScreenContent(
+            pages = defaultWelcomePages,
+            pagerState = rememberPagerState(initialPage = 0, pageCount = { defaultWelcomePages.size }),
+            onContinueClick = {},
+            onSkipClick = {},
+            onLoginClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Slide 2: Health & Voice Logging")
+@Composable
+private fun WelcomeScreenPreview2() {
+    PrimeraTheme {
+        WelcomeScreenContent(
+            pages = defaultWelcomePages,
+            pagerState = rememberPagerState(initialPage = 1, pageCount = { defaultWelcomePages.size }),
+            onContinueClick = {},
+            onSkipClick = {},
+            onLoginClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Slide 3: Smartwatch Sync & Insights")
+@Composable
+private fun WelcomeScreenPreview3() {
+    PrimeraTheme {
+        WelcomeScreenContent(
+            pages = defaultWelcomePages,
+            pagerState = rememberPagerState(initialPage = 2, pageCount = { defaultWelcomePages.size }),
+            onContinueClick = {},
+            onSkipClick = {},
+            onLoginClick = {}
+        )
     }
 }
