@@ -1,5 +1,6 @@
 package cit.edu.primera.feature.onboarding.data
 
+import cit.edu.primera.core.util.CryptoManager
 import cit.edu.primera.feature.onboarding.domain.OnboardingProfile
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -17,43 +18,45 @@ class OnboardingRepositoryImpl : OnboardingRepository {
 
             val userEmail = profile.email?.takeIf { it.isNotBlank() } ?: auth.currentUser?.email
 
+            val pregnancyHistoriesMaps = profile.pregnancyHistories.map { history ->
+                mapOf(
+                    "pregnancyNumber" to CryptoManager.encryptInt(history.pregnancyNumber),
+                    "deliveryDate" to CryptoManager.encryptDate(history.deliveryDate),
+                    "deliveryType" to CryptoManager.encrypt(history.deliveryType),
+                    "birthOutcome" to CryptoManager.encrypt(history.birthOutcome),
+                    "childrenDelivered" to CryptoManager.encrypt(history.childrenDelivered),
+                    "areChildrenLiving" to CryptoManager.encryptBoolean(history.areChildrenLiving),
+                    "hasGdm" to CryptoManager.encryptBoolean(history.hasGdm),
+                    "hasDiabetes" to CryptoManager.encryptBoolean(history.hasDiabetes),
+                    "hasPreeclampsia" to CryptoManager.encryptBoolean(history.hasPreeclampsia),
+                    "hasPretermDelivery" to CryptoManager.encryptBoolean(history.hasPretermDelivery),
+                    "additionalComplications" to CryptoManager.encrypt(history.additionalComplications),
+                    "complications" to CryptoManager.encryptStringList(history.complications)
+                )
+            }
+
             val profileData = hashMapOf<String, Any?>(
                 "email" to userEmail,
                 "username" to profile.username,
-                "birthday" to profile.birthday,
-                "weightKg" to profile.weightKg,
-                "heightCm" to profile.heightCm,
-                "isCycleRegular" to profile.isCycleRegular,
-                "shortestCycleDays" to profile.shortestCycleDays,
-                "longestCycleDays" to profile.longestCycleDays,
-                "hasHadUltrasound" to profile.hasHadUltrasound,
-                "positiveTestDate" to profile.positiveTestDate,
-                "lmpDate" to profile.lmpDate,
-                "eddDate" to profile.eddDate,
-                "isFirstPregnancy" to profile.isFirstPregnancy,
-                "scanDate" to profile.scanDate,
-                "scanWeeks" to profile.scanWeeks,
-                "scanDays" to profile.scanDays,
-                "iceName" to profile.iceName,
-                "iceRelationship" to profile.iceRelationship,
-                "icePrimaryPhone" to profile.icePrimaryPhone,
-                "iceSecondaryPhone" to profile.iceSecondaryPhone,
-                "pregnancyHistories" to profile.pregnancyHistories.map { history ->
-                    mapOf(
-                        "pregnancyNumber" to history.pregnancyNumber,
-                        "deliveryDate" to history.deliveryDate,
-                        "deliveryType" to history.deliveryType,
-                        "birthOutcome" to history.birthOutcome,
-                        "childrenDelivered" to history.childrenDelivered,
-                        "areChildrenLiving" to history.areChildrenLiving,
-                        "hasGdm" to history.hasGdm,
-                        "hasDiabetes" to history.hasDiabetes,
-                        "hasPreeclampsia" to history.hasPreeclampsia,
-                        "hasPretermDelivery" to history.hasPretermDelivery,
-                        "additionalComplications" to history.additionalComplications,
-                        "complications" to history.complications
-                    )
-                },
+                "birthday" to CryptoManager.encryptDate(profile.birthday),
+                "weightKg" to CryptoManager.encryptInt(profile.weightKg),
+                "heightCm" to CryptoManager.encryptInt(profile.heightCm),
+                "isCycleRegular" to CryptoManager.encryptBoolean(profile.isCycleRegular),
+                "shortestCycleDays" to CryptoManager.encryptInt(profile.shortestCycleDays),
+                "longestCycleDays" to CryptoManager.encryptInt(profile.longestCycleDays),
+                "hasHadUltrasound" to CryptoManager.encryptBoolean(profile.hasHadUltrasound),
+                "positiveTestDate" to CryptoManager.encryptDate(profile.positiveTestDate),
+                "lmpDate" to CryptoManager.encryptDate(profile.lmpDate),
+                "eddDate" to CryptoManager.encryptDate(profile.eddDate),
+                "isFirstPregnancy" to CryptoManager.encryptBoolean(profile.isFirstPregnancy),
+                "scanDate" to CryptoManager.encryptDate(profile.scanDate),
+                "scanWeeks" to CryptoManager.encryptInt(profile.scanWeeks),
+                "scanDays" to CryptoManager.encryptInt(profile.scanDays),
+                "iceName" to CryptoManager.encrypt(profile.iceName),
+                "iceRelationship" to CryptoManager.encrypt(profile.iceRelationship),
+                "icePrimaryPhone" to CryptoManager.encrypt(profile.icePrimaryPhone),
+                "iceSecondaryPhone" to CryptoManager.encrypt(profile.iceSecondaryPhone),
+                "pregnancyHistories" to CryptoManager.encryptJsonMapList(pregnancyHistoriesMaps),
                 "onboardingCompleted" to true,
                 "updatedAt" to Date()
             )
