@@ -166,6 +166,7 @@ class FakePreferenceRepository : PreferenceRepository {
     private val remindersEnabled = mutableMapOf<String, Boolean>()
     private val reminderTimes = mutableMapOf<String, Pair<Int, Int>>()
 
+    override fun getDeviceId(): String = "test_device_id"
     override suspend fun shouldShowOnboarding(userId: String): Boolean = false
     override fun setOnboardingCompleted(userId: String) {}
     override fun getOnboardingLastStep(userId: String): String? = null

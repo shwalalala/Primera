@@ -89,13 +89,10 @@ fun OnboardingHostScreen(
                     onBirthdayChange = { viewModel.onBirthdayChange(it) },
                     onContinue = { viewModel.nextStep() }
                 )
-                OnboardingStep.WEIGHT -> WeightStep(
+                OnboardingStep.BODY_MEASUREMENTS -> BodyMeasurementsStep(
                     weightKg = state.weightKg,
-                    onWeightChange = { viewModel.onWeightChange(it) },
-                    onContinue = { viewModel.nextStep() }
-                )
-                OnboardingStep.HEIGHT -> HeightStep(
                     heightCm = state.heightCm,
+                    onWeightChange = { viewModel.onWeightChange(it) },
                     onHeightChange = { viewModel.onHeightChange(it) },
                     onContinue = { viewModel.nextStep() }
                 )
@@ -355,18 +352,20 @@ fun BirthdayStep(
 }
 
 @Composable
-fun WeightStep(
+fun BodyMeasurementsStep(
     weightKg: Int,
+    heightCm: Int,
     onWeightChange: (Int) -> Unit,
+    onHeightChange: (Int) -> Unit,
     onContinue: () -> Unit
 ) {
     OnboardingLayout(
-        title = "Pre-pregnancy Weight",
+        title = "Body Measurements",
         onContinue = onContinue,
-        isContinueEnabled = weightKg in 30..250
+        isContinueEnabled = weightKg in 30..250 && heightCm in 50..250
     ) {
         LabeledField(
-            label = "Weight before pregnancy (kg) *",
+            label = "Pre-pregnancy weight (kg) *",
             value = if (weightKg == 0) "" else weightKg.toString(),
             onValueChange = { value ->
                 val weight = value.filter { it.isDigit() }.toIntOrNull() ?: 0
@@ -375,20 +374,9 @@ fun WeightStep(
             placeholder = "Enter weight in kg",
             keyboardType = KeyboardType.Number
         )
-    }
-}
 
-@Composable
-fun HeightStep(
-    heightCm: Int,
-    onHeightChange: (Int) -> Unit,
-    onContinue: () -> Unit
-) {
-    OnboardingLayout(
-        title = "Your Height",
-        onContinue = onContinue,
-        isContinueEnabled = heightCm in 50..250
-    ) {
+        Spacer(Modifier.height(20.dp))
+
         LabeledField(
             label = "Height (cm) *",
             value = if (heightCm == 0) "" else heightCm.toString(),
@@ -1108,27 +1096,15 @@ private fun BirthdayStepPreview() {
     }
 }
 
-@Preview(widthDp = 393, heightDp = 852, showBackground = true, name = "Onboarding - Weight Step")
+@Preview(widthDp = 393, heightDp = 852, showBackground = true, name = "Onboarding - Body Measurements Step")
 @Composable
-private fun WeightStepPreview() {
+private fun BodyMeasurementsStepPreview() {
     PrimeraTheme {
         Box(modifier = Modifier.background(BackgroundCream)) {
-            WeightStep(
+            BodyMeasurementsStep(
                 weightKg = 60,
-                onWeightChange = {},
-                onContinue = {}
-            )
-        }
-    }
-}
-
-@Preview(widthDp = 393, heightDp = 852, showBackground = true, name = "Onboarding - Height Step")
-@Composable
-private fun HeightStepPreview() {
-    PrimeraTheme {
-        Box(modifier = Modifier.background(BackgroundCream)) {
-            HeightStep(
                 heightCm = 165,
+                onWeightChange = {},
                 onHeightChange = {},
                 onContinue = {}
             )

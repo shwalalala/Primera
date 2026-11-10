@@ -2,11 +2,15 @@ package cit.edu.primera.core.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.provider.Settings
 import androidx.core.content.edit
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
+import java.util.UUID
 
 interface PreferenceRepository {
+    fun getDeviceId(): String
     suspend fun shouldShowOnboarding(userId: String): Boolean
     fun setOnboardingCompleted(userId: String)
     fun getOnboardingLastStep(userId: String): String?
@@ -30,7 +34,7 @@ interface PreferenceRepository {
     fun clearLocalData()
 }
 
-class PreferenceRepositoryImpl(context: Context) : PreferenceRepository {
+class PreferenceRepositoryImpl(private val context: Context) : PreferenceRepository {
     private val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("primera_prefs", Context.MODE_PRIVATE)
 
@@ -43,42 +47,115 @@ class PreferenceRepositoryImpl(context: Context) : PreferenceRepository {
         private const val KEY_SAVED_EMAIL = "saved_remember_me_email"
         private const val KEY_PROFILE_PICTURE_URI = "profile_picture_uri_"
         private const val KEY_MIC_COACHMARK_SEEN = "mic_coachmark_seen_"
+        private const val KEY_PERSISTENT_DEVICE_ID = "persistent_local_device_id"
+        private const val KEY_LAST_COMPLETED_USER_ID = "last_completed_user_id_on_device"
+        private const val KEY_LAST_TOOLTIP_USER_ID = "last_tooltip_user_id_on_device"
+    }
+
+    override fun getDeviceId(): String {
+        return try {
+            val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+            if (!androidId.isNullOrBlank() && androidId != "9774d56d682e549c") {
+                androidId
+            } else {
+                getOrCreatePersistentDeviceId()
+            }
+        } catch (_: Exception) {
+            getOrCreatePersistentDeviceId()
+        }
+    }
+
+    private fun getOrCreatePersistentDeviceId(): String {
+        var localId = sharedPreferences.getString(KEY_PERSISTENT_DEVICE_ID, null)
+        if (localId.isNullOrBlank()) {
+            localId = UUID.randomUUID().toString()
+            sharedPreferences.edit { putString(KEY_PERSISTENT_DEVICE_ID, localId) }
+        }
+        return localId
     }
 
     override suspend fun shouldShowOnboarding(userId: String): Boolean {
         if (userId.isBlank()) return true
+        val deviceId = getDeviceId()
 
-        val isCompletedLocally = sharedPreferences.getBoolean(KEY_ONBOARDING_COMPLETED + userId, false)
-        return !isCompletedLocally && try {
+        // 1. Evaluate Local Device Key & Active User Match
+        val localKey = "${KEY_ONBOARDING_COMPLETED}${userId}_${deviceId}"
+        val isCompletedLocally = sharedPreferences.getBoolean(localKey, false)
+            || sharedPreferences.getBoolean(KEY_ONBOARDING_COMPLETED + userId, false)
+        val lastCompletedUserOnMachine = sharedPreferences.getString(KEY_LAST_COMPLETED_USER_ID, null)
+        val localMatchesActiveUser = isCompletedLocally && (lastCompletedUserOnMachine == userId)
+
+        // 2. Evaluate Backend Database (Server State) for User ID + Device ID pairing
+        val isServerCompletedForUserAndDevice = try {
             val snapshot = FirebaseFirestore.getInstance()
                 .collection("users")
                 .document(userId)
                 .get()
                 .await()
 
-            if (!snapshot.exists()) return true
-
-            val isCompletedInFirestore = (snapshot.getBoolean("onboardingCompleted") == true)
-                    || (snapshot.get("birthday") != null)
-                    || (snapshot.get("eddDate") != null)
-                    || (snapshot.get("dueDate") != null)
-
-            if (isCompletedInFirestore) {
-                setOnboardingCompleted(userId)
+            if (!snapshot.exists()) {
                 false
             } else {
-                snapshot.getBoolean("onboardingCompleted") == false
+                val completedDeviceIds = (snapshot.get("completedDeviceIds") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+                val completedDevicesMap = snapshot.get("completedDevices") as? Map<*, *>
+                val deviceCompletedInMap = completedDevicesMap?.get(deviceId) == true
+                val legacyCompleted = (snapshot.getBoolean("onboardingCompleted") == true)
+                        || (snapshot.get("birthday") != null)
+                        || (snapshot.get("eddDate") != null)
+                        || (snapshot.get("dueDate") != null)
+
+                val serverMatchesPairing = completedDeviceIds.contains(deviceId) || deviceCompletedInMap || legacyCompleted
+
+                if (serverMatchesPairing && !completedDeviceIds.contains(deviceId)) {
+                    try {
+                        FirebaseFirestore.getInstance()
+                            .collection("users")
+                            .document(userId)
+                            .update("completedDeviceIds", FieldValue.arrayUnion(deviceId))
+                    } catch (_: Exception) {}
+                }
+
+                serverMatchesPairing
             }
         } catch (_: Exception) {
-            false
+            // Offline fallback: rely on local storage matching active user on this machine
+            localMatchesActiveUser
         }
+
+        // Composite condition: Trigger onboarding/welcome screen if backend shows no completed record for User ID + Device ID,
+        // OR local storage does not actively match current User ID as last person to complete onboarding on this machine.
+        val shouldTrigger = !isServerCompletedForUserAndDevice || !localMatchesActiveUser
+
+        if (!shouldTrigger) {
+            setOnboardingCompleted(userId)
+        }
+
+        return shouldTrigger
     }
 
     override fun setOnboardingCompleted(userId: String) {
-        sharedPreferences.edit { 
+        if (userId.isBlank()) return
+        val deviceId = getDeviceId()
+        val localKey = "${KEY_ONBOARDING_COMPLETED}${userId}_${deviceId}"
+
+        sharedPreferences.edit {
+            putBoolean(localKey, true)
             putBoolean(KEY_ONBOARDING_COMPLETED + userId, true)
+            putString(KEY_LAST_COMPLETED_USER_ID, userId)
             remove(KEY_ONBOARDING_STEP + userId)
         }
+
+        try {
+            FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(userId)
+                .update(
+                    mapOf(
+                        "onboardingCompleted" to true,
+                        "completedDeviceIds" to FieldValue.arrayUnion(deviceId)
+                    )
+                )
+        } catch (_: Exception) {}
     }
 
     override fun getOnboardingLastStep(userId: String): String? {
@@ -146,15 +223,37 @@ class PreferenceRepositoryImpl(context: Context) : PreferenceRepository {
     }
 
     override fun hasSeenMicCoachmark(userId: String): Boolean {
-        val key =
-            if (userId.isBlank()) KEY_MIC_COACHMARK_SEEN + "guest" else KEY_MIC_COACHMARK_SEEN + userId
-        return sharedPreferences.getBoolean(key, false)
+        val effectiveUser = if (userId.isBlank()) "guest" else userId
+        val deviceId = getDeviceId()
+        val localKey = "${KEY_MIC_COACHMARK_SEEN}${effectiveUser}_${deviceId}"
+
+        val isLocallySeen = sharedPreferences.getBoolean(localKey, false)
+            || sharedPreferences.getBoolean(KEY_MIC_COACHMARK_SEEN + effectiveUser, false)
+        val lastTooltipUser = sharedPreferences.getString(KEY_LAST_TOOLTIP_USER_ID, null)
+
+        val localMatchesCurrentUser = isLocallySeen && (lastTooltipUser == effectiveUser)
+        return localMatchesCurrentUser
     }
 
     override fun setMicCoachmarkDismissed(userId: String) {
-        val key =
-            if (userId.isBlank()) KEY_MIC_COACHMARK_SEEN + "guest" else KEY_MIC_COACHMARK_SEEN + userId
-        sharedPreferences.edit { putBoolean(key, true) }
+        val effectiveUser = if (userId.isBlank()) "guest" else userId
+        val deviceId = getDeviceId()
+        val localKey = "${KEY_MIC_COACHMARK_SEEN}${effectiveUser}_${deviceId}"
+
+        sharedPreferences.edit {
+            putBoolean(localKey, true)
+            putBoolean(KEY_MIC_COACHMARK_SEEN + effectiveUser, true)
+            putString(KEY_LAST_TOOLTIP_USER_ID, effectiveUser)
+        }
+
+        if (effectiveUser != "guest") {
+            try {
+                FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(effectiveUser)
+                    .update("seenMicCoachmarkDevices", FieldValue.arrayUnion(deviceId))
+            } catch (_: Exception) {}
+        }
     }
 
     override fun isReminderEnabled(category: String): Boolean {
@@ -188,6 +287,7 @@ class PreferenceRepositoryImpl(context: Context) : PreferenceRepository {
     override fun clearLocalData() {
         val savedEmail = getSavedEmail()
         val hasLoggedIn = hasEverLoggedIn()
+        val deviceId = getDeviceId()
         sharedPreferences.edit {
             clear()
             if (!savedEmail.isNullOrBlank()) {
@@ -196,6 +296,7 @@ class PreferenceRepositoryImpl(context: Context) : PreferenceRepository {
             if (hasLoggedIn) {
                 putBoolean(KEY_HAS_EVER_LOGGED_IN, true)
             }
+            putString(KEY_PERSISTENT_DEVICE_ID, deviceId)
         }
     }
 }

@@ -113,13 +113,9 @@ class OnboardingAndPregnancyTest {
             onboardingViewModel.onBirthdayChange(birthdayCal.time)
             onboardingViewModel.nextStep()
 
-            // Step 2: Weight
-            assertEquals(OnboardingStep.WEIGHT, onboardingViewModel.uiState.value.currentStep)
+            // Step 2: Body Measurements (Weight & Height on same slide)
+            assertEquals(OnboardingStep.BODY_MEASUREMENTS, onboardingViewModel.uiState.value.currentStep)
             onboardingViewModel.onWeightChange(62)
-            onboardingViewModel.nextStep()
-
-            // Step 3: Height
-            assertEquals(OnboardingStep.HEIGHT, onboardingViewModel.uiState.value.currentStep)
             onboardingViewModel.onHeightChange(165)
             onboardingViewModel.nextStep()
 
@@ -190,9 +186,8 @@ class OnboardingAndPregnancyTest {
     @Test
     fun onboarding_stepByStep_irregularCycle_withUltrasoundScan_calculatesEddAndGestationalAgeAccurately() =
         runTest {
-            // Step 1-3: Birthday, Weight, Height
-            onboardingViewModel.nextStep() // WEIGHT
-            onboardingViewModel.nextStep() // HEIGHT
+            // Step 1-2: Birthday, Body Measurements
+            onboardingViewModel.nextStep() // BODY_MEASUREMENTS
             onboardingViewModel.nextStep() // CYCLE_REGULARITY
 
             // Step 4: Irregular Cycle
@@ -256,8 +251,7 @@ class OnboardingAndPregnancyTest {
             onboardingViewModel.onLmpDateChange(
                 Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -140) }.time
             ) // 20 weeks
-            onboardingViewModel.nextStep() // WEIGHT
-            onboardingViewModel.nextStep() // HEIGHT
+            onboardingViewModel.nextStep() // BODY_MEASUREMENTS
             onboardingViewModel.nextStep() // CYCLE_REGULARITY
             onboardingViewModel.nextStep() // LMP
             onboardingViewModel.nextStep() // EDD
@@ -398,17 +392,52 @@ class OnboardingAndPregnancyTest {
     @Test
     fun onboarding_previousStepNavigation_retainsUserDataAccurately() {
         onboardingViewModel.onWeightChange(58)
-        onboardingViewModel.nextStep() // WEIGHT
-        onboardingViewModel.nextStep() // HEIGHT
+        onboardingViewModel.onHeightChange(165)
+        onboardingViewModel.nextStep() // BIRTHDAY -> BODY_MEASUREMENTS
+        onboardingViewModel.nextStep() // BODY_MEASUREMENTS -> CYCLE_REGULARITY
 
-        assertEquals(OnboardingStep.HEIGHT, onboardingViewModel.uiState.value.currentStep)
+        assertEquals(OnboardingStep.CYCLE_REGULARITY, onboardingViewModel.uiState.value.currentStep)
 
-        onboardingViewModel.previousStep() // Back to WEIGHT
-        assertEquals(OnboardingStep.WEIGHT, onboardingViewModel.uiState.value.currentStep)
+        onboardingViewModel.previousStep() // Back to BODY_MEASUREMENTS
+        assertEquals(OnboardingStep.BODY_MEASUREMENTS, onboardingViewModel.uiState.value.currentStep)
         assertEquals(58, onboardingViewModel.uiState.value.weightKg)
+        assertEquals(165, onboardingViewModel.uiState.value.heightCm)
 
         onboardingViewModel.previousStep() // Back to BIRTHDAY
         assertEquals(OnboardingStep.BIRTHDAY, onboardingViewModel.uiState.value.currentStep)
+    }
+
+    @Test
+    fun compositeCondition_multiUserAndNewDevice_triggersOnboardingAndTooltips() = runTest {
+        val repo = fakePreferenceRepository
+        val userA = "user_A"
+        val userB = "user_B"
+
+        // 1. Initial state for User A -> Should trigger onboarding and tooltips
+        assertTrue("New User A should show onboarding", repo.shouldShowOnboarding(userA))
+        assertFalse("New User A should see tooltip pop up", repo.hasSeenMicCoachmark(userA))
+
+        // 2. User A completes onboarding and dismisses tooltip on Device 1
+        repo.setOnboardingCompleted(userA)
+        repo.setMicCoachmarkDismissed(userA)
+
+        assertFalse("User A should not show onboarding again on same device", repo.shouldShowOnboarding(userA))
+        assertTrue("User A should have seen tooltip on same device", repo.hasSeenMicCoachmark(userA))
+
+        // 3. Shared device scenario: User B logs in on SAME physical device
+        // Composite condition forces onboarding and tooltips to trigger for User B even if User A completed it
+        assertTrue("User B on shared device should trigger onboarding", repo.shouldShowOnboarding(userB))
+        assertFalse("User B on shared device should see tooltip pop up", repo.hasSeenMicCoachmark(userB))
+
+        // 4. User B completes onboarding on shared device
+        repo.setOnboardingCompleted(userB)
+        repo.setMicCoachmarkDismissed(userB)
+
+        assertFalse("User B should not show onboarding after completing", repo.shouldShowOnboarding(userB))
+        assertTrue("User B should have seen tooltip after dismissing", repo.hasSeenMicCoachmark(userB))
+
+        // 5. Switching back to User A on shared device: User B was last completed user, so User A is triggered
+        assertTrue("User A should trigger onboarding when switching users on shared machine", repo.shouldShowOnboarding(userA))
     }
 }
 
@@ -426,15 +455,28 @@ private class FakeOnboardingRepository : OnboardingRepository {
 }
 
 private class FakePreferenceRepository : PreferenceRepository {
-    private var onboardingCompleted = false
+    private var completedUsersOnDevice = mutableMapOf<String, Boolean>()
+    private var lastCompletedUserId: String? = null
+    private var seenMicCoachmarks = mutableMapOf<String, Boolean>()
+    private var lastTooltipUserId: String? = null
     private var onboardingStep: String? = null
     private var savedEmail: String? = null
     private var everLoggedIn = false
+    private var testDeviceId = "test_device_id"
 
-    override suspend fun shouldShowOnboarding(userId: String): Boolean = !onboardingCompleted
+    override fun getDeviceId(): String = testDeviceId
+
+    override suspend fun shouldShowOnboarding(userId: String): Boolean {
+        if (userId.isBlank()) return true
+        val isCompletedLocally = completedUsersOnDevice[userId] == true
+        val isLastUser = lastCompletedUserId == userId
+        return !(isCompletedLocally && isLastUser)
+    }
 
     override fun setOnboardingCompleted(userId: String) {
-        onboardingCompleted = true
+        if (userId.isBlank()) return
+        completedUsersOnDevice[userId] = true
+        lastCompletedUserId = userId
     }
 
     override fun getOnboardingLastStep(userId: String): String? = onboardingStep
@@ -462,8 +504,18 @@ private class FakePreferenceRepository : PreferenceRepository {
     override fun getProfilePictureUri(userId: String): String? = null
     override fun setProfilePictureUri(userId: String, uri: String?) {}
 
-    override fun hasSeenMicCoachmark(userId: String): Boolean = false
-    override fun setMicCoachmarkDismissed(userId: String) {}
+    override fun hasSeenMicCoachmark(userId: String): Boolean {
+        val effectiveUser = if (userId.isBlank()) "guest" else userId
+        val isSeen = seenMicCoachmarks[effectiveUser] == true
+        val isLastUser = lastTooltipUserId == effectiveUser
+        return isSeen && isLastUser
+    }
+
+    override fun setMicCoachmarkDismissed(userId: String) {
+        val effectiveUser = if (userId.isBlank()) "guest" else userId
+        seenMicCoachmarks[effectiveUser] = true
+        lastTooltipUserId = effectiveUser
+    }
 
     override fun isReminderEnabled(category: String): Boolean = true
     override fun setReminderEnabled(category: String, enabled: Boolean) {}
@@ -471,7 +523,10 @@ private class FakePreferenceRepository : PreferenceRepository {
     override fun setReminderTime(category: String, hour: Int, minute: Int) {}
 
     override fun clearLocalData() {
-        onboardingCompleted = false
+        completedUsersOnDevice.clear()
+        lastCompletedUserId = null
+        seenMicCoachmarks.clear()
+        lastTooltipUserId = null
         onboardingStep = null
     }
 }
