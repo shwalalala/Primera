@@ -1,6 +1,8 @@
 package cit.edu.primera.feature.transcription.data
 
+import cit.edu.primera.core.util.CryptoManager
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import java.util.Calendar
@@ -19,14 +21,22 @@ class TranscriptionDataSource(
                 currentSymptoms = dto.detectedSymptoms
             )
 
-            val transcriptionWithUser = dto.copy(
-                userId = userId,
-                hasWarning = warningMessage != null,
-                warningMessage = warningMessage
+            val encryptedData = hashMapOf<String, Any?>(
+                "transcribedText" to CryptoManager.encrypt(dto.transcribedText),
+                "detectedSymptoms" to CryptoManager.encryptStringList(dto.detectedSymptoms),
+                "hasWarning" to (warningMessage != null),
+                "warningMessage" to CryptoManager.encrypt(warningMessage),
+                "audioDuration" to dto.audioDuration,
+                "confidenceScore" to dto.confidenceScore,
+                "languageCode" to dto.languageCode,
+                "deviceModel" to dto.deviceModel,
+                "appVersion" to dto.appVersion,
+                "userId" to userId,
+                "timestamp" to FieldValue.serverTimestamp()
             )
 
             val documentReference = firestore.collection("transcriptions")
-                .add(transcriptionWithUser)
+                .add(encryptedData)
                 .await()
 
             Result.success(documentReference.id)
@@ -56,11 +66,12 @@ class TranscriptionDataSource(
             .await()
             .documents
             .mapNotNull { document ->
-                document.toObject(TranscriptionDto::class.java)
+                val rawSymptoms = document.get("detectedSymptoms")
+                CryptoManager.decryptStringList(rawSymptoms)
             }
 
         val previousSymptoms = recentLogs
-            .flatMap { it.detectedSymptoms }
+            .flatMap { it }
             .toSet()
 
         val repeatedSymptom = currentSymptoms.firstOrNull { symptom ->

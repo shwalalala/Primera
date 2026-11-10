@@ -46,18 +46,38 @@ class DashboardRepositoryImpl(
                 scanDays = userDto.scanDays?.toInt(),
                 pregnancyHistories = userDto.pregnancyHistories?.map { map ->
                     cit.edu.primera.feature.onboarding.domain.PregnancyHistory(
-                        pregnancyNumber = (map["pregnancyNumber"] as? Long)?.toInt() ?: 1,
-                        deliveryDate = (map["deliveryDate"] as? com.google.firebase.Timestamp)?.toDate(),
-                        deliveryType = map["deliveryType"] as? String ?: "",
-                        birthOutcome = map["birthOutcome"] as? String ?: "",
-                        childrenDelivered = map["childrenDelivered"] as? String ?: "",
-                        areChildrenLiving = map["areChildrenLiving"] as? Boolean ?: true,
-                        hasGdm = map["hasGdm"] as? Boolean ?: false,
-                        hasDiabetes = map["hasDiabetes"] as? Boolean ?: false,
-                        hasPreeclampsia = map["hasPreeclampsia"] as? Boolean ?: false,
-                        hasPretermDelivery = map["hasPretermDelivery"] as? Boolean ?: false,
-                        additionalComplications = map["additionalComplications"] as? String ?: "",
-                        complications = map["complications"] as? List<String> ?: emptyList()
+                        pregnancyNumber = cit.edu.primera.core.util.CryptoManager.decryptInt(map["pregnancyNumber"])
+                            ?: (map["pregnancyNumber"] as? Number)?.toInt() ?: 1,
+                        deliveryDate = cit.edu.primera.core.util.CryptoManager.decryptDate(map["deliveryDate"]),
+                        deliveryType = cit.edu.primera.core.util.CryptoManager.decrypt(map["deliveryType"] as? String)
+                            ?: map["deliveryType"] as? String ?: "",
+                        birthOutcome = cit.edu.primera.core.util.CryptoManager.decrypt(map["birthOutcome"] as? String)
+                            ?: map["birthOutcome"] as? String ?: "",
+                        childrenDelivered = cit.edu.primera.core.util.CryptoManager.decrypt(map["childrenDelivered"] as? String)
+                            ?: map["childrenDelivered"] as? String ?: "",
+                        areChildrenLiving = cit.edu.primera.core.util.CryptoManager.decryptBoolean(
+                            map["areChildrenLiving"]
+                        )
+                            ?: map["areChildrenLiving"] as? Boolean ?: true,
+                        hasGdm = cit.edu.primera.core.util.CryptoManager.decryptBoolean(map["hasGdm"])
+                            ?: map["hasGdm"] as? Boolean ?: false,
+                        hasDiabetes = cit.edu.primera.core.util.CryptoManager.decryptBoolean(map["hasDiabetes"])
+                            ?: map["hasDiabetes"] as? Boolean ?: false,
+                        hasPreeclampsia = cit.edu.primera.core.util.CryptoManager.decryptBoolean(map["hasPreeclampsia"])
+                            ?: map["hasPreeclampsia"] as? Boolean ?: false,
+                        hasPretermDelivery = cit.edu.primera.core.util.CryptoManager.decryptBoolean(
+                            map["hasPretermDelivery"]
+                        )
+                            ?: map["hasPretermDelivery"] as? Boolean ?: false,
+                        additionalComplications = cit.edu.primera.core.util.CryptoManager.decrypt(
+                            map["additionalComplications"] as? String
+                        )
+                            ?: map["additionalComplications"] as? String ?: "",
+                        complications = cit.edu.primera.core.util.CryptoManager.decryptStringList(
+                            map["complications"]
+                        )
+                            ?: (map["complications"] as? List<*>)?.mapNotNull { it?.toString() }
+                            ?: emptyList()
                     )
                 } ?: emptyList(),
                 isFirstPregnancy = userDto.isFirstPregnancy,

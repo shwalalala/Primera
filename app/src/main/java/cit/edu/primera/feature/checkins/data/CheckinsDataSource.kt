@@ -1,5 +1,6 @@
 package cit.edu.primera.feature.checkins.data
 
+import cit.edu.primera.core.util.CryptoManager
 import cit.edu.primera.core.util.currentUserIdFlow
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -36,15 +37,22 @@ class CheckinsDataSource {
 
                             val logs = snapshot?.documents?.mapNotNull { doc ->
                                 try {
+                                    val rawType = doc.getString("type")
+                                    val rawCategory = doc.getString("category")
+                                    val rawMessage = doc.getString("message")
+                                    val rawDescription = doc.getString("description")
+                                    val rawWarningMessage = doc.getString("warningMessage")
+
                                     CheckinLogDto(
                                         id = doc.id,
-                                        type = doc.getString("type") ?: "Check-in",
-                                        category = doc.getString("category") ?: "Fetal Movement",
-                                        message = doc.getString("message"),
-                                        description = doc.getString("description"),
+                                        type = CryptoManager.decrypt(rawType) ?: "Check-in",
+                                        category = CryptoManager.decrypt(rawCategory)
+                                            ?: "Fetal Movement",
+                                        message = CryptoManager.decrypt(rawMessage),
+                                        description = CryptoManager.decrypt(rawDescription),
                                         timestamp = doc.getTimestamp("timestamp")?.toDate(),
                                         hasWarning = doc.getBoolean("hasWarning") ?: false,
-                                        warningMessage = doc.getString("warningMessage")
+                                        warningMessage = CryptoManager.decrypt(rawWarningMessage)
                                     )
                                 } catch (_: Exception) {
                                     null
@@ -75,7 +83,8 @@ class CheckinsDataSource {
                             }
 
                             if (snapshot != null && snapshot.exists()) {
-                                val weightKg = snapshot.getLong("weightKg")?.toInt()
+                                val weightRaw = snapshot.get("weightKg")
+                                val weightKg = CryptoManager.decryptInt(weightRaw)
                                 val updatedAt = snapshot.getTimestamp("updatedAt")?.toDate()
 
                                 trySend(CheckinUserDto(weightKg, updatedAt))
@@ -104,13 +113,13 @@ class CheckinsDataSource {
 
             val logData = mutableMapOf<String, Any?>(
                 "userId" to userId,
-                "type" to log.type,
-                "category" to log.category,
-                "message" to log.message,
-                "description" to log.description,
+                "type" to CryptoManager.encrypt(log.type),
+                "category" to CryptoManager.encrypt(log.category),
+                "message" to CryptoManager.encrypt(log.message),
+                "description" to CryptoManager.encrypt(log.description),
                 "timestamp" to (log.timestamp ?: Date()),
                 "hasWarning" to (warningMessage != null),
-                "warningMessage" to warningMessage
+                "warningMessage" to CryptoManager.encrypt(warningMessage)
             )
 
             if (!log.id.isNullOrBlank()) {
@@ -138,7 +147,7 @@ class CheckinsDataSource {
                 .document(userId)
                 .set(
                     mapOf(
-                        "weightKg" to weightKg,
+                        "weightKg" to CryptoManager.encryptInt(weightKg),
                         "updatedAt" to Date()
                     ),
                     SetOptions.merge()
@@ -182,7 +191,8 @@ class CheckinsDataSource {
 
             val previousSymptoms = recentLogs
                 .flatMap { document ->
-                    val description = document.getString("description").orEmpty()
+                    val rawDescription = document.getString("description").orEmpty()
+                    val description = CryptoManager.decrypt(rawDescription).orEmpty()
                     extractSymptomsFromDescription(description)
                 }
                 .map { it.lowercase().trim() }
