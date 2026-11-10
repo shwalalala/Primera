@@ -18,12 +18,18 @@ class DashboardRepositoryImpl(
         ) { userDto, logsDtoList ->
             if (userDto == null) return@combine null
 
+            val resolvedUserName = userDto.username?.takeIf { it.isNotBlank() }
+                ?: userDto.fullName?.takeIf { it.isNotBlank() }
+                ?: userDto.firstName?.takeIf { it.isNotBlank() }
+                ?: userDto.email?.substringBefore("@")?.takeIf { it.isNotBlank() }
+                ?: "User"
+
             DashboardData(
                 email = userDto.email,
                 firstName = userDto.firstName,
                 lastName = userDto.lastName,
                 middleName = userDto.middleName,
-                userName = userDto.username ?: userDto.fullName ?: userDto.firstName ?: "Sarah",
+                userName = resolvedUserName,
                 photoUri = userDto.photoUri,
                 birthday = userDto.birthday,
                 lmpDate = userDto.lmpDate,
