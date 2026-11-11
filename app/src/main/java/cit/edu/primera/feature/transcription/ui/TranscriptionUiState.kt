@@ -5,10 +5,16 @@ sealed class TranscriptionUiState {
     object RequestingPermission : TranscriptionUiState()
     object Listening : TranscriptionUiState()
     object Processing : TranscriptionUiState()
+    data class AnalyzingWithAi(
+        val rawText: String,
+        val durationMs: Long
+    ) : TranscriptionUiState()
     data class Success(
         val text: String,
         val confidence: Float,
-        val durationMs: Long
+        val durationMs: Long,
+        val rawSpokenText: String = text,
+        val isAiCorrected: Boolean = false
     ) : TranscriptionUiState()
     object Uploading : TranscriptionUiState()
     object Uploaded : TranscriptionUiState()

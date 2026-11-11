@@ -50,6 +50,7 @@ object ViewModelProvider {
                 TranscriptionViewModel::class.java -> TranscriptionViewModel(
                     container.transcriptionRepository,
                     container.symptomExtractor,
+                    container.voiceTextCorrector,
                     SpeechRecognitionManager(application)
                 )
                 InsightsViewModel::class.java -> InsightsViewModel(
