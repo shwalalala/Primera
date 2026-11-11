@@ -55,6 +55,7 @@ import cit.edu.primera.feature.dashboard.ui.DashboardScreen
 import cit.edu.primera.feature.dashboard.ui.DashboardUiState
 import cit.edu.primera.feature.dashboard.ui.DashboardViewModel
 import cit.edu.primera.feature.dashboard.ui.NewsEducationScreen
+import cit.edu.primera.feature.vaccination.ui.VaccinationInfoScreen
 import cit.edu.primera.feature.insights.ui.InsightsScreen
 import cit.edu.primera.feature.onboarding.ui.OnboardingHostScreen
 import cit.edu.primera.feature.profile.ui.ProfileScreen
@@ -613,6 +614,14 @@ fun AppNavGraph(
 
                 composable(Routes.REMINDER_SETTINGS) {
                     cit.edu.primera.feature.notification.ui.ReminderSettingsScreen(
+                        onBack = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable(Routes.VACCINATION_INFO) {
+                    VaccinationInfoScreen(
                         onBack = {
                             navController.popBackStack()
                         }

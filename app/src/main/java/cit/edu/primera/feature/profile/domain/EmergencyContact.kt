@@ -6,3 +6,4 @@ data class EmergencyContact(
     val primaryPhone: String = "",
     val secondaryPhone: String = ""
 )
+

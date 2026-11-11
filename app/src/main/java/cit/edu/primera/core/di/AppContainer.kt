@@ -46,6 +46,7 @@ interface AppContainer {
     val symptomExtractor: SymptomExtractor
     val voiceTextCorrector: VoiceTextCorrector
     val geminiContentRepository: cit.edu.primera.feature.dashboard.data.GeminiContentRepository
+    val vaccinationRepository: cit.edu.primera.feature.vaccination.data.VaccinationRepository
 }
 
 class AppContainerImpl(private val context: Context) : AppContainer {
@@ -151,5 +152,9 @@ class AppContainerImpl(private val context: Context) : AppContainer {
 
     override val healthConnectManager: HealthConnectManager by lazy {
         HealthConnectManager(context)
+    }
+
+    override val vaccinationRepository: cit.edu.primera.feature.vaccination.data.VaccinationRepository by lazy {
+        cit.edu.primera.feature.vaccination.data.VaccinationRepositoryImpl()
     }
 }
