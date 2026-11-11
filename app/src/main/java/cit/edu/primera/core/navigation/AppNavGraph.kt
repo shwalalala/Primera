@@ -390,8 +390,16 @@ fun AppNavGraph(
                 }
 
                 composable(Routes.DASHBOARD) {
+                    val parentEntry = remember(it) {
+                        try {
+                            navController.getBackStackEntry(Routes.DASHBOARD)
+                        } catch (_: Exception) {
+                            it
+                        }
+                    }
+
                     val checkinsViewModel: CheckinsViewModel =
-                        viewModel(factory = ViewModelProvider.Factory)
+                        viewModel(parentEntry, factory = ViewModelProvider.Factory)
 
                     DashboardScreen(
                         onOpenDrawer = {
@@ -454,7 +462,7 @@ fun AppNavGraph(
                 composable(Routes.CHECKIN) {
                     val parentEntry = remember(it) {
                         try {
-                            navController.getBackStackEntry(Routes.CHECKIN)
+                            navController.getBackStackEntry(Routes.DASHBOARD)
                         } catch (_: Exception) {
                             it
                         }
@@ -485,7 +493,7 @@ fun AppNavGraph(
                 composable(Routes.DAILY_CHECKIN) {
                     val parentEntry = remember(it) {
                         try {
-                            navController.getBackStackEntry(Routes.CHECKIN)
+                            navController.getBackStackEntry(Routes.DASHBOARD)
                         } catch (_: Exception) {
                             it
                         }
@@ -508,7 +516,7 @@ fun AppNavGraph(
                 composable(Routes.CHECKIN_PREVIEW) {
                     val parentEntry = remember(it) {
                         try {
-                            navController.getBackStackEntry(Routes.CHECKIN)
+                            navController.getBackStackEntry(Routes.DASHBOARD)
                         } catch (_: Exception) {
                             it
                         }
@@ -522,8 +530,19 @@ fun AppNavGraph(
                             navController.popBackStack()
                         },
                         onNavigateToOverview = {
+                            val hasCheckinInBackstack = try {
+                                navController.getBackStackEntry(Routes.CHECKIN)
+                                true
+                            } catch (_: Exception) {
+                                false
+                            }
+
                             navController.navigate(Routes.CHECKIN) {
-                                popUpTo(Routes.CHECKIN) { inclusive = false }
+                                if (hasCheckinInBackstack) {
+                                    popUpTo(Routes.CHECKIN) { inclusive = false }
+                                } else {
+                                    popUpTo(Routes.DASHBOARD) { inclusive = false }
+                                }
                                 launchSingleTop = true
                             }
                         },
@@ -548,7 +567,11 @@ fun AppNavGraph(
                         viewModel(factory = ViewModelProvider.Factory)
 
                     val parentEntry = remember(it) {
-                        navController.getBackStackEntry(Routes.DASHBOARD)
+                        try {
+                            navController.getBackStackEntry(Routes.DASHBOARD)
+                        } catch (_: Exception) {
+                            it
+                        }
                     }
 
                     val checkinsViewModel: CheckinsViewModel =

@@ -19,13 +19,18 @@ class TranscriptionDataSource(
             val warningMessage = detectThreeDaySymptomPattern(
                 userId = userId,
                 currentSymptoms = dto.detectedSymptoms
-            )
+            ) ?: detectSymptomWarning(dto.detectedSymptoms)
+              ?: dto.warningMessage
+
+            val encryptedWarning = CryptoManager.encrypt(warningMessage)
 
             val encryptedData = hashMapOf<String, Any?>(
                 "transcribedText" to CryptoManager.encrypt(dto.transcribedText),
+                "message" to CryptoManager.encrypt(dto.transcribedText),
                 "detectedSymptoms" to CryptoManager.encryptStringList(dto.detectedSymptoms),
-                "hasWarning" to (warningMessage != null),
-                "warningMessage" to CryptoManager.encrypt(warningMessage),
+                "hasWarning" to (warningMessage != null || dto.hasWarning),
+                "warningMessage" to encryptedWarning,
+                "warning" to encryptedWarning,
                 "audioDuration" to dto.audioDuration,
                 "confidenceScore" to dto.confidenceScore,
                 "languageCode" to dto.languageCode,
@@ -59,27 +64,54 @@ class TranscriptionDataSource(
             set(Calendar.MILLISECOND, 0)
         }.time
 
-        val recentLogs = firestore.collection("transcriptions")
-            .whereEqualTo("userId", userId)
-            .whereGreaterThanOrEqualTo("timestamp", startDate)
-            .get()
-            .await()
-            .documents
-            .mapNotNull { document ->
-                val rawSymptoms = document.get("detectedSymptoms")
-                CryptoManager.decryptStringList(rawSymptoms)
+        return try {
+            val recentLogs = firestore.collection("transcriptions")
+                .whereEqualTo("userId", userId)
+                .get()
+                .await()
+                .documents
+                .filter { document ->
+                    val ts = document.getTimestamp("timestamp")?.toDate()
+                    ts != null && !ts.before(startDate)
+                }
+                .mapNotNull { document ->
+                    val rawSymptoms = document.get("detectedSymptoms")
+                    CryptoManager.decryptStringList(rawSymptoms)
+                }
+
+            val previousSymptoms = recentLogs
+                .flatMap { it }
+                .toSet()
+
+            val repeatedSymptom = currentSymptoms.firstOrNull { symptom ->
+                previousSymptoms.contains(symptom)
             }
 
-        val previousSymptoms = recentLogs
-            .flatMap { it }
-            .toSet()
+            repeatedSymptom?.let { symptom ->
+                "You have logged $symptom repeatedly within the last 3 days. Please monitor your condition and consider consulting a healthcare professional if it continues or worsens."
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
 
-        val repeatedSymptom = currentSymptoms.firstOrNull { symptom ->
-            previousSymptoms.contains(symptom)
+    private fun detectSymptomWarning(symptoms: List<String>): String? {
+        if (symptoms.isEmpty()) return null
+
+        val critical = symptoms.firstOrNull { s ->
+            val lower = s.lowercase().trim()
+            lower.contains("bleeding") || lower.contains("spotting") ||
+                    lower.contains("chest pain") || lower.contains("shortness of breath") ||
+                    lower.contains("fever") || lower.contains("headache") ||
+                    lower.contains("aching head") || lower.contains("dizziness") ||
+                    lower.contains("abdominal pain") || lower.contains("swelling")
         }
 
-        return repeatedSymptom?.let { symptom ->
-            "You have logged $symptom repeatedly within the last 3 days. Please monitor your condition and consider consulting a healthcare professional if it continues or worsens."
+        return if (critical != null) {
+            "Attention: You reported $critical. Monitor this symptom closely, rest, stay hydrated, and consult your healthcare provider if it persists or worsens."
+        } else {
+            val symptomText = symptoms.joinToString(", ")
+            "Monitor your reported symptoms ($symptomText) closely. Prioritize rest and hydration, and consult your doctor if they continue or worsen."
         }
     }
 }

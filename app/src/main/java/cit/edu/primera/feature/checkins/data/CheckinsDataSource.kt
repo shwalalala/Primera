@@ -41,7 +41,13 @@ class CheckinsDataSource {
                                     val rawCategory = doc.getString("category")
                                     val rawMessage = doc.getString("message")
                                     val rawDescription = doc.getString("description")
-                                    val rawWarningMessage = doc.getString("warningMessage")
+                                    val rawWarningMessage = doc.getString("warningMessage") ?: doc.getString("warning")
+
+                                    val hasWarning = doc.getBoolean("hasWarning")
+                                        ?: doc.getBoolean("warning")
+                                        ?: (rawWarningMessage != null)
+
+                                    val decryptedWarning = CryptoManager.decrypt(rawWarningMessage)
 
                                     CheckinLogDto(
                                         id = doc.id,
@@ -51,8 +57,9 @@ class CheckinsDataSource {
                                         message = CryptoManager.decrypt(rawMessage),
                                         description = CryptoManager.decrypt(rawDescription),
                                         timestamp = doc.getTimestamp("timestamp")?.toDate(),
-                                        hasWarning = doc.getBoolean("hasWarning") ?: false,
-                                        warningMessage = CryptoManager.decrypt(rawWarningMessage)
+                                        hasWarning = hasWarning,
+                                        warningMessage = decryptedWarning,
+                                        warning = decryptedWarning
                                     )
                                 } catch (_: Exception) {
                                     null
@@ -104,22 +111,33 @@ class CheckinsDataSource {
 
             val currentDescription = log.description.orEmpty()
             val currentSymptoms = extractSymptomsFromDescription(currentDescription)
+                .ifEmpty { extractSymptomsFromText(log.message.orEmpty()) }
 
             val warningMessage = detectThreeDayCheckinSymptomPattern(
                 userId = userId,
                 currentSymptoms = currentSymptoms,
                 currentEditingId = log.id
-            )
+            ) ?: detectSymptomWarning(currentSymptoms)
+              ?: log.warningMessage
+
+            val hasWarning = (warningMessage != null) || log.hasWarning
+
+            val messageToSave = log.message?.trim()?.takeIf { it.isNotBlank() }
+                ?: extractNoteFromDescription(currentDescription)
+                ?: currentDescription.takeIf { it.isNotBlank() }
+
+            val encryptedWarning = CryptoManager.encrypt(warningMessage)
 
             val logData = mutableMapOf<String, Any?>(
                 "userId" to userId,
-                "type" to CryptoManager.encrypt(log.type),
-                "category" to CryptoManager.encrypt(log.category),
-                "message" to CryptoManager.encrypt(log.message),
+                "type" to CryptoManager.encrypt(log.type ?: "Check-in"),
+                "category" to CryptoManager.encrypt(log.category ?: "Other"),
+                "message" to CryptoManager.encrypt(messageToSave),
                 "description" to CryptoManager.encrypt(log.description),
                 "timestamp" to (log.timestamp ?: Date()),
-                "hasWarning" to (warningMessage != null),
-                "warningMessage" to CryptoManager.encrypt(warningMessage)
+                "hasWarning" to hasWarning,
+                "warningMessage" to encryptedWarning,
+                "warning" to encryptedWarning
             )
 
             if (!log.id.isNullOrBlank()) {
@@ -208,6 +226,53 @@ class CheckinsDataSource {
         } catch (_: Exception) {
             null
         }
+    }
+
+    private fun detectSymptomWarning(symptoms: List<String>): String? {
+        if (symptoms.isEmpty()) return null
+
+        val critical = symptoms.firstOrNull { s ->
+            val lower = s.lowercase().trim()
+            lower.contains("bleeding") || lower.contains("spotting") ||
+                    lower.contains("chest pain") || lower.contains("shortness of breath") ||
+                    lower.contains("fever") || lower.contains("headache") ||
+                    lower.contains("aching head") || lower.contains("dizziness") ||
+                    lower.contains("abdominal pain") || lower.contains("swelling")
+        }
+
+        return if (critical != null) {
+            "Attention: You reported $critical. Monitor this symptom closely, rest, stay hydrated, and consult your healthcare provider if it persists or worsens."
+        } else {
+            val symptomText = symptoms.joinToString(", ")
+            "Monitor your reported symptoms ($symptomText) closely. Prioritize rest and hydration, and consult your doctor if they continue or worsen."
+        }
+    }
+
+    private fun extractNoteFromDescription(description: String): String? {
+        if (description.isBlank()) return null
+        var note = description
+        listOf("Symptoms:", "Mood:", "Medicine:", "Weight:").forEach { label ->
+            val index = note.indexOf(label)
+            if (index != -1) {
+                val end = note.indexOf(";", index).let {
+                    if (it == -1) note.length else it + 1
+                }
+                note = note.removeRange(index, end).trim()
+            }
+        }
+        val cleanNote = note.trimStart(';').trim()
+        return cleanNote.takeIf { it.isNotBlank() }
+    }
+
+    private fun extractSymptomsFromText(text: String): List<String> {
+        if (text.isBlank()) return emptyList()
+        val commonSymptoms = listOf(
+            "headache", "aching head", "dizziness", "nausea", "fatigue",
+            "fever", "cough", "shortness of breath", "chest pain",
+            "abdominal pain", "back pain", "swelling", "heartburn", "spotting", "bleeding"
+        )
+        val lower = text.lowercase()
+        return commonSymptoms.filter { lower.contains(it) }
     }
 
     private fun extractSymptomsFromDescription(description: String): List<String> {
