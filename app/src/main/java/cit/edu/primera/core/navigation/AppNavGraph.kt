@@ -93,25 +93,39 @@ fun AppNavGraph(
     pendingDestinationRoute: String? = null,
     onPendingRouteHandled: () -> Unit = {}
 ) {
-    val authViewModel: AuthViewModel = viewModel(factory = ViewModelProvider.Factory)
+    val authViewModel: AuthViewModel =
+        viewModel(factory = ViewModelProvider.Factory)
+
     val currentBackStack by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStack?.destination?.route
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
 
-    val dashboardViewModel: DashboardViewModel = viewModel(factory = ViewModelProvider.Factory)
+    val dashboardViewModel: DashboardViewModel =
+        viewModel(factory = ViewModelProvider.Factory)
+
     val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
     val showMicCoachmark by dashboardViewModel.showMicCoachmark.collectAsStateWithLifecycle()
     val sidebarUserData = (dashboardUiState as? DashboardUiState.Success)?.data
     var showSummaryQrDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(pendingDestinationRoute, currentRoute) {
-        if (!pendingDestinationRoute.isNullOrBlank() && currentRoute != null && currentRoute != Routes.SPLASH) {
+        if (
+            !pendingDestinationRoute.isNullOrBlank() &&
+            currentRoute != null &&
+            currentRoute != Routes.SPLASH
+        ) {
             val target = pendingDestinationRoute
             onPendingRouteHandled()
-            val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-            if (currentUser != null || target == Routes.LOGIN || target == Routes.WELCOME) {
+            val currentUser =
+                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+
+            if (
+                currentUser != null ||
+                target == Routes.LOGIN ||
+                target == Routes.WELCOME
+            ) {
                 navController.navigate(target) {
                     launchSingleTop = true
                 }
@@ -171,7 +185,8 @@ fun AppNavGraph(
                 com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
             val appContainer =
                 (context.applicationContext as? cit.edu.primera.PrimeraApplication)?.container
-            val localPhoto = appContainer?.preferenceRepository?.getProfilePictureUri(currentUserId)
+            val localPhoto =
+                appContainer?.preferenceRepository?.getProfilePictureUri(currentUserId)
             val unifiedPhotoUri =
                 sidebarUserData?.photoUri?.takeIf { it.isNotBlank() } ?: localPhoto
 
@@ -400,7 +415,6 @@ fun AppNavGraph(
                                 }
                             },
                             onBack = {
-                                // Retain latest main's incomplete-account cleanup.
                                 authViewModel.deleteIncompleteAccountAndLogout()
                                 navController.navigate(Routes.LOGIN) {
                                     popUpTo(Routes.ONBOARDING) {
@@ -411,9 +425,22 @@ fun AppNavGraph(
                         )
                     }
 
+                    // Shared Dashboard-scoped CheckinsViewModel.
+                    // Preserve teammates' voice transcription fix.
                     composable(Routes.DASHBOARD) {
+                        val parentEntry = remember(it) {
+                            try {
+                                navController.getBackStackEntry(Routes.DASHBOARD)
+                            } catch (_: Exception) {
+                                it
+                            }
+                        }
+
                         val checkinsViewModel: CheckinsViewModel =
-                            viewModel(factory = ViewModelProvider.Factory)
+                            viewModel(
+                                parentEntry,
+                                factory = ViewModelProvider.Factory
+                            )
 
                         DashboardScreen(
                             onOpenDrawer = {
@@ -476,7 +503,7 @@ fun AppNavGraph(
                     composable(Routes.CHECKIN) {
                         val parentEntry = remember(it) {
                             try {
-                                navController.getBackStackEntry(Routes.CHECKIN)
+                                navController.getBackStackEntry(Routes.DASHBOARD)
                             } catch (_: Exception) {
                                 it
                             }
@@ -515,7 +542,7 @@ fun AppNavGraph(
                         )
                     }
 
-                    // Prenatal calendar and direct record navigation.
+                    // Preserve prenatal calendar and direct record opening.
                     composable(
                         route = PRENATAL_CHECKUP_PATTERN,
                         arguments = listOf(
@@ -537,10 +564,11 @@ fun AppNavGraph(
                         )
                     }
 
+                    // Daily Check-in uses the same Dashboard-scoped ViewModel.
                     composable(Routes.DAILY_CHECKIN) {
                         val parentEntry = remember(it) {
                             try {
-                                navController.getBackStackEntry(Routes.CHECKIN)
+                                navController.getBackStackEntry(Routes.DASHBOARD)
                             } catch (_: Exception) {
                                 it
                             }
@@ -566,7 +594,7 @@ fun AppNavGraph(
                     composable(Routes.CHECKIN_PREVIEW) {
                         val parentEntry = remember(it) {
                             try {
-                                navController.getBackStackEntry(Routes.CHECKIN)
+                                navController.getBackStackEntry(Routes.DASHBOARD)
                             } catch (_: Exception) {
                                 it
                             }
@@ -583,9 +611,22 @@ fun AppNavGraph(
                                 navController.popBackStack()
                             },
                             onNavigateToOverview = {
+                                val hasCheckinInBackstack = try {
+                                    navController.getBackStackEntry(Routes.CHECKIN)
+                                    true
+                                } catch (_: Exception) {
+                                    false
+                                }
+
                                 navController.navigate(Routes.CHECKIN) {
-                                    popUpTo(Routes.CHECKIN) {
-                                        inclusive = false
+                                    if (hasCheckinInBackstack) {
+                                        popUpTo(Routes.CHECKIN) {
+                                            inclusive = false
+                                        }
+                                    } else {
+                                        popUpTo(Routes.DASHBOARD) {
+                                            inclusive = false
+                                        }
                                     }
                                     launchSingleTop = true
                                 }
@@ -596,7 +637,6 @@ fun AppNavGraph(
 
                     composable(Routes.FORGOT_PW) {
                         val state by authViewModel.uiState.collectAsStateWithLifecycle()
-
                         ForgotPasswordScreen(
                             state = state,
                             onEmailChange = authViewModel::onEmailChange,
@@ -612,7 +652,11 @@ fun AppNavGraph(
                             viewModel(factory = ViewModelProvider.Factory)
 
                         val parentEntry = remember(it) {
-                            navController.getBackStackEntry(Routes.DASHBOARD)
+                            try {
+                                navController.getBackStackEntry(Routes.DASHBOARD)
+                            } catch (_: Exception) {
+                                it
+                            }
                         }
 
                         val checkinsViewModel: CheckinsViewModel =
@@ -734,7 +778,8 @@ fun AppNavGraph(
 
             if (showSummaryQrDialog) {
                 val context = androidx.compose.ui.platform.LocalContext.current
-                val summaryQrContent by dashboardViewModel.summaryQrContent.collectAsStateWithLifecycle()
+                val summaryQrContent by
+                dashboardViewModel.summaryQrContent.collectAsStateWithLifecycle()
 
                 cit.edu.primera.ui.components.SummaryQrDialog(
                     onDismissRequest = {
@@ -775,9 +820,7 @@ fun PlaceholderScreen(name: String) {
             ),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = name,
                 style = MaterialTheme.typography.displayMedium,

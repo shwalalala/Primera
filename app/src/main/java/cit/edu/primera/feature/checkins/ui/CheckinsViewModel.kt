@@ -39,11 +39,8 @@ class CheckinsViewModel(
     val dailyState: StateFlow<DailyCheckinUiState> =
         _dailyState.asStateFlow()
 
-    // Added: preserve the original DTOs for date-aware editing.
-    // This avoids changing teammates' dashboard model.
     private var cachedLogs: List<CheckinLogDto> = emptyList()
 
-    // Keep teammates' option definitions and constructor ordering.
     private val defaultSymptoms = listOf(
         CheckinOption("Aching Head", "Symptom"),
         CheckinOption("Nausea", "Symptom"),
@@ -71,10 +68,6 @@ class CheckinsViewModel(
         loadOptions()
     }
 
-    // -------------------------------------------------
-    // DATE HELPERS - OUR ADDITION
-    // -------------------------------------------------
-
     private fun createDateFormat(): SimpleDateFormat =
         SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
             isLenient = false
@@ -99,10 +92,6 @@ class CheckinsViewModel(
         return formatter.format(fallback ?: Date())
     }
 
-    // -------------------------------------------------
-    // TEAMMATES' EXISTING CUSTOM OPTIONS
-    // -------------------------------------------------
-
     private fun loadOptions() {
         val customSymptoms = repository.getCustomOptions("Symptom")
             .map { CheckinOption(it, "Symptom") }
@@ -122,14 +111,9 @@ class CheckinsViewModel(
         }
     }
 
-    // -------------------------------------------------
-    // OBSERVE CHECK-IN HISTORY
-    // -------------------------------------------------
-
     private fun observeLogs() {
         repository.observeLogs()
             .onEach { logs ->
-                // Added: retain DTOs for restoring edit dates.
                 cachedLogs = logs
 
                 _overviewState.update {
@@ -150,11 +134,6 @@ class CheckinsViewModel(
             .launchIn(viewModelScope)
     }
 
-    // -------------------------------------------------
-    // TEAMMATES' WEIGHT OBSERVER
-    // With edit protection from our earlier version.
-    // -------------------------------------------------
-
     private fun observeWeight() {
         repository.observeUserWeight()
             .onEach { userDto ->
@@ -173,7 +152,6 @@ class CheckinsViewModel(
                             weightKg = if (state.editingId == null) {
                                 userDto.weightKg?.toString() ?: ""
                             } else {
-                                // Do not overwrite a record being edited.
                                 state.weightKg
                             },
                             lastWeightUpdateDate = lastUpdate?.let { date ->
@@ -190,22 +168,14 @@ class CheckinsViewModel(
             .launchIn(viewModelScope)
     }
 
-    // -------------------------------------------------
-    // CHECK-IN HISTORY
-    // Added date-aware sorting while retaining
-    // teammates' DashboardLogUiItem structure.
-    // -------------------------------------------------
-
     private fun mapLogs(
         logs: List<CheckinLogDto>
     ): List<DashboardLogUiItem> {
         val dateFormat = createDateFormat()
-
         val timeFormat = SimpleDateFormat(
             "h:mm a",
             Locale.getDefault()
         )
-
         val displayFormat = SimpleDateFormat(
             "MMM d, yyyy",
             Locale.getDefault()
@@ -277,10 +247,6 @@ class CheckinsViewModel(
         }
     }
 
-    // -------------------------------------------------
-    // CALENDAR DATE MANAGEMENT
-    // -------------------------------------------------
-
     private fun updateWeekDays() {
         val selectedDate = _dailyState.value.selectedCheckinDate
         val dateFormat = createDateFormat()
@@ -318,7 +284,6 @@ class CheckinsViewModel(
         }
     }
 
-    // Added: called by SelectableCheckinCalendar.
     fun onCheckinDateSelected(date: String) {
         val dateFormat = createDateFormat()
 
@@ -326,7 +291,6 @@ class CheckinsViewModel(
             dateFormat.parse(date)
         }.getOrNull() ?: return
 
-        // Reject malformed dates.
         if (dateFormat.format(selectedDate) != date) {
             return
         }
@@ -335,7 +299,6 @@ class CheckinsViewModel(
             dateFormat.format(Date())
         ) ?: return
 
-        // Daily check-ins are not allowed for future dates.
         if (selectedDate.after(today)) {
             return
         }
@@ -350,10 +313,6 @@ class CheckinsViewModel(
         updateWeekDays()
     }
 
-    // -------------------------------------------------
-    // TEAMMATES' SEARCH AND FILTER
-    // -------------------------------------------------
-
     fun onSearchQueryChange(query: String) {
         _overviewState.update {
             it.copy(searchQuery = query)
@@ -365,10 +324,6 @@ class CheckinsViewModel(
             it.copy(selectedFilter = filter)
         }
     }
-
-    // -------------------------------------------------
-    // TEAMMATES' SYMPTOM, MOOD AND MEDICINE TOGGLES
-    // -------------------------------------------------
 
     fun onSymptomToggle(symptom: String) {
         _dailyState.update { state ->
@@ -412,10 +367,6 @@ class CheckinsViewModel(
         }
     }
 
-    // -------------------------------------------------
-    // MEASUREMENTS
-    // -------------------------------------------------
-
     fun onWeightChange(weight: String) {
         if (
             weight.isEmpty() ||
@@ -427,7 +378,6 @@ class CheckinsViewModel(
         }
     }
 
-    // Added: blood sugar handling.
     fun onBloodSugarChange(bloodSugar: String) {
         if (
             bloodSugar.isEmpty() ||
@@ -438,10 +388,6 @@ class CheckinsViewModel(
             }
         }
     }
-
-    // -------------------------------------------------
-    // TEAMMATES' CUSTOM OPTIONS
-    // -------------------------------------------------
 
     fun onAddCustomOption(category: String, label: String) {
         if (label.isBlank()) return
@@ -456,15 +402,36 @@ class CheckinsViewModel(
         }
     }
 
-    // -------------------------------------------------
-    // TEAMMATES' VOICE INPUT AND SYMPTOM EXTRACTION
-    // -------------------------------------------------
-
+    // Teammates' fix: update Notes immediately.
+    // Symptom extraction happens separately afterward.
     fun applyVoiceInputToCheckin(
         transcribedText: String
     ) {
+        val trimmedText = transcribedText.trim()
+
+        if (trimmedText.isNotBlank()) {
+            _dailyState.update { state ->
+                val updatedNote = buildString {
+                    if (state.note.isNotBlank()) {
+                        append(state.note.trim())
+                        append("\n\n")
+                    }
+
+                    append("Voice input: ")
+                    append(trimmedText)
+                }
+
+                state.copy(
+                    note = updatedNote,
+                    success = false,
+                    errorMessage = null
+                )
+            }
+        }
+
         viewModelScope.launch {
-            val detectedSymptoms = symptomExtractor.extract(transcribedText)
+            val detectedSymptoms =
+                symptomExtractor.extract(transcribedText)
 
             val mappedSymptoms = detectedSymptoms
                 .mapNotNull { mapDetectedSymptomToCheckinOption(it) }
@@ -480,30 +447,22 @@ class CheckinsViewModel(
                     }
 
                 if (!alreadyAvailable) {
-                    repository.addCustomOption("Symptom", symptomLabel)
+                    repository.addCustomOption(
+                        "Symptom",
+                        symptomLabel
+                    )
                 }
             }
 
-            loadOptions()
+            if (mappedSymptoms.isNotEmpty()) {
+                loadOptions()
 
-            _dailyState.update { state ->
-                val updatedNote = buildString {
-                    if (state.note.isNotBlank()) {
-                        append(state.note.trim())
-                        append("\n\n")
-                    }
-
-                    append("Voice input: ")
-                    append(transcribedText.trim())
+                _dailyState.update { state ->
+                    state.copy(
+                        selectedSymptoms =
+                            state.selectedSymptoms + mappedSymptoms
+                    )
                 }
-
-                state.copy(
-                    selectedSymptoms =
-                        state.selectedSymptoms + mappedSymptoms,
-                    note = updatedNote,
-                    success = false,
-                    errorMessage = null
-                )
             }
         }
     }
@@ -533,12 +492,6 @@ class CheckinsViewModel(
             }
         }
     }
-
-    // -------------------------------------------------
-    // SAVE CHECK-IN
-    // Date-aware saving and blood sugar restored.
-    // Existing repository.saveLog() is preserved.
-    // -------------------------------------------------
 
     fun onSaveCheckin() {
         if (_dailyState.value.isSaving) return
@@ -607,7 +560,7 @@ class CheckinsViewModel(
                 }
 
                 if (state.note.isNotBlank()) {
-                    descriptionParts.add(state.note)
+                    descriptionParts.add(state.note.trim())
                 }
 
                 if (descriptionParts.isNotEmpty()) {
@@ -618,19 +571,24 @@ class CheckinsViewModel(
                         else -> "Other"
                     }
 
+                    val messageText = state.note.trim().ifBlank {
+                        descriptionParts.joinToString("; ")
+                    }
+
                     repository.saveLog(
                         CheckinLogDto(
                             id = state.editingId,
                             type = "Check-in",
                             category = category,
+                            message = messageText,
                             description = descriptionParts.joinToString("; "),
                             timestamp = state.originalTimestamp ?: Date(),
                             checkinDate = state.selectedCheckinDate
                         )
                     ).getOrThrow()
 
-                    // Do not overwrite today's profile weight
-                    // when saving a historical check-in.
+                    // Don't update the user's current profile weight
+                    // when editing a historical check-in.
                     val isToday =
                         state.selectedCheckinDate == dateFormat.format(Date())
 
@@ -664,10 +622,6 @@ class CheckinsViewModel(
         }
     }
 
-    // -------------------------------------------------
-    // RESET FOR NEW CHECK-IN
-    // -------------------------------------------------
-
     fun prepareNewCheckin() {
         _dailyState.update { state ->
             DailyCheckinUiState(
@@ -683,12 +637,6 @@ class CheckinsViewModel(
 
         updateWeekDays()
     }
-
-    // -------------------------------------------------
-    // LOAD EXISTING CHECK-IN FOR EDITING
-    // Restore the original date, timestamp,
-    // and blood sugar without changing dashboard DTOs.
-    // -------------------------------------------------
 
     fun loadCheckinForEdit(log: DashboardLogUiItem) {
         val originalLog = cachedLogs.firstOrNull {
@@ -757,10 +705,6 @@ class CheckinsViewModel(
         updateWeekDays()
     }
 
-    // -------------------------------------------------
-    // TEAMMATES' DESCRIPTION PARSING
-    // -------------------------------------------------
-
     private fun parseSection(
         description: String,
         label: String
@@ -769,6 +713,7 @@ class CheckinsViewModel(
         if (start == -1) return emptyList()
 
         val contentStart = start + label.length
+
         val end = description.indexOf(";", contentStart).let {
             if (it == -1) description.length else it
         }

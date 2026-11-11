@@ -12,6 +12,7 @@ data class CheckinLogDto(
     val timestamp: Date? = null,
     val hasWarning: Boolean = false,
     val warningMessage: String? = null,
+    val warning: String? = null,
     val checkinDate: String? = null
 )
 

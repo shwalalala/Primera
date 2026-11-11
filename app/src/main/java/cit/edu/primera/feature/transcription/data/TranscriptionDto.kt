@@ -8,6 +8,9 @@ data class TranscriptionDto(
     @get:JvmName("getTranscribedText")
     val transcribedText: String = "",
 
+    @get:JvmName("getMessage")
+    val message: String? = null,
+
     @get:JvmName("getDetectedSymptoms")
     val detectedSymptoms: List<String> = emptyList(),
 
@@ -16,6 +19,9 @@ data class TranscriptionDto(
 
     @get:JvmName("getWarningMessage")
     val warningMessage: String? = null,
+
+    @get:JvmName("getWarning")
+    val warning: String? = null,
 
     @get:JvmName("getAudioDuration")
     val audioDuration: Long = 0L,
