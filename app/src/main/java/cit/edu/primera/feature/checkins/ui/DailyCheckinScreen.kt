@@ -1,3 +1,4 @@
+
 package cit.edu.primera.feature.checkins.ui
 
 import androidx.compose.foundation.background
@@ -18,9 +19,11 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,6 +44,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,9 +61,11 @@ import cit.edu.primera.core.theme.SurfaceWhite
 import cit.edu.primera.core.theme.TextHint
 import cit.edu.primera.core.theme.TextPrimary
 import cit.edu.primera.core.theme.TextSecondary
-import cit.edu.primera.feature.dashboard.ui.DashboardWeekDayItem
-import cit.edu.primera.feature.dashboard.ui.WeekCalendarRow
 import cit.edu.primera.ui.components.PrimeraGradientButton
+
+// ==================================================
+// DAILY CHECK-IN SCREEN
+// ==================================================
 
 @Composable
 fun DailyCheckinScreen(
@@ -72,16 +80,22 @@ fun DailyCheckinScreen(
         state = state,
         onBack = onBack,
         onClear = viewModel::prepareNewCheckin,
-        onSubmit = onReview, // Navigate to review instead of saving directly
+        onSubmit = onReview,
         onSymptomToggle = viewModel::onSymptomToggle,
         onMoodToggle = viewModel::onMoodToggle,
         onMedicineToggle = viewModel::onMedicineToggle,
         onNoteChange = viewModel::onNoteChange,
         onWeightChange = viewModel::onWeightChange,
+        onBloodSugarChange = viewModel::onBloodSugarChange,
+        onCheckinDateSelected = viewModel::onCheckinDateSelected,
         onAddCustomOption = viewModel::onAddCustomOption,
         modifier = modifier
     )
 }
+
+// ==================================================
+// DAILY CHECK-IN CONTENT
+// ==================================================
 
 @Composable
 fun DailyCheckinContent(
@@ -94,6 +108,8 @@ fun DailyCheckinContent(
     onMedicineToggle: (String) -> Unit,
     onNoteChange: (String) -> Unit,
     onWeightChange: (String) -> Unit,
+    onBloodSugarChange: (String) -> Unit,
+    onCheckinDateSelected: (String) -> Unit,
     onAddCustomOption: (String, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -113,82 +129,143 @@ fun DailyCheckinContent(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 32.dp)
+                .padding(bottom = 24.dp)
         ) {
             Spacer(Modifier.statusBarsPadding())
+
+            // ----------------------------------
+            // COMPACT HEADER
+            // ----------------------------------
+
             DailyCheckinTopBar(
                 onBack = onBack,
                 onClear = onClear,
                 isEditing = state.editingId != null
             )
-            
-            WeekCalendarRow(state.weekDays)
-            
-            Spacer(Modifier.height(16.dp))
-            
+
+            // ----------------------------------
+            // EXISTING COMPACT CALENDAR
+            // ----------------------------------
+
+            SelectableCheckinCalendar(
+                selectedDate = state.selectedCheckinDate,
+                onDateSelected = onCheckinDateSelected,
+                compact = true
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            // ----------------------------------
+            // SYMPTOMS
+            // ----------------------------------
+
             CheckinSection(
                 title = "Symptoms",
                 options = state.availableSymptoms,
                 selectedOptions = state.selectedSymptoms,
                 onOptionToggle = onSymptomToggle,
-                onAddCustom = { label -> onAddCustomOption("Symptom", label) }
+                onAddCustom = { label ->
+                    onAddCustomOption("Symptom", label)
+                }
             )
-            
-            Spacer(Modifier.height(24.dp))
-            
+
+            Spacer(Modifier.height(12.dp))
+
+            // ----------------------------------
+            // MOODS
+            // ----------------------------------
+
             CheckinSection(
                 title = "Moods",
                 options = state.availableMoods,
                 selectedOptions = state.selectedMoods,
                 onOptionToggle = onMoodToggle,
-                onAddCustom = { label -> onAddCustomOption("Mood", label) }
+                onAddCustom = { label ->
+                    onAddCustomOption("Mood", label)
+                }
             )
-            
-            Spacer(Modifier.height(24.dp))
-            
+
+            Spacer(Modifier.height(12.dp))
+
+            // ----------------------------------
+            // MEDICINE
+            // ----------------------------------
+
             CheckinSection(
                 title = "Medicine",
                 options = state.availableMedicines,
                 selectedOptions = state.selectedMedicines,
                 onOptionToggle = onMedicineToggle,
-                onAddCustom = { label -> onAddCustomOption("Medicine", label) }
+                onAddCustom = { label ->
+                    onAddCustomOption("Medicine", label)
+                }
             )
-            
-            Spacer(Modifier.height(24.dp))
-            
+
+            Spacer(Modifier.height(14.dp))
+
+            // ----------------------------------
+            // NOTE
+            // ----------------------------------
+
             NoteSection(
                 note = state.note,
                 onNoteChange = onNoteChange
             )
-            
-            Spacer(Modifier.height(24.dp))
-            
+
+            Spacer(Modifier.height(12.dp))
+
+            // ----------------------------------
+            // WEIGHT
+            // ----------------------------------
+
             WeightSection(
                 weight = state.weightKg,
                 lastUpdated = state.lastWeightUpdateDate,
                 shouldAlert = state.shouldShowWeightUpdateAlert,
                 onWeightChange = onWeightChange
             )
-            
-            Spacer(Modifier.height(32.dp))
-            
+
+            Spacer(Modifier.height(12.dp))
+
+            // ----------------------------------
+            // BLOOD SUGAR
+            // ----------------------------------
+
+            BloodSugarSection(
+                bloodSugar = state.bloodSugarMgDl,
+                onBloodSugarChange = onBloodSugarChange
+            )
+
+            Spacer(Modifier.height(20.dp))
+
+            // ----------------------------------
+            // EXISTING REVIEW ACTION
+            // ----------------------------------
+
             PrimeraGradientButton(
                 text = "Review Check-in",
                 onClick = onSubmit,
-                modifier = Modifier.padding(horizontal = 24.dp)
+                modifier = Modifier.padding(horizontal = 20.dp)
             )
 
             if (state.errorMessage != null) {
                 Text(
                     text = state.errorMessage,
                     color = ErrorRed,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(
+                        horizontal = 20.dp,
+                        vertical = 8.dp
+                    ),
                     style = MaterialTheme.typography.bodySmall
                 )
             }
         }
     }
 }
+
+// ==================================================
+// COMPACT TOP BAR
+// ==================================================
 
 @Composable
 private fun DailyCheckinTopBar(
@@ -199,26 +276,61 @@ private fun DailyCheckinTopBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .padding(
+                start = 16.dp,
+                end = 12.dp,
+                top = 4.dp,
+                bottom = 4.dp
+            ),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        TextButton(onClick = onBack) {
-            Text("Cancel", color = TextSecondary)
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier.size(40.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.ArrowBack,
+                contentDescription = "Back",
+                tint = PrimeraViolet,
+                modifier = Modifier.size(22.dp)
+            )
         }
-        
+
         Text(
-            text = if (isEditing) "Edit Check-In" else "Daily Check-In",
-            style = MaterialTheme.typography.displayMedium,
+            text = if (isEditing) {
+                "Edit Check-In"
+            } else {
+                "Daily Check-In"
+            },
+            fontSize = 17.sp,
+            fontWeight = FontWeight.SemiBold,
             color = TextPrimary,
             modifier = Modifier.weight(1f),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
-        
-        TextButton(onClick = onClear) {
-            Text("Clear", color = PrimeraViolet)
+
+        TextButton(
+            onClick = onClear,
+            contentPadding = PaddingValues(
+                horizontal = 8.dp,
+                vertical = 4.dp
+            )
+        ) {
+            Text(
+                text = "Clear",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = PrimeraViolet
+            )
         }
     }
 }
+
+// ==================================================
+// SYMPTOMS / MOODS / MEDICINE
+// ==================================================
 
 @Composable
 private fun CheckinSection(
@@ -228,59 +340,91 @@ private fun CheckinSection(
     onOptionToggle: (String) -> Unit,
     onAddCustom: (String) -> Unit
 ) {
-    var showAddDialog by remember { mutableStateOf(false) }
-    var customLabel by remember { mutableStateOf("") }
+    var showAddDialog by remember {
+        mutableStateOf(false)
+    }
 
-    Column {
+    var customLabel by remember {
+        mutableStateOf("")
+    }
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp),
+                .padding(
+                    start = 20.dp,
+                    end = 14.dp
+                ),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
                 text = title,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
                 color = TextPrimary
             )
-            IconButton(onClick = { showAddDialog = true }) {
+
+            IconButton(
+                onClick = {
+                    showAddDialog = true
+                },
+                modifier = Modifier.size(36.dp)
+            ) {
                 Icon(
-                    Icons.Default.Add,
+                    imageVector = Icons.Default.Add,
                     contentDescription = "Add custom $title",
                     modifier = Modifier.size(20.dp),
                     tint = PrimeraViolet
                 )
             }
         }
-        
-        Spacer(Modifier.height(16.dp))
-        
+
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(
+                horizontal = 20.dp
+            ),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(options) { option ->
                 CheckinItemChip(
                     label = option.label,
-                    isSelected = selectedOptions.contains(option.label),
-                    onClick = { onOptionToggle(option.label) }
+                    isSelected = selectedOptions.contains(
+                        option.label
+                    ),
+                    onClick = {
+                        onOptionToggle(option.label)
+                    }
                 )
             }
         }
     }
 
+    // ------------------------------------------
+    // EXISTING CUSTOM OPTION DIALOG
+    // ------------------------------------------
+
     if (showAddDialog) {
         AlertDialog(
-            onDismissRequest = { showAddDialog = false },
-            title = { Text("Add Custom $title") },
+            onDismissRequest = {
+                showAddDialog = false
+            },
+            title = {
+                Text("Add Custom $title")
+            },
             text = {
                 OutlinedTextField(
                     value = customLabel,
-                    onValueChange = { customLabel = it },
-                    label = { Text("Label") },
+                    onValueChange = {
+                        customLabel = it
+                    },
+                    label = {
+                        Text("Label")
+                    },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -295,57 +439,109 @@ private fun CheckinSection(
                         }
                     }
                 ) {
-                    Text("Add")
+                    Text(
+                        text = "Add",
+                        color = PrimeraViolet
+                    )
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showAddDialog = false }) {
-                    Text("Cancel")
+                TextButton(
+                    onClick = {
+                        showAddDialog = false
+                    }
+                ) {
+                    Text(
+                        text = "Cancel",
+                        color = TextSecondary
+                    )
                 }
             }
         )
     }
 }
 
+// ==================================================
+// REUSABLE COMPACT INPUT CARD
+// ==================================================
+
+@Composable
+private fun CompactCheckinCard(
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(SurfaceWhite)
+            .border(
+                width = 1.dp,
+                color = DashboardLogBorder,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .padding(
+                horizontal = 14.dp,
+                vertical = 10.dp
+            ),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(
+            text = title,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = TextPrimary
+        )
+
+        content()
+    }
+}
+
+// ==================================================
+// NOTE
+// ==================================================
+
 @Composable
 private fun NoteSection(
     note: String,
     onNoteChange: (String) -> Unit
 ) {
-    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(SurfaceWhite)
-                .border(1.dp, DashboardLogBorder, RoundedCornerShape(16.dp))
-                .padding(16.dp)
-        ) {
-            Column {
+    CompactCheckinCard(
+        title = "Note",
+        modifier = Modifier.padding(horizontal = 20.dp)
+    ) {
+        TextField(
+            value = note,
+            onValueChange = onNoteChange,
+            placeholder = {
                 Text(
-                    text = "Note",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    text = "Add your note here...",
+                    fontSize = 14.sp,
+                    color = TextHint
                 )
-                Spacer(Modifier.height(8.dp))
-                TextField(
-                    value = note,
-                    onValueChange = onNoteChange,
-                    placeholder = { Text("Add your note here...", color = TextHint) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    )
-                )
-            }
-        }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            textStyle = androidx.compose.ui.text.TextStyle(
+                fontSize = 14.sp,
+                color = TextPrimary
+            ),
+            minLines = 1,
+            maxLines = 4,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                disabledContainerColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent
+            )
+        )
     }
 }
+
+// ==================================================
+// WEIGHT
+// ==================================================
 
 @Composable
 private fun WeightSection(
@@ -354,66 +550,132 @@ private fun WeightSection(
     shouldAlert: Boolean,
     onWeightChange: (String) -> Unit
 ) {
-    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(SurfaceWhite)
-                .border(1.dp, DashboardLogBorder, RoundedCornerShape(16.dp))
-                .padding(16.dp)
+    Column(
+        modifier = Modifier
+            .padding(horizontal = 20.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(SurfaceWhite)
+            .border(
+                width = 1.dp,
+                color = DashboardLogBorder,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .padding(
+                horizontal = 14.dp,
+                vertical = 10.dp
+            ),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Weight",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
-                    )
-                    if (lastUpdated != null) {
-                        Text(
-                            text = "Last updated: $lastUpdated",
-                            fontSize = 11.sp,
-                            color = TextSecondary
-                        )
-                    }
-                }
-                
-                if (shouldAlert) {
-                    Text(
-                        text = "Please update your weight (it's been > 2 weeks)",
-                        fontSize = 12.sp,
-                        color = ErrorRed,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-                
-                Spacer(Modifier.height(8.dp))
-                TextField(
-                    value = weight,
-                    onValueChange = onWeightChange,
-                    placeholder = { Text("Add your weight here...", color = TextHint) },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
-                    ),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    )
+            Text(
+                text = "Weight",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = TextPrimary
+            )
+
+            Spacer(Modifier.weight(1f))
+
+            if (lastUpdated != null) {
+                Text(
+                    text = "Updated: $lastUpdated",
+                    fontSize = 10.sp,
+                    color = TextSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
+
+        if (shouldAlert) {
+            Text(
+                text = "Please update your weight (it's been > 2 weeks)",
+                fontSize = 11.sp,
+                color = ErrorRed
+            )
+        }
+
+        TextField(
+            value = weight,
+            onValueChange = onWeightChange,
+            placeholder = {
+                Text(
+                    text = "Add your weight here...",
+                    fontSize = 14.sp,
+                    color = TextHint
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number
+            ),
+            textStyle = androidx.compose.ui.text.TextStyle(
+                fontSize = 14.sp,
+                color = TextPrimary
+            ),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                disabledContainerColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent
+            )
+        )
     }
 }
+
+// ==================================================
+// BLOOD SUGAR
+// ==================================================
+
+@Composable
+private fun BloodSugarSection(
+    bloodSugar: String,
+    onBloodSugarChange: (String) -> Unit
+) {
+    CompactCheckinCard(
+        title = "Blood Sugar",
+        modifier = Modifier.padding(horizontal = 20.dp)
+    ) {
+        TextField(
+            value = bloodSugar,
+            onValueChange = onBloodSugarChange,
+            placeholder = {
+                Text(
+                    text = "Add blood sugar (mg/dL)...",
+                    fontSize = 14.sp,
+                    color = TextHint
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number
+            ),
+            textStyle = androidx.compose.ui.text.TextStyle(
+                fontSize = 14.sp,
+                color = TextPrimary
+            ),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                disabledContainerColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent
+            )
+        )
+    }
+}
+
+// ==================================================
+// COMPOSE PREVIEW
+// ==================================================
 
 @Preview(showBackground = true)
 @Composable
@@ -421,16 +683,6 @@ private fun DailyCheckinPreview() {
     PrimeraTheme {
         DailyCheckinContent(
             state = DailyCheckinUiState(
-                editingId = null,
-                weekDays = listOf(
-                    DashboardWeekDayItem("S", 22, false),
-                    DashboardWeekDayItem("M", 23, true),
-                    DashboardWeekDayItem("T", 24, false),
-                    DashboardWeekDayItem("W", 25, false),
-                    DashboardWeekDayItem("T", 26, false),
-                    DashboardWeekDayItem("F", 27, false),
-                    DashboardWeekDayItem("S", 28, false)
-                ),
                 selectedSymptoms = setOf("Nausea"),
                 lastWeightUpdateDate = "May 14, 2026",
                 shouldShowWeightUpdateAlert = true
@@ -443,6 +695,8 @@ private fun DailyCheckinPreview() {
             onMedicineToggle = {},
             onNoteChange = {},
             onWeightChange = {},
+            onBloodSugarChange = {},
+            onCheckinDateSelected = {},
             onAddCustomOption = { _, _ -> }
         )
     }

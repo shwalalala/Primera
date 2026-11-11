@@ -1,3 +1,4 @@
+
 package cit.edu.primera.feature.checkins.data
 
 import cit.edu.primera.core.util.currentUserIdFlow
@@ -12,125 +13,243 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.tasks.await
-import java.util.Calendar
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 
 class CheckinsDataSource {
+
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
+
+    // ---------------------------------------------
+    // DATE HELPERS
+    // ---------------------------------------------
+
+    private fun createDateFormat(): SimpleDateFormat =
+        SimpleDateFormat(
+            "yyyy-MM-dd",
+            Locale.US
+        ).apply {
+            isLenient = false
+        }
+
+    private fun normalizeCheckinDate(
+        dateString: String?,
+        fallbackTimestamp: Date?
+    ): String? {
+        val formatter = createDateFormat()
+
+        if (!dateString.isNullOrBlank()) {
+            val parsed = runCatching {
+                formatter.parse(dateString)
+            }.getOrNull()
+
+            if (
+                parsed != null &&
+                formatter.format(parsed) == dateString
+            ) {
+                return dateString
+            }
+        }
+
+        return fallbackTimestamp?.let {
+            formatter.format(it)
+        }
+    }
+
+    // ---------------------------------------------
+    // OBSERVE CHECK-IN HISTORY
+    // ---------------------------------------------
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun observeLogs(): Flow<List<CheckinLogDto>> =
         auth.currentUserIdFlow().flatMapLatest { userId ->
+
             if (userId.isNullOrBlank()) {
                 flowOf(emptyList())
             } else {
                 callbackFlow {
-                    val registration: ListenerRegistration = firestore.collection("checkins")
-                        .whereEqualTo("userId", userId)
-                        .addSnapshotListener { snapshot, error ->
-                            if (error != null) {
-                                trySend(emptyList())
-                                return@addSnapshotListener
-                            }
+                    val registration: ListenerRegistration =
+                        firestore.collection("checkins")
+                            .whereEqualTo("userId", userId)
+                            .addSnapshotListener { snapshot, error ->
 
-                            val logs = snapshot?.documents?.mapNotNull { doc ->
-                                try {
-                                    CheckinLogDto(
-                                        id = doc.id,
-                                        type = doc.getString("type") ?: "Check-in",
-                                        category = doc.getString("category") ?: "Fetal Movement",
-                                        message = doc.getString("message"),
-                                        description = doc.getString("description"),
-                                        timestamp = doc.getTimestamp("timestamp")?.toDate(),
-                                        hasWarning = doc.getBoolean("hasWarning") ?: false,
-                                        warningMessage = doc.getString("warningMessage")
-                                    )
-                                } catch (_: Exception) {
-                                    null
+                                if (error != null) {
+                                    trySend(emptyList())
+                                    return@addSnapshotListener
                                 }
-                            }?.sortedByDescending { it.timestamp ?: Date(0) } ?: emptyList()
 
-                            trySend(logs)
-                        }
+                                val logs = snapshot?.documents
+                                    ?.mapNotNull { doc ->
+                                        try {
+                                            CheckinLogDto(
+                                                id = doc.id,
+                                                type = doc.getString("type")
+                                                    ?: "Check-in",
+                                                category = doc.getString("category")
+                                                    ?: "Fetal Movement",
+                                                message = doc.getString("message"),
+                                                description = doc.getString("description"),
+                                                timestamp = doc.getTimestamp("timestamp")
+                                                    ?.toDate(),
+
+                                                // Legacy warning fields are
+                                                // retained only for DTO
+                                                // compatibility with old data.
+                                                // No new warnings are generated.
+                                                hasWarning = doc.getBoolean("hasWarning")
+                                                    ?: false,
+                                                warningMessage = doc.getString(
+                                                    "warningMessage"
+                                                ),
+
+                                                checkinDate = doc.getString(
+                                                    "checkinDate"
+                                                )
+                                            )
+                                        } catch (_: Exception) {
+                                            null
+                                        }
+                                    }
+                                    ?.sortedByDescending {
+                                        it.timestamp ?: Date(0)
+                                    }
+                                    ?: emptyList()
+
+                                trySend(logs)
+                            }
 
                     awaitClose(registration::remove)
                 }
             }
         }
 
+    // ---------------------------------------------
+    // OBSERVE USER WEIGHT
+    // ---------------------------------------------
+
     @OptIn(ExperimentalCoroutinesApi::class)
     fun observeUserWeight(): Flow<CheckinUserDto?> =
         auth.currentUserIdFlow().flatMapLatest { userId ->
+
             if (userId.isNullOrBlank()) {
                 flowOf(null)
             } else {
                 callbackFlow {
-                    val registration: ListenerRegistration = firestore.collection("users")
-                        .document(userId)
-                        .addSnapshotListener { snapshot, error ->
-                            if (error != null) {
-                                trySend(null)
-                                return@addSnapshotListener
-                            }
+                    val registration: ListenerRegistration =
+                        firestore.collection("users")
+                            .document(userId)
+                            .addSnapshotListener { snapshot, error ->
 
-                            if (snapshot != null && snapshot.exists()) {
-                                val weightKg = snapshot.getLong("weightKg")?.toInt()
-                                val updatedAt = snapshot.getTimestamp("updatedAt")?.toDate()
+                                if (error != null) {
+                                    trySend(null)
+                                    return@addSnapshotListener
+                                }
 
-                                trySend(CheckinUserDto(weightKg, updatedAt))
-                            } else {
-                                trySend(null)
+                                if (snapshot != null && snapshot.exists()) {
+                                    val weightKg = snapshot
+                                        .getLong("weightKg")
+                                        ?.toInt()
+
+                                    val updatedAt = snapshot
+                                        .getTimestamp("updatedAt")
+                                        ?.toDate()
+
+                                    trySend(
+                                        CheckinUserDto(
+                                            weightKg,
+                                            updatedAt
+                                        )
+                                    )
+                                } else {
+                                    trySend(null)
+                                }
                             }
-                        }
 
                     awaitClose(registration::remove)
                 }
             }
-    }
+        }
+
+    // ---------------------------------------------
+    // SAVE OR UPDATE DAILY CHECK-IN
+    //
+    // Symptom pattern detection has been removed.
+    //
+    // Check-ins are now recorded without medical
+    // interpretation or symptom-warning generation.
+    // ---------------------------------------------
 
     suspend fun saveLog(log: CheckinLogDto): Result<Unit> {
         return try {
+            // Preserve the existing authentication
+            // behavior from the current data source.
             val userId = auth.currentUser?.uid ?: "anonymous"
 
-            val currentDescription = log.description.orEmpty()
-            val currentSymptoms = extractSymptomsFromDescription(currentDescription)
-
-            val warningMessage = detectThreeDayCheckinSymptomPattern(
-                userId = userId,
-                currentSymptoms = currentSymptoms,
-                currentEditingId = log.id
+            val currentCheckinDate = normalizeCheckinDate(
+                dateString = log.checkinDate,
+                fallbackTimestamp = log.timestamp ?: Date()
             )
 
-            val logData = mutableMapOf<String, Any?>(
+            val logData = mapOf(
                 "userId" to userId,
                 "type" to log.type,
                 "category" to log.category,
                 "message" to log.message,
                 "description" to log.description,
                 "timestamp" to (log.timestamp ?: Date()),
-                "hasWarning" to (warningMessage != null),
-                "warningMessage" to warningMessage
+                "checkinDate" to currentCheckinDate,
+
+                // Keep legacy warning fields neutral.
+                // This also clears them when an old
+                // check-in is edited and saved.
+                "hasWarning" to false,
+                "warningMessage" to null
             )
 
-            if (!log.id.isNullOrBlank()) {
+            val checkinCollection =
                 firestore.collection("checkins")
-                    .document(log.id)
-                    .set(logData, SetOptions.merge())
+
+            val checkinReference =
+                if (!log.id.isNullOrBlank()) {
+                    checkinCollection.document(log.id)
+                } else {
+                    checkinCollection.document()
+                }
+
+            if (!log.id.isNullOrBlank()) {
+                checkinReference
+                    .set(
+                        logData,
+                        SetOptions.merge()
+                    )
                     .await()
             } else {
-                firestore.collection("checkins")
-                    .add(logData)
+                checkinReference
+                    .set(logData)
                     .await()
             }
 
+            // No symptom detection.
+            // No recurring or persistent warnings.
+            // No symptom notification creation.
+
             Result.success(Unit)
+
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    suspend fun updateUserWeight(weightKg: Int): Result<Unit> {
+    // ---------------------------------------------
+    // UPDATE USER WEIGHT
+    // Existing behavior preserved.
+    // ---------------------------------------------
+
+    suspend fun updateUserWeight(
+        weightKg: Int
+    ): Result<Unit> {
         return try {
             val userId = auth.currentUser?.uid ?: "anonymous"
 
@@ -146,75 +265,9 @@ class CheckinsDataSource {
                 .await()
 
             Result.success(Unit)
+
         } catch (e: Exception) {
             Result.failure(e)
         }
-    }
-
-    private suspend fun detectThreeDayCheckinSymptomPattern(
-        userId: String,
-        currentSymptoms: List<String>,
-        currentEditingId: String?
-    ): String? {
-        if (currentSymptoms.isEmpty()) return null
-
-        return try {
-            val startDate = Calendar.getInstance().apply {
-                add(Calendar.DAY_OF_YEAR, -2)
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.time
-
-            val recentLogs = firestore.collection("checkins")
-                .whereEqualTo("userId", userId)
-                .get()
-                .await()
-                .documents
-                .filter { document ->
-                    currentEditingId == null || document.id != currentEditingId
-                }
-                .filter { document ->
-                    val ts = document.getTimestamp("timestamp")?.toDate()
-                    ts != null && !ts.before(startDate)
-                }
-
-            val previousSymptoms = recentLogs
-                .flatMap { document ->
-                    val description = document.getString("description").orEmpty()
-                    extractSymptomsFromDescription(description)
-                }
-                .map { it.lowercase().trim() }
-                .toSet()
-
-            val repeatedSymptom = currentSymptoms.firstOrNull { symptom ->
-                previousSymptoms.contains(symptom.lowercase().trim())
-            }
-
-            repeatedSymptom?.let { symptom ->
-                "You have logged $symptom repeatedly within the last 3 days. Please monitor your condition and consider consulting a healthcare professional if it continues or worsens."
-            }
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    private fun extractSymptomsFromDescription(description: String): List<String> {
-        val symptomLabel = "Symptoms:"
-        val start = description.indexOf(symptomLabel)
-
-        if (start == -1) return emptyList()
-
-        val contentStart = start + symptomLabel.length
-        val end = description.indexOf(";", contentStart).let { semicolonIndex ->
-            if (semicolonIndex == -1) description.length else semicolonIndex
-        }
-
-        return description.substring(contentStart, end)
-            .split(",")
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .distinct()
     }
 }
