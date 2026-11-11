@@ -886,6 +886,7 @@ private val previewProfileViewModel by lazy {
             override suspend fun saveProfile(profile: cit.edu.primera.feature.onboarding.domain.OnboardingProfile) = Result.success(Unit)
         },
         preferenceRepository = object : cit.edu.primera.core.data.PreferenceRepository {
+            override fun getDeviceId() = "preview_device_id"
             override suspend fun shouldShowOnboarding(userId: String) = false
             override fun setOnboardingCompleted(userId: String) {}
             override fun getOnboardingLastStep(userId: String) = null

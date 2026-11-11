@@ -47,7 +47,10 @@ class OnboardingViewModel(
         val savedStepName = preferenceRepository.getOnboardingLastStep(userId)
         if (savedStepName != null) {
             try {
-                val step = OnboardingStep.valueOf(savedStepName)
+                val step = when (savedStepName) {
+                    "WEIGHT", "HEIGHT" -> OnboardingStep.BODY_MEASUREMENTS
+                    else -> OnboardingStep.valueOf(savedStepName)
+                }
                 // Don't resume to PREPARING, that should be final
                 if (step != OnboardingStep.PREPARING) {
                     _state.update { it.copy(currentStep = step) }
@@ -211,9 +214,8 @@ class OnboardingViewModel(
         val currentState = _state.value
 
         val next = when (currentState.currentStep) {
-            OnboardingStep.BIRTHDAY -> OnboardingStep.WEIGHT
-            OnboardingStep.WEIGHT -> OnboardingStep.HEIGHT
-            OnboardingStep.HEIGHT -> OnboardingStep.CYCLE_REGULARITY
+            OnboardingStep.BIRTHDAY -> OnboardingStep.BODY_MEASUREMENTS
+            OnboardingStep.BODY_MEASUREMENTS -> OnboardingStep.CYCLE_REGULARITY
             OnboardingStep.CYCLE_REGULARITY -> {
                 if (currentState.isCycleRegular == false) OnboardingStep.CYCLE_VARIANCE
                 else OnboardingStep.LMP
@@ -279,9 +281,8 @@ class OnboardingViewModel(
         val currentState = _state.value
         val prev = when (currentState.currentStep) {
             OnboardingStep.BIRTHDAY -> OnboardingStep.BIRTHDAY
-            OnboardingStep.WEIGHT -> OnboardingStep.BIRTHDAY
-            OnboardingStep.HEIGHT -> OnboardingStep.WEIGHT
-            OnboardingStep.CYCLE_REGULARITY -> OnboardingStep.HEIGHT
+            OnboardingStep.BODY_MEASUREMENTS -> OnboardingStep.BIRTHDAY
+            OnboardingStep.CYCLE_REGULARITY -> OnboardingStep.BODY_MEASUREMENTS
             OnboardingStep.CYCLE_VARIANCE -> OnboardingStep.CYCLE_REGULARITY
             OnboardingStep.HAD_ULTRASOUND -> OnboardingStep.CYCLE_VARIANCE
             OnboardingStep.LMP -> OnboardingStep.CYCLE_REGULARITY

@@ -1,8 +1,8 @@
 <resources>
     <string name="app_name">Primera</string>
 
-    <!-- Google Sign-In Web Client ID (Client Type 1 from Firebase Console / Google Cloud) -->
-    <string name="default_web_client_id" translatable="false">520407937883-hf0rh7b2ohmijmrnsp9f5ghj2afgfoi9.apps.googleusercontent.com</string>
+    <!-- Google Sign-In Web Client ID (Client Type 3 from Firebase Console / Google Cloud) -->
+    <string name="default_web_client_id" translatable="false">520407937883-np9ce4ebp6mjf35ucca62s299jjdah62.apps.googleusercontent.com</string>
 
     <!-- Facebook Login Metadata -->
     <!-- TODO: Replace with your actual Facebook App ID from developers.facebook.com -->

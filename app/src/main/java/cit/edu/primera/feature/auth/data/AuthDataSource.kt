@@ -203,10 +203,19 @@ class AuthDataSource {
     }
 
     suspend fun deleteAccount() {
-        val user = auth.currentUser ?: throw Exception("User is not authenticated")
+        val user = auth.currentUser ?: return
         val userId = user.uid
-        firestore.collection("users").document(userId).delete().await()
-        user.delete().await()
+        try {
+            firestore.collection("users").document(userId).delete().await()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to delete firestore user document: ${e.message}")
+        }
+        try {
+            user.delete().await()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to delete firebase auth user: ${e.message}")
+            auth.signOut()
+        }
     }
 
     suspend fun updateEmail(currentPassword: String, newEmail: String) {

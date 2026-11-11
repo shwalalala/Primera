@@ -45,7 +45,7 @@
 ## About the Project
 
 Primera is an Android pregnancy-support application developed by team
-`2526-sem2-it332-55`. It is intended to make maternal wellness tracking more
+`2627-sem1-it411-55`. It is intended to make maternal wellness tracking more
 convenient by combining manual and voice-assisted health logging with
 Health Connect data, progress tracking, and supportive pregnancy information.
 
@@ -259,7 +259,7 @@ Firebase data in issues, commits, screenshots, or pull requests.
 
 ## Team
 
-**Team Code:** `2526-sem2-it332-55`
+**Team Code:** `2627-sem1-it411-55`
 
 | Profile | Contributor | ID | Email |
 |---|---|---:|---|

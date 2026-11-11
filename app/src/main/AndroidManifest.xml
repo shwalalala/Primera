@@ -27,6 +27,9 @@
         <!-- Facebook App for Express Login (Android 11+) -->
         <package android:name="com.facebook.katana" />
 
+        <!-- Google Recognition Service for Cebuano and Philippine languages -->
+        <package android:name="com.google.android.googlequicksearchbox" />
+
         <intent>
             <action android:name="android.speech.RecognitionService" />
         </intent>

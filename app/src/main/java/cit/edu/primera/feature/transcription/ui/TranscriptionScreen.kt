@@ -3,6 +3,7 @@ package cit.edu.primera.feature.transcription.ui
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -10,37 +11,51 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,6 +76,7 @@ import cit.edu.primera.core.theme.PrimeraViolet
 import cit.edu.primera.core.theme.TextPrimary
 import cit.edu.primera.core.theme.TextSecondary
 import cit.edu.primera.core.utils.clickableNoRipple
+import cit.edu.primera.feature.transcription.domain.VoiceLanguage
 import cit.edu.primera.ui.components.FullScreenLoadingOverlay
 import cit.edu.primera.ui.components.PrimeraGradientButton
 
@@ -72,6 +88,11 @@ fun TranscriptionScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val transcribedText by viewModel.transcribedText.collectAsStateWithLifecycle()
+    val rawTranscribedText by viewModel.rawTranscribedText.collectAsStateWithLifecycle()
+    val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
+    val isAiCorrected by viewModel.isAiCorrected.collectAsStateWithLifecycle()
+
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -84,11 +105,26 @@ fun TranscriptionScreen(
     TranscriptionContent(
         uiState = uiState,
         transcribedText = transcribedText,
+        rawTranscribedText = rawTranscribedText,
+        selectedLanguage = selectedLanguage,
+        isAiCorrected = isAiCorrected,
+        onSelectLanguage = viewModel::selectLanguage,
         onStartListening = {
-            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            val hasPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.RECORD_AUDIO
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+            if (hasPermission) {
+                viewModel.startListening()
+            } else {
+                permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            }
         },
         onStopListening = viewModel::stopListening,
         onTextEdited = viewModel::onTextEdited,
+        onReformatWithAi = viewModel::reformatWithAi,
+        onRevertToRaw = viewModel::revertToRawText,
         onSave = viewModel::saveTranscription,
         onUseInCheckin = {
             if (transcribedText.isNotBlank()) {
@@ -104,14 +140,22 @@ fun TranscriptionScreen(
 private fun TranscriptionContent(
     uiState: TranscriptionUiState,
     transcribedText: String,
+    rawTranscribedText: String,
+    selectedLanguage: VoiceLanguage,
+    isAiCorrected: Boolean,
+    onSelectLanguage: (VoiceLanguage) -> Unit,
     onStartListening: () -> Unit,
     onStopListening: () -> Unit,
     onTextEdited: (String) -> Unit,
+    onReformatWithAi: () -> Unit,
+    onRevertToRaw: () -> Unit,
     onSave: () -> Unit,
     onUseInCheckin: () -> Unit,
     onDismissError: () -> Unit,
     onBack: () -> Unit
 ) {
+    val scrollState = rememberScrollState()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -129,12 +173,13 @@ private fun TranscriptionContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(scrollState)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(16.dp))
 
-            androidx.compose.foundation.layout.Row(
+            Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -147,7 +192,7 @@ private fun TranscriptionContent(
                 }
 
                 Text(
-                    text = "Voice Transcription",
+                    text = "Voice Logging",
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
@@ -160,13 +205,23 @@ private fun TranscriptionContent(
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = "Tap the microphone to start recording your thoughts",
+                text = "Speak your thoughts. AI will add punctuation and formatting automatically.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(16.dp))
+
+            LanguageSelector(
+                selectedLanguage = selectedLanguage,
+                onSelectLanguage = onSelectLanguage,
+                enabled = (uiState !is TranscriptionUiState.Listening) &&
+                        (uiState !is TranscriptionUiState.Processing) &&
+                        (uiState !is TranscriptionUiState.AnalyzingWithAi)
+            )
+
+            Spacer(Modifier.height(24.dp))
 
             MicrophoneButton(
                 uiState = uiState,
@@ -178,20 +233,129 @@ private fun TranscriptionContent(
                 }
             )
 
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(16.dp))
+
+            if (uiState is TranscriptionUiState.Listening) {
+                Text(
+                    text = "Listening in ${selectedLanguage.displayName}...",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = PrimeraViolet
+                    )
+                )
+            }
+
+            if (uiState is TranscriptionUiState.AnalyzingWithAi) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.White.copy(alpha = 0.9f)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.5.dp,
+                            color = PrimeraViolet
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                text = "AI is analyzing & correcting...",
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimary
+                                )
+                            )
+                            Text(
+                                text = if (selectedLanguage == VoiceLanguage.BISAYA) {
+                                    "Recognizing Bisaya speech, correcting words & punctuating"
+                                } else {
+                                    "Analyzing ${selectedLanguage.shortLabel} speech and formatting punctuation"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
 
             if (
                 uiState is TranscriptionUiState.Success ||
                 uiState is TranscriptionUiState.Uploading ||
                 uiState is TranscriptionUiState.Uploaded
             ) {
+                // AI Badge and Actions Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isAiCorrected) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(PrimeraViolet.copy(alpha = 0.12f))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = PrimeraViolet,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = "AI Punctuated & Formatted",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = PrimeraViolet
+                                )
+                            )
+                        }
+                    } else {
+                        Spacer(Modifier.width(8.dp))
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = onReformatWithAi) {
+                            Icon(
+                                Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text("AI Polish")
+                        }
+
+                        if (rawTranscribedText.isNotBlank() && rawTranscribedText != transcribedText) {
+                            TextButton(onClick = onRevertToRaw) {
+                                Text("Revert", style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+
                 OutlinedTextField(
                     value = transcribedText,
                     onValueChange = onTextEdited,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 150.dp),
-                    label = { Text("Transcribed Text") },
+                        .heightIn(min = 140.dp),
+                    label = { Text("Voice Log (AI-Corrected)") },
                     trailingIcon = {
                         if (transcribedText.isNotEmpty()) {
                             IconButton(onClick = { onTextEdited("") }) {
@@ -204,23 +368,68 @@ private fun TranscriptionContent(
                     },
                     shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedContainerColor = Color.White.copy(alpha = 0.6f),
+                        unfocusedContainerColor = Color.White.copy(alpha = 0.7f),
                         focusedContainerColor = Color.White,
                         unfocusedBorderColor = InputBorder,
                         focusedBorderColor = PrimeraViolet
                     )
                 )
 
-                if (uiState is TranscriptionUiState.Success) {
-                    Text(
-                        text = "Confidence: ${(uiState.confidence * 100).toInt()}%",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondary,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
+                if (rawTranscribedText.isNotBlank() && rawTranscribedText != transcribedText) {
+                    var showRaw by remember { mutableStateOf(false) }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        TextButton(onClick = { showRaw = !showRaw }) {
+                            Text(
+                                if (showRaw) "Hide raw speech" else "View raw speech input",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextSecondary
+                            )
+                        }
+                    }
+
+                    AnimatedVisibility(visible = showRaw) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.White.copy(alpha = 0.5f))
+                                .padding(12.dp)
+                        ) {
+                            Text(
+                                text = "Raw speech: \"$rawTranscribedText\"",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                        }
+                    }
                 }
 
-                Spacer(Modifier.height(24.dp))
+                if (uiState is TranscriptionUiState.Success) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Language: ${selectedLanguage.displayName}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextSecondary
+                        )
+
+                        Text(
+                            text = "Confidence: ${(uiState.confidence * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextSecondary
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(20.dp))
 
                 PrimeraGradientButton(
                     text = if (uiState is TranscriptionUiState.Uploaded) {
@@ -243,6 +452,8 @@ private fun TranscriptionContent(
                     isLoading = false
                 )
             }
+
+            Spacer(Modifier.height(16.dp))
         }
 
         if (uiState is TranscriptionUiState.Processing) {
@@ -259,6 +470,49 @@ private fun TranscriptionContent(
                         Text("OK")
                     }
                 }
+            )
+        }
+    }
+}
+
+@Composable
+private fun LanguageSelector(
+    selectedLanguage: VoiceLanguage,
+    onSelectLanguage: (VoiceLanguage) -> Unit,
+    enabled: Boolean
+) {
+    val scrollState = rememberScrollState()
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(scrollState),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            Icons.Default.Translate,
+            contentDescription = "Language",
+            tint = PrimeraViolet,
+            modifier = Modifier.size(18.dp)
+        )
+
+        VoiceLanguage.entries.forEach { language ->
+            val isSelected = selectedLanguage == language
+            FilterChip(
+                selected = isSelected,
+                onClick = { onSelectLanguage(language) },
+                label = {
+                    Text(
+                        text = language.displayName,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    )
+                },
+                enabled = enabled,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = PrimeraViolet.copy(alpha = 0.2f),
+                    selectedLabelColor = PrimeraViolet
+                )
             )
         }
     }
@@ -331,9 +585,15 @@ private fun TranscriptionScreenPreview() {
         TranscriptionContent(
             uiState = TranscriptionUiState.Idle,
             transcribedText = "",
+            rawTranscribedText = "",
+            selectedLanguage = VoiceLanguage.BISAYA,
+            isAiCorrected = false,
+            onSelectLanguage = {},
             onStartListening = {},
             onStopListening = {},
             onTextEdited = {},
+            onReformatWithAi = {},
+            onRevertToRaw = {},
             onSave = {},
             onUseInCheckin = {},
             onDismissError = {},
@@ -348,14 +608,22 @@ private fun TranscriptionScreenSuccessPreview() {
     PrimeraTheme {
         TranscriptionContent(
             uiState = TranscriptionUiState.Success(
-                "I feel dizzy and I have headache.",
-                0.95f,
-                5000L
+                text = "Gikapoy ko unya labad akong ulo, unsaon man ni?",
+                confidence = 0.95f,
+                durationMs = 5000L,
+                rawSpokenText = "gikapoy ko unya labad akong ulo unsaon man ni",
+                isAiCorrected = true
             ),
-            transcribedText = "I feel dizzy and I have headache.",
+            transcribedText = "Gikapoy ko unya labad akong ulo, unsaon man ni?",
+            rawTranscribedText = "gikapoy ko unya labad akong ulo unsaon man ni",
+            selectedLanguage = VoiceLanguage.BISAYA,
+            isAiCorrected = true,
+            onSelectLanguage = {},
             onStartListening = {},
             onStopListening = {},
             onTextEdited = {},
+            onReformatWithAi = {},
+            onRevertToRaw = {},
             onSave = {},
             onUseInCheckin = {},
             onDismissError = {},

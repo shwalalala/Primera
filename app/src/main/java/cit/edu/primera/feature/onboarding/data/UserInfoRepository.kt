@@ -1,9 +1,10 @@
 package cit.edu.primera.feature.onboarding.data
 
+import cit.edu.primera.core.util.CryptoManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
-import java.util.*
+import java.util.Date
 
 class UserInfoRepository {
     private val auth = FirebaseAuth.getInstance()
@@ -22,17 +23,17 @@ class UserInfoRepository {
     ): Result<Unit> {
         return try {
             val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
-            
+
             val userInfo = hashMapOf(
-                "firstName" to firstName,
-                "lastName" to lastName,
-                "middleName" to middleName,
-                "birthday" to birthday,
-                "weightKg" to weightKg,
-                "heightCm" to heightCm,
-                "lmpDate" to lmpDate,
-                "eddDate" to eddDate,
-                "isFirstPregnancy" to isFirstPregnancy,
+                "firstName" to CryptoManager.encrypt(firstName),
+                "lastName" to CryptoManager.encrypt(lastName),
+                "middleName" to CryptoManager.encrypt(middleName),
+                "birthday" to CryptoManager.encryptDate(birthday),
+                "weightKg" to CryptoManager.encryptInt(weightKg),
+                "heightCm" to CryptoManager.encryptInt(heightCm),
+                "lmpDate" to CryptoManager.encryptDate(lmpDate),
+                "eddDate" to CryptoManager.encryptDate(eddDate),
+                "isFirstPregnancy" to CryptoManager.encryptBoolean(isFirstPregnancy),
                 "updatedAt" to Date()
             )
 
@@ -57,11 +58,11 @@ class UserInfoRepository {
             val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
 
             val historyData = hashMapOf(
-                "pregnancyNumber" to pregnancyNumber,
-                "historyDeliveryDate" to historyDeliveryDate,
-                "deliveryType" to deliveryType,
-                "childrenDelivered" to childrenDelivered,
-                "complications" to complications,
+                "pregnancyNumber" to CryptoManager.encryptInt(pregnancyNumber),
+                "historyDeliveryDate" to CryptoManager.encryptDate(historyDeliveryDate),
+                "deliveryType" to CryptoManager.encrypt(deliveryType),
+                "childrenDelivered" to CryptoManager.encrypt(childrenDelivered),
+                "complications" to CryptoManager.encryptStringList(complications),
                 "updatedAt" to Date()
             )
 

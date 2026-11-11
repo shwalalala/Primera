@@ -163,8 +163,7 @@ class AuthViewModel(
                 onSuccess = {
                     handleSuccessfulAuthentication(
                         trimmedEmail,
-                        currentState.rememberMe,
-                        isSignUp = false
+                        currentState.rememberMe
                     )
                 },
                 onFailure = { error ->
@@ -191,7 +190,7 @@ class AuthViewModel(
 
             result.fold(
                 onSuccess = {
-                    handleSuccessfulAuthentication(trimmedEmail, false, isSignUp = true)
+                    handleSuccessfulAuthentication(trimmedEmail, false)
                 },
                 onFailure = { error ->
                     val specificMessage = when {
@@ -282,11 +281,10 @@ class AuthViewModel(
             val result = authRepository.loginWithFacebook(accessToken)
 
             result.fold(
-                onSuccess = { isNewUser ->
+                onSuccess = { _ ->
                     handleSuccessfulAuthentication(
                         _state.value.email,
-                        currentState.rememberMe,
-                        isSignUp = isNewUser
+                        currentState.rememberMe
                     )
                 },
                 onFailure = { error ->
@@ -328,11 +326,10 @@ class AuthViewModel(
             val result = authRepository.loginWithGoogle(idToken)
 
             result.fold(
-                onSuccess = { isNewUser ->
+                onSuccess = { _ ->
                     handleSuccessfulAuthentication(
                         _state.value.email,
-                        currentState.rememberMe,
-                        isSignUp = isNewUser
+                        currentState.rememberMe
                     )
                 },
                 onFailure = { error ->
@@ -377,10 +374,33 @@ class AuthViewModel(
         }
     }
 
+    fun deleteIncompleteAccountAndLogout() {
+        viewModelScope.launch {
+            val userId = authRepository.getCurrentUserId() ?: ""
+            if (userId.isNotBlank() && preferenceRepository.shouldShowOnboarding(userId)) {
+                authRepository.deleteAccount()
+                preferenceRepository.clearLocalData()
+            } else {
+                authRepository.logout()
+            }
+            wipeSensitiveState()
+            _state.update {
+                it.copy(
+                    isAuthenticated = false,
+                    isLoading = false,
+                    username = "",
+                    email = "",
+                    password = "",
+                    confirmPassword = ""
+                )
+            }
+            _effect.send(AuthEffect.NavigateToLogin)
+        }
+    }
+
     private fun handleSuccessfulAuthentication(
         email: String,
-        rememberMe: Boolean,
-        isSignUp: Boolean
+        rememberMe: Boolean
     ) {
         preferenceRepository.setHasEverLoggedIn(true)
         if (rememberMe && email.isNotBlank()) {
@@ -409,10 +429,9 @@ class AuthViewModel(
                 )
             }
 
-            if (isSignUp) {
+            if (preferenceRepository.shouldShowOnboarding(userId)) {
                 _effect.send(AuthEffect.NavigateToOnboarding)
             } else {
-                preferenceRepository.setOnboardingCompleted(userId)
                 _effect.send(AuthEffect.NavigateToDashboard)
             }
         }

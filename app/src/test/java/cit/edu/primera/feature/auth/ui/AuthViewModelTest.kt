@@ -127,17 +127,30 @@ class AuthViewModelTest {
 }
 
 private class FakePreferenceRepository : PreferenceRepository {
-    private var onboardingCompleted = false
+    private var completedUsersOnDevice = mutableMapOf<String, Boolean>()
+    private var lastCompletedUserId: String? = null
+    private var seenMicCoachmarks = mutableMapOf<String, Boolean>()
+    private var lastTooltipUserId: String? = null
     private var onboardingStep: String? = null
     private var watchSyncEnabled = false
     private var customOptions = mutableMapOf<String, Set<String>>()
     private var everLoggedIn = false
     private var savedEmail: String? = null
+    private var testDeviceId = "test_device_id"
 
-    override suspend fun shouldShowOnboarding(userId: String): Boolean = !onboardingCompleted
+    override fun getDeviceId(): String = testDeviceId
+
+    override suspend fun shouldShowOnboarding(userId: String): Boolean {
+        if (userId.isBlank()) return true
+        val isCompletedLocally = completedUsersOnDevice[userId] == true
+        val isLastUser = lastCompletedUserId == userId
+        return !(isCompletedLocally && isLastUser)
+    }
 
     override fun setOnboardingCompleted(userId: String) {
-        onboardingCompleted = true
+        if (userId.isBlank()) return
+        completedUsersOnDevice[userId] = true
+        lastCompletedUserId = userId
     }
 
     override fun getOnboardingLastStep(userId: String): String? = onboardingStep
@@ -178,10 +191,17 @@ private class FakePreferenceRepository : PreferenceRepository {
         profilePictureUri = uri
     }
 
-    private var micCoachmarkSeen = false
-    override fun hasSeenMicCoachmark(userId: String): Boolean = micCoachmarkSeen
+    override fun hasSeenMicCoachmark(userId: String): Boolean {
+        val effectiveUser = if (userId.isBlank()) "guest" else userId
+        val isSeen = seenMicCoachmarks[effectiveUser] == true
+        val isLastUser = lastTooltipUserId == effectiveUser
+        return isSeen && isLastUser
+    }
+
     override fun setMicCoachmarkDismissed(userId: String) {
-        micCoachmarkSeen = true
+        val effectiveUser = if (userId.isBlank()) "guest" else userId
+        seenMicCoachmarks[effectiveUser] = true
+        lastTooltipUserId = effectiveUser
     }
 
     override fun isReminderEnabled(category: String): Boolean = true
@@ -190,7 +210,10 @@ private class FakePreferenceRepository : PreferenceRepository {
     override fun setReminderTime(category: String, hour: Int, minute: Int) {}
 
     override fun clearLocalData() {
-        onboardingCompleted = false
+        completedUsersOnDevice.clear()
+        lastCompletedUserId = null
+        seenMicCoachmarks.clear()
+        lastTooltipUserId = null
         onboardingStep = null
         watchSyncEnabled = false
         customOptions.clear()

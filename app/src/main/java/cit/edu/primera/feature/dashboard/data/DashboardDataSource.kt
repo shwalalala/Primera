@@ -1,5 +1,6 @@
 package cit.edu.primera.feature.dashboard.data
 
+import cit.edu.primera.core.util.CryptoManager
 import cit.edu.primera.core.util.currentUserIdFlow
 import cit.edu.primera.feature.smartwatchconnection.domain.SmartwatchHealth
 import com.google.firebase.auth.FirebaseAuth
@@ -43,14 +44,17 @@ class DashboardDataSource(
                                     val resolvedPhotoUri =
                                         remotePhoto?.takeIf { it.isNotBlank() } ?: localPhoto
 
-                                    val rawEdd = (snapshot.getTimestamp("eddDate")
-                                        ?: snapshot.getTimestamp("dueDate"))?.toDate()
-                                    val rawLmp = snapshot.getTimestamp("lmpDate")?.toDate()
-                                    val rawScanDate = snapshot.getTimestamp("scanDate")?.toDate()
-                                    val rawScanWeeks = snapshot.getLong("scanWeeks")?.toInt()
-                                    val rawScanDays = snapshot.getLong("scanDays")?.toInt()
+                                    val rawEdd = CryptoManager.decryptDate(snapshot.get("eddDate"))
+                                        ?: CryptoManager.decryptDate(snapshot.get("dueDate"))
+                                    val rawLmp = CryptoManager.decryptDate(snapshot.get("lmpDate"))
+                                    val rawScanDate =
+                                        CryptoManager.decryptDate(snapshot.get("scanDate"))
+                                    val rawScanWeeks =
+                                        CryptoManager.decryptInt(snapshot.get("scanWeeks"))
+                                    val rawScanDays =
+                                        CryptoManager.decryptInt(snapshot.get("scanDays"))
                                     val rawPositiveTestDate =
-                                        snapshot.getTimestamp("positiveTestDate")?.toDate()
+                                        CryptoManager.decryptDate(snapshot.get("positiveTestDate"))
 
                                     val resolvedDueDate =
                                         cit.edu.primera.core.util.PregnancyCalculator.calculateEdd(
@@ -66,11 +70,11 @@ class DashboardDataSource(
                                         email = snapshot.getString("email"),
                                         username = snapshot.getString("username"),
                                         photoUri = resolvedPhotoUri,
-                                        firstName = snapshot.getString("firstName"),
-                                        lastName = snapshot.getString("lastName"),
-                                        middleName = snapshot.getString("middleName"),
-                                        fullName = snapshot.getString("fullName"),
-                                        birthday = snapshot.getTimestamp("birthday")?.toDate(),
+                                        firstName = CryptoManager.decrypt(snapshot.getString("firstName")),
+                                        lastName = CryptoManager.decrypt(snapshot.getString("lastName")),
+                                        middleName = CryptoManager.decrypt(snapshot.getString("middleName")),
+                                        fullName = CryptoManager.decrypt(snapshot.getString("fullName")),
+                                        birthday = CryptoManager.decryptDate(snapshot.get("birthday")),
                                         dueDate = resolvedDueDate,
                                         steps = snapshot.getLong("steps") ?: 0L,
                                         stepsGoal = snapshot.getLong("stepsGoal") ?: 8000L,
@@ -78,24 +82,37 @@ class DashboardDataSource(
                                         sleepHours = snapshot.getLong("sleepHours") ?: 0L,
                                         sleepMinutes = snapshot.getLong("sleepMinutes") ?: 0L,
                                         spO2 = snapshot.getLong("spO2"),
-                                        weightKg = snapshot.getLong("weightKg"),
-                                        heightCm = snapshot.getLong("heightCm"),
-                                        isCycleRegular = snapshot.getBoolean("isCycleRegular"),
-                                        hasHadUltrasound = snapshot.getBoolean("hasHadUltrasound"),
-                                        shortestCycleDays = snapshot.getLong("shortestCycleDays"),
-                                        longestCycleDays = snapshot.getLong("longestCycleDays"),
-                                        positiveTestDate = snapshot.getTimestamp("positiveTestDate")
-                                            ?.toDate(),
-                                        isFirstPregnancy = snapshot.getBoolean("isFirstPregnancy"),
-                                        scanDate = snapshot.getTimestamp("scanDate")?.toDate(),
-                                        scanWeeks = snapshot.getLong("scanWeeks"),
-                                        scanDays = snapshot.getLong("scanDays"),
-                                        lmpDate = snapshot.getTimestamp("lmpDate")?.toDate(),
-                                        pregnancyHistories = snapshot.get("pregnancyHistories") as? List<Map<String, Any>>,
-                                        iceName = snapshot.getString("iceName"),
-                                        iceRelationship = snapshot.getString("iceRelationship"),
-                                        icePrimaryPhone = snapshot.getString("icePrimaryPhone"),
-                                        iceSecondaryPhone = snapshot.getString("iceSecondaryPhone")
+                                        weightKg = CryptoManager.decryptLong(snapshot.get("weightKg")),
+                                        heightCm = CryptoManager.decryptLong(snapshot.get("heightCm")),
+                                        isCycleRegular = CryptoManager.decryptBoolean(snapshot.get("isCycleRegular")),
+                                        hasHadUltrasound = CryptoManager.decryptBoolean(
+                                            snapshot.get(
+                                                "hasHadUltrasound"
+                                            )
+                                        ),
+                                        shortestCycleDays = CryptoManager.decryptLong(snapshot.get("shortestCycleDays")),
+                                        longestCycleDays = CryptoManager.decryptLong(snapshot.get("longestCycleDays")),
+                                        positiveTestDate = rawPositiveTestDate,
+                                        isFirstPregnancy = CryptoManager.decryptBoolean(
+                                            snapshot.get(
+                                                "isFirstPregnancy"
+                                            )
+                                        ),
+                                        scanDate = rawScanDate,
+                                        scanWeeks = rawScanWeeks?.toLong(),
+                                        scanDays = rawScanDays?.toLong(),
+                                        lmpDate = rawLmp,
+                                        pregnancyHistories = CryptoManager.decryptJsonMapList(
+                                            snapshot.get("pregnancyHistories")
+                                        ),
+                                        iceName = CryptoManager.decrypt(snapshot.getString("iceName")),
+                                        iceRelationship = CryptoManager.decrypt(snapshot.getString("iceRelationship")),
+                                        icePrimaryPhone = CryptoManager.decrypt(snapshot.getString("icePrimaryPhone")),
+                                        iceSecondaryPhone = CryptoManager.decrypt(
+                                            snapshot.getString(
+                                                "iceSecondaryPhone"
+                                            )
+                                        )
                                     )
                                 } catch (_: Exception) {
                                     null
@@ -131,10 +148,10 @@ class DashboardDataSource(
                                 try {
                                     HealthLogDto(
                                         id = doc.id,
-                                        type = doc.getString("type"),
-                                        category = doc.getString("category"),
-                                        message = doc.getString("message"),
-                                        description = doc.getString("description"),
+                                        type = CryptoManager.decrypt(doc.getString("type")),
+                                        category = CryptoManager.decrypt(doc.getString("category")),
+                                        message = CryptoManager.decrypt(doc.getString("message")),
+                                        description = CryptoManager.decrypt(doc.getString("description")),
                                         timestamp = doc.getTimestamp("timestamp")?.toDate(),
                                     )
                                 } catch (_: Exception) {
