@@ -23,8 +23,10 @@ import cit.edu.primera.feature.transcription.data.TranscriptionDataSource
 import cit.edu.primera.feature.transcription.data.TranscriptionRepository
 import cit.edu.primera.feature.transcription.data.TranscriptionRepositoryImpl
 import cit.edu.primera.feature.transcription.domain.GeminiSymptomExtractor
+import cit.edu.primera.feature.transcription.domain.GeminiVoiceTextCorrector
 import cit.edu.primera.feature.transcription.domain.KeywordSymptomExtractor
 import cit.edu.primera.feature.transcription.domain.SymptomExtractor
+import cit.edu.primera.feature.transcription.domain.VoiceTextCorrector
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -42,6 +44,7 @@ interface AppContainer {
     val healthConnectManager: HealthConnectManager
     val networkMonitor: NetworkMonitor
     val symptomExtractor: SymptomExtractor
+    val voiceTextCorrector: VoiceTextCorrector
     val geminiContentRepository: cit.edu.primera.feature.dashboard.data.GeminiContentRepository
 }
 
@@ -74,6 +77,19 @@ class AppContainerImpl(private val context: Context) : AppContainer {
             GeminiSymptomExtractor(model)
         } else {
             KeywordSymptomExtractor()
+        }
+    }
+
+    override val voiceTextCorrector: VoiceTextCorrector by lazy {
+        val geminiApiKey = cit.edu.primera.BuildConfig.GEMINI_API_KEY
+        if (geminiApiKey.isNotBlank()) {
+            val model = GenerativeModel(
+                modelName = "gemini-1.5-flash",
+                apiKey = geminiApiKey,
+            )
+            GeminiVoiceTextCorrector(model)
+        } else {
+            GeminiVoiceTextCorrector(null)
         }
     }
 
