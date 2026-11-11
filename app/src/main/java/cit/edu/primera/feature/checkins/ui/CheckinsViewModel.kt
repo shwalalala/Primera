@@ -271,6 +271,27 @@ class CheckinsViewModel(
     fun applyVoiceInputToCheckin(
         transcribedText: String
     ) {
+        val trimmedText = transcribedText.trim()
+        if (trimmedText.isNotBlank()) {
+            _dailyState.update { state ->
+                val updatedNote = buildString {
+                    if (state.note.isNotBlank()) {
+                        append(state.note.trim())
+                        append("\n\n")
+                    }
+
+                    append("Voice input: ")
+                    append(trimmedText)
+                }
+
+                state.copy(
+                    note = updatedNote,
+                    success = false,
+                    errorMessage = null
+                )
+            }
+        }
+
         viewModelScope.launch {
             val detectedSymptoms = symptomExtractor.extract(transcribedText)
             
@@ -288,25 +309,14 @@ class CheckinsViewModel(
                 }
             }
 
-            loadOptions()
+            if (mappedSymptoms.isNotEmpty()) {
+                loadOptions()
 
-            _dailyState.update { state ->
-                val updatedNote = buildString {
-                    if (state.note.isNotBlank()) {
-                        append(state.note.trim())
-                        append("\n\n")
-                    }
-
-                    append("Voice input: ")
-                    append(transcribedText.trim())
+                _dailyState.update { state ->
+                    state.copy(
+                        selectedSymptoms = state.selectedSymptoms + mappedSymptoms
+                    )
                 }
-
-                state.copy(
-                    selectedSymptoms = state.selectedSymptoms + mappedSymptoms,
-                    note = updatedNote,
-                    success = false,
-                    errorMessage = null
-                )
             }
         }
     }
@@ -362,7 +372,7 @@ class CheckinsViewModel(
                 }
 
                 if (state.note.isNotBlank()) {
-                    descriptionParts.add(state.note)
+                    descriptionParts.add(state.note.trim())
                 }
 
                 if (descriptionParts.isNotEmpty()) {
@@ -373,11 +383,16 @@ class CheckinsViewModel(
                         else -> "Other"
                     }
 
+                    val messageText = state.note.trim().ifBlank {
+                        descriptionParts.joinToString("; ")
+                    }
+
                     repository.saveLog(
                         CheckinLogDto(
                             id = state.editingId,
                             type = "Check-in",
                             category = category,
+                            message = messageText,
                             description = descriptionParts.joinToString("; "),
                             timestamp = Date()
                         )

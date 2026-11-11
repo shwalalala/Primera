@@ -10,7 +10,8 @@ data class CheckinLogDto(
     val description: String? = null,
     val timestamp: Date? = null,
     val hasWarning: Boolean = false,
-    val warningMessage: String? = null
+    val warningMessage: String? = null,
+    val warning: String? = null
 )
 
 data class CheckinUserDto(

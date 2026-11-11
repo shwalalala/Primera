@@ -42,11 +42,11 @@ class KeywordSymptomExtractor : SymptomExtractor {
         ),
         "abdominal pain" to listOf(
             "stomach pain", "abdominal pain", "belly pain", "cramps", "cramping",
-            "hilab", "naghilab", "sakit sa tiyan", "hilab sa tiyan", "sakit tiyan", "cramp sa tiyan"
+            "hilab", "naghilab", "sakit sa tiyan", "hilab sa tiyan", "sakit tiyan", "cramp sa tiyan", "sakit akong tiyan"
         ),
         "back pain" to listOf(
             "back pain", "lower back pain", "pain in my back", "aching back",
-            "sakit sa likod", "panuhot", "sakit sa hawak", "ngulngol sa likod"
+            "sakit sa likod", "panuhot", "sakit sa hawak", "ngulngol sa likod", "sakit akong likod"
         ),
         "swelling" to listOf(
             "swelling", "swollen", "swollen feet", "my feet are swollen", "edema",
