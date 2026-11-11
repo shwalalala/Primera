@@ -1,3 +1,4 @@
+
 package cit.edu.primera.feature.checkins.data
 
 import java.util.Date
@@ -11,7 +12,8 @@ data class CheckinLogDto(
     val timestamp: Date? = null,
     val hasWarning: Boolean = false,
     val warningMessage: String? = null,
-    val warning: String? = null
+    val warning: String? = null,
+    val checkinDate: String? = null
 )
 
 data class CheckinUserDto(

@@ -1,3 +1,4 @@
+
 package cit.edu.primera.feature.checkins.ui
 
 import androidx.compose.ui.graphics.Color
@@ -23,6 +24,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 class CheckinsViewModel(
     private val repository: CheckinsRepository,
@@ -30,29 +32,33 @@ class CheckinsViewModel(
 ) : ViewModel() {
 
     private val _overviewState = MutableStateFlow(CheckinsOverviewUiState())
-    val overviewState: StateFlow<CheckinsOverviewUiState> = _overviewState.asStateFlow()
+    val overviewState: StateFlow<CheckinsOverviewUiState> =
+        _overviewState.asStateFlow()
 
     private val _dailyState = MutableStateFlow(DailyCheckinUiState())
-    val dailyState: StateFlow<DailyCheckinUiState> = _dailyState.asStateFlow()
+    val dailyState: StateFlow<DailyCheckinUiState> =
+        _dailyState.asStateFlow()
+
+    private var cachedLogs: List<CheckinLogDto> = emptyList()
 
     private val defaultSymptoms = listOf(
         CheckinOption("Aching Head", "Symptom"),
         CheckinOption("Nausea", "Symptom"),
         CheckinOption("Back Pain", "Symptom"),
-        CheckinOption("Fatigue", "Symptom"),
+        CheckinOption("Fatigue", "Symptom")
     )
 
     private val defaultMoods = listOf(
         CheckinOption("Normal", "Mood"),
         CheckinOption("Angry", "Mood"),
         CheckinOption("Happy", "Mood"),
-        CheckinOption("Sad", "Mood"),
+        CheckinOption("Sad", "Mood")
     )
 
     private val defaultMedicines = listOf(
         CheckinOption("Med Pills", "Medicine"),
         CheckinOption("Gauze", "Medicine"),
-        CheckinOption("Syringe", "Medicine"),
+        CheckinOption("Syringe", "Medicine")
     )
 
     init {
@@ -60,6 +66,30 @@ class CheckinsViewModel(
         observeWeight()
         updateWeekDays()
         loadOptions()
+    }
+
+    private fun createDateFormat(): SimpleDateFormat =
+        SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
+            isLenient = false
+        }
+
+    private fun normalizeCheckinDate(
+        value: String?,
+        fallback: Date?
+    ): String {
+        val formatter = createDateFormat()
+
+        if (!value.isNullOrBlank()) {
+            val parsed = runCatching {
+                formatter.parse(value)
+            }.getOrNull()
+
+            if (parsed != null && formatter.format(parsed) == value) {
+                return value
+            }
+        }
+
+        return formatter.format(fallback ?: Date())
     }
 
     private fun loadOptions() {
@@ -84,6 +114,8 @@ class CheckinsViewModel(
     private fun observeLogs() {
         repository.observeLogs()
             .onEach { logs ->
+                cachedLogs = logs
+
                 _overviewState.update {
                     it.copy(
                         logs = mapLogs(logs),
@@ -107,6 +139,7 @@ class CheckinsViewModel(
             .onEach { userDto ->
                 if (userDto != null) {
                     val lastUpdate = userDto.weightUpdatedAt
+
                     val shouldAlert = if (lastUpdate != null) {
                         val diff = Date().time - lastUpdate.time
                         diff > 14L * 24 * 60 * 60 * 1000
@@ -114,11 +147,18 @@ class CheckinsViewModel(
                         true
                     }
 
-                    _dailyState.update {
-                        it.copy(
-                            weightKg = userDto.weightKg?.toString() ?: "",
+                    _dailyState.update { state ->
+                        state.copy(
+                            weightKg = if (state.editingId == null) {
+                                userDto.weightKg?.toString() ?: ""
+                            } else {
+                                state.weightKg
+                            },
                             lastWeightUpdateDate = lastUpdate?.let { date ->
-                                SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(date)
+                                SimpleDateFormat(
+                                    "MMM d, yyyy",
+                                    Locale.getDefault()
+                                ).format(date)
                             },
                             shouldShowWeightUpdateAlert = shouldAlert
                         )
@@ -128,26 +168,64 @@ class CheckinsViewModel(
             .launchIn(viewModelScope)
     }
 
-    private fun mapLogs(logs: List<CheckinLogDto>): List<DashboardLogUiItem> {
-        val sdf = SimpleDateFormat("h:mm a", Locale.getDefault())
-        val daySdf = SimpleDateFormat("MMM d", Locale.getDefault())
+    private fun mapLogs(
+        logs: List<CheckinLogDto>
+    ): List<DashboardLogUiItem> {
+        val dateFormat = createDateFormat()
+        val timeFormat = SimpleDateFormat(
+            "h:mm a",
+            Locale.getDefault()
+        )
+        val displayFormat = SimpleDateFormat(
+            "MMM d, yyyy",
+            Locale.getDefault()
+        )
 
-        val today = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.time
+        val todayString = dateFormat.format(Date())
 
-        return logs.map { log ->
-            val timestamp = log.timestamp ?: Date()
+        val yesterdayString = dateFormat.format(
+            Calendar.getInstance().apply {
+                add(Calendar.DAY_OF_YEAR, -1)
+            }.time
+        )
 
-            val timeText = if (timestamp.after(today)) {
-                sdf.format(timestamp)
-            } else if (timestamp.time > today.time - 24 * 60 * 60 * 1000) {
-                "Yesterday"
-            } else {
-                daySdf.format(timestamp)
+        return logs.sortedWith(
+            compareByDescending<CheckinLogDto> {
+                normalizeCheckinDate(
+                    it.checkinDate,
+                    it.timestamp
+                )
+            }.thenByDescending {
+                it.timestamp?.time ?: 0L
+            }
+        ).map { log ->
+            val actualDate = normalizeCheckinDate(
+                log.checkinDate,
+                log.timestamp
+            )
+
+            val timestamp = log.timestamp
+
+            val timeText = when (actualDate) {
+                todayString -> {
+                    if (timestamp != null) {
+                        timeFormat.format(timestamp)
+                    } else {
+                        "Today"
+                    }
+                }
+
+                yesterdayString -> "Yesterday"
+
+                else -> {
+                    val parsed = dateFormat.parse(actualDate)
+
+                    if (parsed != null) {
+                        displayFormat.format(parsed)
+                    } else {
+                        actualDate
+                    }
+                }
             }
 
             DashboardLogUiItem(
@@ -170,20 +248,31 @@ class CheckinsViewModel(
     }
 
     private fun updateWeekDays() {
-        val calendar = Calendar.getInstance()
-        val today = calendar.get(Calendar.DAY_OF_YEAR)
+        val selectedDate = _dailyState.value.selectedCheckinDate
+        val dateFormat = createDateFormat()
 
-        calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek)
+        val selected = runCatching {
+            dateFormat.parse(selectedDate)
+        }.getOrNull() ?: return
+
+        val calendar = Calendar.getInstance().apply {
+            time = selected
+            set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
+        }
+
+        val dayInitials = listOf(
+            "S", "M", "T", "W", "T", "F", "S"
+        )
 
         val days = mutableListOf<DashboardWeekDayItem>()
-        val dayInitials = listOf("S", "M", "T", "W", "T", "F", "S")
 
         for (i in 0..6) {
             days.add(
                 DashboardWeekDayItem(
                     initial = dayInitials[i],
                     date = calendar.get(Calendar.DAY_OF_MONTH),
-                    isSelected = calendar.get(Calendar.DAY_OF_YEAR) == today
+                    isSelected = dateFormat.format(calendar.time) ==
+                            selectedDate
                 )
             )
 
@@ -193,6 +282,35 @@ class CheckinsViewModel(
         _dailyState.update {
             it.copy(weekDays = days)
         }
+    }
+
+    fun onCheckinDateSelected(date: String) {
+        val dateFormat = createDateFormat()
+
+        val selectedDate = runCatching {
+            dateFormat.parse(date)
+        }.getOrNull() ?: return
+
+        if (dateFormat.format(selectedDate) != date) {
+            return
+        }
+
+        val today = dateFormat.parse(
+            dateFormat.format(Date())
+        ) ?: return
+
+        if (selectedDate.after(today)) {
+            return
+        }
+
+        _dailyState.update {
+            it.copy(
+                selectedCheckinDate = date,
+                errorMessage = null
+            )
+        }
+
+        updateWeekDays()
     }
 
     fun onSearchQueryChange(query: String) {
@@ -250,8 +368,24 @@ class CheckinsViewModel(
     }
 
     fun onWeightChange(weight: String) {
-        _dailyState.update {
-            it.copy(weightKg = weight)
+        if (
+            weight.isEmpty() ||
+            weight.matches(Regex("\\d{0,3}(\\.\\d{0,2})?"))
+        ) {
+            _dailyState.update {
+                it.copy(weightKg = weight)
+            }
+        }
+    }
+
+    fun onBloodSugarChange(bloodSugar: String) {
+        if (
+            bloodSugar.isEmpty() ||
+            bloodSugar.matches(Regex("\\d{0,3}"))
+        ) {
+            _dailyState.update {
+                it.copy(bloodSugarMgDl = bloodSugar)
+            }
         }
     }
 
@@ -268,10 +402,13 @@ class CheckinsViewModel(
         }
     }
 
+    // Teammates' fix: update Notes immediately.
+    // Symptom extraction happens separately afterward.
     fun applyVoiceInputToCheckin(
         transcribedText: String
     ) {
         val trimmedText = transcribedText.trim()
+
         if (trimmedText.isNotBlank()) {
             _dailyState.update { state ->
                 val updatedNote = buildString {
@@ -293,19 +430,27 @@ class CheckinsViewModel(
         }
 
         viewModelScope.launch {
-            val detectedSymptoms = symptomExtractor.extract(transcribedText)
-            
+            val detectedSymptoms =
+                symptomExtractor.extract(transcribedText)
+
             val mappedSymptoms = detectedSymptoms
                 .mapNotNull { mapDetectedSymptomToCheckinOption(it) }
                 .distinct()
 
             mappedSymptoms.forEach { symptomLabel ->
-                val alreadyAvailable = _dailyState.value.availableSymptoms.any { option ->
-                    option.label.equals(symptomLabel, ignoreCase = true)
-                }
+                val alreadyAvailable =
+                    _dailyState.value.availableSymptoms.any { option ->
+                        option.label.equals(
+                            symptomLabel,
+                            ignoreCase = true
+                        )
+                    }
 
                 if (!alreadyAvailable) {
-                    repository.addCustomOption("Symptom", symptomLabel)
+                    repository.addCustomOption(
+                        "Symptom",
+                        symptomLabel
+                    )
                 }
             }
 
@@ -314,14 +459,17 @@ class CheckinsViewModel(
 
                 _dailyState.update { state ->
                     state.copy(
-                        selectedSymptoms = state.selectedSymptoms + mappedSymptoms
+                        selectedSymptoms =
+                            state.selectedSymptoms + mappedSymptoms
                     )
                 }
             }
         }
     }
 
-    private fun mapDetectedSymptomToCheckinOption(symptom: String): String? {
+    private fun mapDetectedSymptomToCheckinOption(
+        symptom: String
+    ): String? {
         return when (symptom.lowercase().trim()) {
             "headache" -> "Aching Head"
             "dizziness" -> "Dizziness"
@@ -334,41 +482,81 @@ class CheckinsViewModel(
             "fever" -> "Fever"
             "cough" -> "Cough"
             "swelling" -> "Swelling"
+
             else -> symptom.replaceFirstChar { char ->
-                if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else char.toString()
+                if (char.isLowerCase()) {
+                    char.titlecase(Locale.getDefault())
+                } else {
+                    char.toString()
+                }
             }
         }
     }
 
     fun onSaveCheckin() {
+        if (_dailyState.value.isSaving) return
+
         viewModelScope.launch {
             _dailyState.update {
-                it.copy(isSaving = true, errorMessage = null)
+                it.copy(
+                    isSaving = true,
+                    errorMessage = null
+                )
             }
 
             try {
-                val weight = _dailyState.value.weightKg.toIntOrNull()
-                if (weight != null) {
-                    repository.updateUserWeight(weight).getOrThrow()
+                val state = _dailyState.value
+                val dateFormat = createDateFormat()
+
+                val selectedDate = dateFormat.parse(
+                    state.selectedCheckinDate
+                ) ?: error("Invalid check-in date")
+
+                require(
+                    dateFormat.format(selectedDate) ==
+                            state.selectedCheckinDate
+                ) {
+                    "Invalid check-in date"
                 }
 
-                val state = _dailyState.value
+                val today = dateFormat.parse(
+                    dateFormat.format(Date())
+                ) ?: error("Invalid current date")
+
+                require(!selectedDate.after(today)) {
+                    "You cannot record a check-in for a future date"
+                }
+
                 val descriptionParts = mutableListOf<String>()
 
                 if (state.weightKg.isNotBlank()) {
-                    descriptionParts.add("Weight: ${state.weightKg} kg")
+                    descriptionParts.add(
+                        "Weight: ${state.weightKg} kg"
+                    )
+                }
+
+                if (state.bloodSugarMgDl.isNotBlank()) {
+                    descriptionParts.add(
+                        "Blood Sugar: ${state.bloodSugarMgDl} mg/dL"
+                    )
                 }
 
                 if (state.selectedSymptoms.isNotEmpty()) {
-                    descriptionParts.add("Symptoms: ${state.selectedSymptoms.joinToString(", ")}")
+                    descriptionParts.add(
+                        "Symptoms: ${state.selectedSymptoms.joinToString(", ")}"
+                    )
                 }
 
                 if (state.selectedMoods.isNotEmpty()) {
-                    descriptionParts.add("Mood: ${state.selectedMoods.joinToString(", ")}")
+                    descriptionParts.add(
+                        "Mood: ${state.selectedMoods.joinToString(", ")}"
+                    )
                 }
 
                 if (state.selectedMedicines.isNotEmpty()) {
-                    descriptionParts.add("Medicine: ${state.selectedMedicines.joinToString(", ")}")
+                    descriptionParts.add(
+                        "Medicine: ${state.selectedMedicines.joinToString(", ")}"
+                    )
                 }
 
                 if (state.note.isNotBlank()) {
@@ -394,9 +582,25 @@ class CheckinsViewModel(
                             category = category,
                             message = messageText,
                             description = descriptionParts.joinToString("; "),
-                            timestamp = Date()
+                            timestamp = state.originalTimestamp ?: Date(),
+                            checkinDate = state.selectedCheckinDate
                         )
                     ).getOrThrow()
+
+                    // Don't update the user's current profile weight
+                    // when editing a historical check-in.
+                    val isToday =
+                        state.selectedCheckinDate == dateFormat.format(Date())
+
+                    if (isToday) {
+                        val weight = state.weightKg.toDoubleOrNull()
+
+                        if (weight != null && weight > 0) {
+                            repository.updateUserWeight(
+                                weight.roundToInt()
+                            ).getOrThrow()
+                        }
+                    }
                 }
 
                 _dailyState.update {
@@ -410,7 +614,8 @@ class CheckinsViewModel(
                 _dailyState.update {
                     it.copy(
                         isSaving = false,
-                        errorMessage = e.message ?: "Failed to save check-in"
+                        errorMessage =
+                            e.message ?: "Failed to save check-in"
                     )
                 }
             }
@@ -418,30 +623,53 @@ class CheckinsViewModel(
     }
 
     fun prepareNewCheckin() {
-        _dailyState.update {
+        _dailyState.update { state ->
             DailyCheckinUiState(
-                weekDays = it.weekDays,
-                availableSymptoms = it.availableSymptoms,
-                availableMoods = it.availableMoods,
-                availableMedicines = it.availableMedicines,
-                weightKg = it.weightKg,
-                lastWeightUpdateDate = it.lastWeightUpdateDate,
-                shouldShowWeightUpdateAlert = it.shouldShowWeightUpdateAlert
+                availableSymptoms = state.availableSymptoms,
+                availableMoods = state.availableMoods,
+                availableMedicines = state.availableMedicines,
+                weightKg = state.weightKg,
+                lastWeightUpdateDate = state.lastWeightUpdateDate,
+                shouldShowWeightUpdateAlert =
+                    state.shouldShowWeightUpdateAlert
             )
         }
+
+        updateWeekDays()
     }
 
     fun loadCheckinForEdit(log: DashboardLogUiItem) {
-        val description = log.description
+        val originalLog = cachedLogs.firstOrNull {
+            it.id == log.id
+        }
+
+        val description = originalLog?.description ?: log.description
+
         val symptoms = parseSection(description, "Symptoms:")
         val moods = parseSection(description, "Mood:")
         val medicines = parseSection(description, "Medicine:")
-        val weight = parseSection(description, "Weight:").firstOrNull()?.removeSuffix(" kg")
+
+        val weight = parseSection(description, "Weight:")
+            .firstOrNull()
+            ?.removeSuffix(" kg")
+            ?.trim()
+
+        val bloodSugar = parseSection(description, "Blood Sugar:")
+            .firstOrNull()
+            ?.removeSuffix(" mg/dL")
+            ?.trim()
 
         var note = description
 
-        listOf("Symptoms:", "Mood:", "Medicine:", "Weight:").forEach { label ->
+        listOf(
+            "Symptoms:",
+            "Mood:",
+            "Medicine:",
+            "Weight:",
+            "Blood Sugar:"
+        ).forEach { label ->
             val index = note.indexOf(label)
+
             if (index != -1) {
                 val end = note.indexOf(";", index).let {
                     if (it == -1) note.length else it + 1
@@ -453,25 +681,39 @@ class CheckinsViewModel(
 
         note = note.trimStart(';').trim()
 
-        _dailyState.update {
-            it.copy(
+        val restoredDate = normalizeCheckinDate(
+            originalLog?.checkinDate,
+            originalLog?.timestamp
+        )
+
+        _dailyState.update { current ->
+            current.copy(
                 editingId = log.id,
+                originalTimestamp = originalLog?.timestamp,
+                selectedCheckinDate = restoredDate,
                 selectedSymptoms = symptoms.toSet(),
                 selectedMoods = moods.toSet(),
                 selectedMedicines = medicines.toSet(),
-                weightKg = weight ?: it.weightKg,
+                weightKg = weight ?: "",
+                bloodSugarMgDl = bloodSugar ?: "",
                 note = note,
                 success = false,
                 errorMessage = null
             )
         }
+
+        updateWeekDays()
     }
 
-    private fun parseSection(description: String, label: String): List<String> {
+    private fun parseSection(
+        description: String,
+        label: String
+    ): List<String> {
         val start = description.indexOf(label)
         if (start == -1) return emptyList()
 
         val contentStart = start + label.length
+
         val end = description.indexOf(";", contentStart).let {
             if (it == -1) description.length else it
         }
