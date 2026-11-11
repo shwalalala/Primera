@@ -82,6 +82,9 @@ object ViewModelProvider {
                 cit.edu.primera.feature.vaccination.ui.VaccinationViewModel::class.java -> cit.edu.primera.feature.vaccination.ui.VaccinationViewModel(
                     container.vaccinationRepository
                 )
+                cit.edu.primera.feature.newseducation.ui.NewsEducationViewModel::class.java -> cit.edu.primera.feature.newseducation.ui.NewsEducationViewModel(
+                    container.newsEducationRepository
+                )
                 else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             } as T
         }

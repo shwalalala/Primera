@@ -54,7 +54,7 @@ import cit.edu.primera.feature.checkins.ui.DailyCheckinScreen
 import cit.edu.primera.feature.dashboard.ui.DashboardScreen
 import cit.edu.primera.feature.dashboard.ui.DashboardUiState
 import cit.edu.primera.feature.dashboard.ui.DashboardViewModel
-import cit.edu.primera.feature.dashboard.ui.NewsEducationScreen
+import cit.edu.primera.feature.newseducation.ui.NewsEducationScreen
 import cit.edu.primera.feature.vaccination.ui.VaccinationInfoScreen
 import cit.edu.primera.feature.insights.ui.InsightsScreen
 import cit.edu.primera.feature.onboarding.ui.OnboardingHostScreen

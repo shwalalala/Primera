@@ -77,8 +77,8 @@ fun AppSidebar(
         SidebarEntry.Item(Routes.PROFILE, "My Profile", Icons.Default.Person),
         SidebarEntry.Item(Routes.SETTINGS, "Settings", Icons.Default.Settings),
 
-        SidebarEntry.Header("HEALTH & TRACKING"),
-        SidebarEntry.Item(Routes.DASHBOARD, "Home", Icons.Default.Home),
+//        SidebarEntry.Header("HEALTH & TRACKING"),
+//        SidebarEntry.Item(Routes.DASHBOARD, "Home", Icons.Default.Home),
 
         SidebarEntry.Header("CONTENT"),
         SidebarEntry.Item(
@@ -86,12 +86,11 @@ fun AppSidebar(
             "Vaccination Info",
             Icons.Default.HealthAndSafety,
         ),
-//        @Suppress("DEPRECATION")
-//        SidebarEntry.Item(
-//            Routes.NEWS_EDUCATION,
-//            "News & Education",
-//            Icons.AutoMirrored.Filled.MenuBook,
-//        ),
+        SidebarEntry.Item(
+            Routes.NEWS_EDUCATION,
+            "News & Education",
+            Icons.AutoMirrored.Filled.MenuBook,
+        ),
     )
 
     Surface(

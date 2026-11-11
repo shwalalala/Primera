@@ -47,6 +47,7 @@ interface AppContainer {
     val voiceTextCorrector: VoiceTextCorrector
     val geminiContentRepository: cit.edu.primera.feature.dashboard.data.GeminiContentRepository
     val vaccinationRepository: cit.edu.primera.feature.vaccination.data.VaccinationRepository
+    val newsEducationRepository: cit.edu.primera.feature.newseducation.data.NewsEducationRepository
 }
 
 class AppContainerImpl(private val context: Context) : AppContainer {
@@ -156,5 +157,9 @@ class AppContainerImpl(private val context: Context) : AppContainer {
 
     override val vaccinationRepository: cit.edu.primera.feature.vaccination.data.VaccinationRepository by lazy {
         cit.edu.primera.feature.vaccination.data.VaccinationRepositoryImpl()
+    }
+
+    override val newsEducationRepository: cit.edu.primera.feature.newseducation.data.NewsEducationRepository by lazy {
+        cit.edu.primera.feature.newseducation.data.NewsEducationRepositoryImpl()
     }
 }
