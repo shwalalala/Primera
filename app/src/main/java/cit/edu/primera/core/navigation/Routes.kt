@@ -17,6 +17,7 @@ object Routes {
     const val TRANSCRIPTION = "transcription"
     const val PROFILE       = "profile"
     const val SETTINGS      = "settings"
+    const val VACCINATION_INFO = "vaccination_info"
     const val NEWS_EDUCATION = "news_education"
     const val NOTIFICATIONS = "notifications"
     const val REMINDER_SETTINGS = "reminder_settings"

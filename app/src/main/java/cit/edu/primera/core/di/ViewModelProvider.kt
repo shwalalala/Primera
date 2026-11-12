@@ -1,4 +1,3 @@
-
 package cit.edu.primera.core.di
 
 import androidx.lifecycle.ViewModel
@@ -73,7 +72,6 @@ object ViewModelProvider {
                     container.voiceTextCorrector,
                     SpeechRecognitionManager(application)
                 )
-
                 InsightsViewModel::class.java -> InsightsViewModel(
                     container.dashboardRepository,
                     container.checkinsRepository,
@@ -106,6 +104,12 @@ object ViewModelProvider {
                         container.reminderManager
                     )
 
+                cit.edu.primera.feature.vaccination.ui.VaccinationViewModel::class.java -> cit.edu.primera.feature.vaccination.ui.VaccinationViewModel(
+                    container.vaccinationRepository
+                )
+                cit.edu.primera.feature.newseducation.ui.NewsEducationViewModel::class.java -> cit.edu.primera.feature.newseducation.ui.NewsEducationViewModel(
+                    container.newsEducationRepository
+                )
                 else -> throw IllegalArgumentException(
                     "Unknown ViewModel class: ${modelClass.name}"
                 )

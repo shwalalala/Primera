@@ -30,6 +30,8 @@ import cit.edu.primera.feature.transcription.domain.GeminiVoiceTextCorrector
 import cit.edu.primera.feature.transcription.domain.KeywordSymptomExtractor
 import cit.edu.primera.feature.transcription.domain.SymptomExtractor
 import cit.edu.primera.feature.transcription.domain.VoiceTextCorrector
+import cit.edu.primera.feature.vaccination.data.VaccinationRepository
+import cit.edu.primera.feature.newseducation.data.NewsEducationRepository
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -59,16 +61,22 @@ interface AppContainer {
 
     // Health Summary PDF data collection
     val healthSummaryDataLoader: HealthSummaryDataLoader
+
+    // Local changes: Vaccination and News Education
+    val vaccinationRepository: VaccinationRepository
+    val newsEducationRepository: NewsEducationRepository
 }
 
 class AppContainerImpl(
     private val context: Context
 ) : AppContainer {
 
+    // Network monitoring
     override val networkMonitor: NetworkMonitor by lazy {
         ConnectivityManagerNetworkMonitor(context)
     }
 
+    // Gemini content repository
     override val geminiContentRepository:
             cit.edu.primera.feature.dashboard.data.GeminiContentRepository by lazy {
 
@@ -90,7 +98,9 @@ class AppContainerImpl(
         }
     }
 
+    // Symptom extraction
     override val symptomExtractor: SymptomExtractor by lazy {
+
         val geminiApiKey = cit.edu.primera.BuildConfig.GEMINI_API_KEY
 
         if (geminiApiKey.isNotBlank()) {
@@ -105,7 +115,9 @@ class AppContainerImpl(
         }
     }
 
+    // Voice text correction
     override val voiceTextCorrector: VoiceTextCorrector by lazy {
+
         val geminiApiKey = cit.edu.primera.BuildConfig.GEMINI_API_KEY
 
         if (geminiApiKey.isNotBlank()) {
@@ -194,9 +206,7 @@ class AppContainerImpl(
         )
     }
 
-    override val transcriptionRepository:
-            TranscriptionRepository by lazy {
-
+    override val transcriptionRepository: TranscriptionRepository by lazy {
         TranscriptionRepositoryImpl(transcriptionDataSource)
     }
 
@@ -240,5 +250,21 @@ class AppContainerImpl(
 
     override val healthConnectManager: HealthConnectManager by lazy {
         HealthConnectManager(context)
+    }
+
+    // ---------------------------------------------
+    // VACCINATION DEPENDENCIES
+    // ---------------------------------------------
+
+    override val vaccinationRepository: VaccinationRepository by lazy {
+        cit.edu.primera.feature.vaccination.data.VaccinationRepositoryImpl()
+    }
+
+    // ---------------------------------------------
+    // NEWS EDUCATION DEPENDENCIES
+    // ---------------------------------------------
+
+    override val newsEducationRepository: NewsEducationRepository by lazy {
+        cit.edu.primera.feature.newseducation.data.NewsEducationRepositoryImpl()
     }
 }

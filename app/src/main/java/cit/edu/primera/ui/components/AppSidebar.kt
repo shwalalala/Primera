@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
@@ -76,11 +77,15 @@ fun AppSidebar(
         SidebarEntry.Item(Routes.PROFILE, "My Profile", Icons.Default.Person),
         SidebarEntry.Item(Routes.SETTINGS, "Settings", Icons.Default.Settings),
 
-        SidebarEntry.Header("HEALTH & TRACKING"),
-        SidebarEntry.Item(Routes.DASHBOARD, "Home", Icons.Default.Home),
+//        SidebarEntry.Header("HEALTH & TRACKING"),
+//        SidebarEntry.Item(Routes.DASHBOARD, "Home", Icons.Default.Home),
 
         SidebarEntry.Header("CONTENT"),
-        @Suppress("DEPRECATION")
+        SidebarEntry.Item(
+            Routes.VACCINATION_INFO,
+            "Vaccination Info",
+            Icons.Default.HealthAndSafety,
+        ),
         SidebarEntry.Item(
             Routes.NEWS_EDUCATION,
             "News & Education",

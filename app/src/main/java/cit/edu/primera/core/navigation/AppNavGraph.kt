@@ -58,7 +58,7 @@ import cit.edu.primera.feature.checkins.ui.PrenatalCheckupScreen
 import cit.edu.primera.feature.dashboard.ui.DashboardScreen
 import cit.edu.primera.feature.dashboard.ui.DashboardUiState
 import cit.edu.primera.feature.dashboard.ui.DashboardViewModel
-import cit.edu.primera.feature.dashboard.ui.NewsEducationScreen
+import cit.edu.primera.feature.newseducation.ui.NewsEducationScreen
 import cit.edu.primera.feature.insights.ui.InsightsScreen
 import cit.edu.primera.feature.onboarding.ui.OnboardingHostScreen
 import cit.edu.primera.feature.profile.ui.ProfileScreen
@@ -67,6 +67,7 @@ import cit.edu.primera.feature.smartwatchconnection.ui.SmartwatchRoute
 import cit.edu.primera.feature.splash.ui.SplashScreen
 import cit.edu.primera.feature.transcription.ui.TranscriptionScreen
 import cit.edu.primera.feature.transcription.ui.TranscriptionViewModel
+import cit.edu.primera.feature.vaccination.ui.VaccinationInfoScreen
 import cit.edu.primera.feature.welcome.ui.WelcomeScreen
 import cit.edu.primera.ui.components.AppSidebar
 import cit.edu.primera.ui.components.CoachmarkTooltip
@@ -729,6 +730,14 @@ fun AppNavGraph(
                         )
                     }
 
+                    composable(Routes.VACCINATION_INFO) {
+                        VaccinationInfoScreen(
+                            onBack = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+
                     composable(Routes.NEWS_EDUCATION) {
                         NewsEducationScreen(
                             onBack = {
@@ -837,3 +846,4 @@ fun PlaceholderScreen(name: String) {
         }
     }
 }
+
