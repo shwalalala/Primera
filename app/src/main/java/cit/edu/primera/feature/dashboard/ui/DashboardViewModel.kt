@@ -1,3 +1,4 @@
+
 package cit.edu.primera.feature.dashboard.ui
 
 import androidx.compose.ui.graphics.Color
@@ -7,6 +8,8 @@ import cit.edu.primera.core.theme.LogBaby
 import cit.edu.primera.core.theme.LogNutrition
 import cit.edu.primera.core.theme.LogOther
 import cit.edu.primera.core.theme.LogPain
+import cit.edu.primera.core.util.DataExportHelper
+import cit.edu.primera.core.util.HealthSummaryDataLoader
 import cit.edu.primera.feature.dashboard.data.DashboardRepository
 import cit.edu.primera.feature.dashboard.domain.DashboardBusinessLogic
 import cit.edu.primera.feature.dashboard.domain.DashboardData
@@ -17,7 +20,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -25,6 +27,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import cit.edu.primera.core.util.HealthSummaryPdfRenderer
 
 class DashboardViewModel(
     private val repository: DashboardRepository,
@@ -32,14 +35,19 @@ class DashboardViewModel(
     private val healthConnectManager: HealthConnectManager,
     private val preferenceRepository: cit.edu.primera.core.data.PreferenceRepository,
     private val networkMonitor: cit.edu.primera.core.util.NetworkMonitor,
-    private val geminiContentRepository: cit.edu.primera.feature.dashboard.data.GeminiContentRepository? = null,
+    private val geminiContentRepository:
+    cit.edu.primera.feature.dashboard.data.GeminiContentRepository? = null,
+    private val healthSummaryDataLoader: HealthSummaryDataLoader
 ) : ViewModel() {
 
-    private val _weeklyContent = MutableStateFlow<cit.edu.primera.feature.dashboard.domain.WeeklyInfo?>(null)
+    private val _weeklyContent =
+        MutableStateFlow<cit.edu.primera.feature.dashboard.domain.WeeklyInfo?>(null)
+
     private var currentLoadedWeek: Int? = null
 
     private val _showMicCoachmark = MutableStateFlow(false)
-    val showMicCoachmark: StateFlow<Boolean> = _showMicCoachmark.asStateFlow()
+    val showMicCoachmark: StateFlow<Boolean> =
+        _showMicCoachmark.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -50,15 +58,23 @@ class DashboardViewModel(
 
     fun checkMicCoachmark() {
         viewModelScope.launch {
-            val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
-            val hasSeen = preferenceRepository.hasSeenMicCoachmark(userId)
+            val userId =
+                com.google.firebase.auth.FirebaseAuth.getInstance()
+                    .currentUser?.uid ?: ""
+
+            val hasSeen =
+                preferenceRepository.hasSeenMicCoachmark(userId)
+
             _showMicCoachmark.value = !hasSeen
         }
     }
 
     fun dismissMicCoachmark() {
         viewModelScope.launch {
-            val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
+            val userId =
+                com.google.firebase.auth.FirebaseAuth.getInstance()
+                    .currentUser?.uid ?: ""
+
             preferenceRepository.setMicCoachmarkDismissed(userId)
             _showMicCoachmark.value = false
         }
@@ -71,11 +87,15 @@ class DashboardViewModel(
             initialValue = true
         )
 
+    // Existing QR summary text remains unchanged.
     val summaryQrContent: StateFlow<String> = combine(
         repository.observeHealthRecords(),
         repository.observeDashboardData()
     ) { healthRecords, dashboardData ->
-        cit.edu.primera.core.util.DataExportHelper.generateSummaryText(healthRecords, dashboardData)
+        DataExportHelper.generateSummaryText(
+            healthRecords,
+            dashboardData
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -88,21 +108,41 @@ class DashboardViewModel(
         _weeklyContent
     ) { data, healthRecords, weeklyContent ->
         if (data == null) {
-            DashboardUiState.Success(createDefaultUiModel(weeklyContent))
+            DashboardUiState.Success(
+                createDefaultUiModel(weeklyContent)
+            )
         } else {
-            val week = DashboardBusinessLogic.getWeekNumber(data.dueDate)
+            val week =
+                DashboardBusinessLogic.getWeekNumber(data.dueDate)
+
             ensureWeeklyContent(week)
-            DashboardUiState.Success(mapToUiModel(data, healthRecords, weeklyContent, week))
+
+            DashboardUiState.Success(
+                mapToUiModel(
+                    data,
+                    healthRecords,
+                    weeklyContent,
+                    week
+                )
+            )
         } as DashboardUiState
     }
-        .onStart { 
-            // Optional: emit Loading explicitly if needed
+        .onStart {
+            // Existing loading behavior preserved.
         }
         .catch { e ->
             if (e.message?.contains("index") == true) {
-                emit(DashboardUiState.Success(createDefaultUiModel(null)))
+                emit(
+                    DashboardUiState.Success(
+                        createDefaultUiModel(null)
+                    )
+                )
             } else {
-                emit(DashboardUiState.Error(e.message ?: "An unexpected error occurred"))
+                emit(
+                    DashboardUiState.Error(
+                        e.message ?: "An unexpected error occurred"
+                    )
+                )
             }
         }
         .stateIn(
@@ -114,19 +154,28 @@ class DashboardViewModel(
     private fun ensureWeeklyContent(week: Int) {
         if (currentLoadedWeek != week) {
             currentLoadedWeek = week
+
             viewModelScope.launch {
-                val content = if (isOnline.value && geminiContentRepository != null) {
-                    geminiContentRepository.getWeeklyContent(week)
-                } else {
-                    cit.edu.primera.feature.dashboard.domain.BabyDevelopmentData.getInfoForWeek(week)
-                }
+                val content =
+                    if (isOnline.value && geminiContentRepository != null) {
+                        geminiContentRepository.getWeeklyContent(week)
+                    } else {
+                        cit.edu.primera.feature.dashboard.domain.BabyDevelopmentData
+                            .getInfoForWeek(week)
+                    }
+
                 _weeklyContent.value = content
             }
         }
     }
 
-    private fun createDefaultUiModel(weeklyContent: cit.edu.primera.feature.dashboard.domain.WeeklyInfo?): DashboardUiModel {
-        val info = weeklyContent ?: cit.edu.primera.feature.dashboard.domain.BabyDevelopmentData.getInfoForWeek(1)
+    private fun createDefaultUiModel(
+        weeklyContent: cit.edu.primera.feature.dashboard.domain.WeeklyInfo?
+    ): DashboardUiModel {
+        val info = weeklyContent
+            ?: cit.edu.primera.feature.dashboard.domain.BabyDevelopmentData
+                .getInfoForWeek(1)
+
         return DashboardUiModel(
             userName = "Guest",
             timeOfDay = DashboardBusinessLogic.getTimeOfDay(),
@@ -163,29 +212,39 @@ class DashboardViewModel(
         weeklyContent: cit.edu.primera.feature.dashboard.domain.WeeklyInfo?,
         week: Int
     ): DashboardUiModel {
-        val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
-        val info = weeklyContent ?: cit.edu.primera.feature.dashboard.domain.BabyDevelopmentData.getInfoForWeek(week)
-        
-        // Watch sync is active if the user has performed at least one sync session
-        val isWatchSynced = preferenceRepository.isWatchSyncEnabled(userId)
+        val userId =
+            com.google.firebase.auth.FirebaseAuth.getInstance()
+                .currentUser?.uid ?: ""
 
-        val isTentative = data.isCycleRegular == false && data.hasHadUltrasound == false
+        val info = weeklyContent
+            ?: cit.edu.primera.feature.dashboard.domain.BabyDevelopmentData
+                .getInfoForWeek(week)
+
+        val isWatchSynced =
+            preferenceRepository.isWatchSyncEnabled(userId)
+
+        val isTentative =
+            data.isCycleRegular == false &&
+                    data.hasHadUltrasound == false
+
         val warning = if (isTentative) {
             "Gestational age may not be accurate. Please have an ultrasound as soon as possible for a confirmed due date."
-        } else null
+        } else {
+            null
+        }
 
-        // Calculate heart rate trends
         val avgHrLastWeek = healthRecords
             .take(7)
             .mapNotNull { it.averageHeartRate }
             .average()
 
-        val hrVsLastWeek = if (!avgHrLastWeek.isNaN() && (data.heartRateBpm > 0)) {
-            (data.heartRateBpm - avgHrLastWeek).toInt()
-        } else {
-            0
-        }
-        
+        val hrVsLastWeek =
+            if (!avgHrLastWeek.isNaN() && data.heartRateBpm > 0) {
+                (data.heartRateBpm - avgHrLastWeek).toInt()
+            } else {
+                0
+            }
+
         return DashboardUiModel(
             userName = data.userName,
             timeOfDay = DashboardBusinessLogic.getTimeOfDay(),
@@ -203,30 +262,39 @@ class DashboardViewModel(
             stepsGoal = data.stepsGoal,
             sleepHours = data.sleepHours,
             sleepMinutes = data.sleepMinutes,
-            sleepQuality = DashboardBusinessLogic.getSleepQuality(data.sleepHours, data.sleepMinutes),
+            sleepQuality = DashboardBusinessLogic.getSleepQuality(
+                data.sleepHours,
+                data.sleepMinutes
+            ),
             spO2 = data.spO2,
             isWatchSynced = isWatchSynced,
             isGestationalAgeTentative = isTentative,
             inaccuracyWarning = warning,
-            recentLogs = data.recentLogs
-                .map { log ->
-                    val sdf = SimpleDateFormat("h:mm a", Locale.getDefault())
-                    val timeText = if (isToday(log.timestamp)) {
-                        "Today, ${sdf.format(log.timestamp)}"
-                    } else if (isYesterday(log.timestamp)) {
-                        "Yesterday, ${sdf.format(log.timestamp)}"
-                    } else {
-                        SimpleDateFormat("MMM d, h:mm a", Locale.getDefault()).format(log.timestamp)
-                    }
+            recentLogs = data.recentLogs.map { log ->
+                val sdf = SimpleDateFormat(
+                    "h:mm a",
+                    Locale.getDefault()
+                )
 
-                    DashboardLogUiItem(
-                        id = log.id,
-                        category = log.category,
-                        description = log.description,
-                        time = timeText,
-                        accentColor = getCategoryColor(log.category)
-                    )
-                },
+                val timeText = if (isToday(log.timestamp)) {
+                    "Today, ${sdf.format(log.timestamp)}"
+                } else if (isYesterday(log.timestamp)) {
+                    "Yesterday, ${sdf.format(log.timestamp)}"
+                } else {
+                    SimpleDateFormat(
+                        "MMM d, h:mm a",
+                        Locale.getDefault()
+                    ).format(log.timestamp)
+                }
+
+                DashboardLogUiItem(
+                    id = log.id,
+                    category = log.category,
+                    description = log.description,
+                    time = timeText,
+                    accentColor = getCategoryColor(log.category)
+                )
+            },
             weekDays = getCurrentWeekDays(),
             upcomingReminders = getPrenatalReminders(week),
             milestones = info.milestones,
@@ -235,8 +303,11 @@ class DashboardViewModel(
         )
     }
 
-    private fun getPrenatalReminders(week: Int): List<PrenatalReminderUiItem> {
+    private fun getPrenatalReminders(
+        week: Int
+    ): List<PrenatalReminderUiItem> {
         val reminders = mutableListOf<PrenatalReminderUiItem>()
+
         when {
             week in 1..13 -> {
                 reminders.add(
@@ -247,6 +318,7 @@ class DashboardViewModel(
                         isUrgent = false
                     )
                 )
+
                 reminders.add(
                     PrenatalReminderUiItem(
                         title = "Dating Ultrasound Scan",
@@ -256,6 +328,7 @@ class DashboardViewModel(
                     )
                 )
             }
+
             week in 14..27 -> {
                 reminders.add(
                     PrenatalReminderUiItem(
@@ -265,6 +338,7 @@ class DashboardViewModel(
                         isUrgent = false
                     )
                 )
+
                 reminders.add(
                     PrenatalReminderUiItem(
                         title = "Glucose Screening (GDM Test)",
@@ -274,6 +348,7 @@ class DashboardViewModel(
                     )
                 )
             }
+
             else -> {
                 reminders.add(
                     PrenatalReminderUiItem(
@@ -283,6 +358,7 @@ class DashboardViewModel(
                         isUrgent = false
                     )
                 )
+
                 reminders.add(
                     PrenatalReminderUiItem(
                         title = "Group B Strep (GBS) Screening",
@@ -293,12 +369,16 @@ class DashboardViewModel(
                 )
             }
         }
+
         return reminders
     }
 
     private fun isToday(date: Date): Boolean {
         val cal1 = Calendar.getInstance()
-        val cal2 = Calendar.getInstance().apply { time = date }
+        val cal2 = Calendar.getInstance().apply {
+            time = date
+        }
+
         return cal1[Calendar.YEAR] == cal2[Calendar.YEAR] &&
                 cal1[Calendar.DAY_OF_YEAR] == cal2[Calendar.DAY_OF_YEAR]
     }
@@ -306,7 +386,11 @@ class DashboardViewModel(
     private fun isYesterday(date: Date): Boolean {
         val cal1 = Calendar.getInstance()
         cal1.add(Calendar.DAY_OF_YEAR, -1)
-        val cal2 = Calendar.getInstance().apply { time = date }
+
+        val cal2 = Calendar.getInstance().apply {
+            time = date
+        }
+
         return cal1[Calendar.YEAR] == cal2[Calendar.YEAR] &&
                 cal1[Calendar.DAY_OF_YEAR] == cal2[Calendar.DAY_OF_YEAR]
     }
@@ -323,16 +407,24 @@ class DashboardViewModel(
     private fun getCurrentWeekDays(): List<DashboardWeekDayItem> {
         val calendar = Calendar.getInstance()
         val today = calendar[Calendar.DAY_OF_YEAR]
-        
-        // Set to the first day of the week (Sunday)
-        calendar[Calendar.DAY_OF_WEEK] = calendar.firstDayOfWeek
-        
+
+        calendar[Calendar.DAY_OF_WEEK] =
+            calendar.firstDayOfWeek
+
         val days = mutableListOf<DashboardWeekDayItem>()
-        val dayInitials = listOf("S", "M", "T", "W", "T", "F", "S")
-        val monthFormat = SimpleDateFormat("MMM", Locale.getDefault())
-        
+        val dayInitials = listOf(
+            "S", "M", "T", "W", "T", "F", "S"
+        )
+
+        val monthFormat = SimpleDateFormat(
+            "MMM",
+            Locale.getDefault()
+        )
+
         for (i in 0..6) {
-            val monthStr = monthFormat.format(calendar.time)
+            val monthStr =
+                monthFormat.format(calendar.time)
+
             days.add(
                 DashboardWeekDayItem(
                     initial = dayInitials[i],
@@ -341,75 +433,142 @@ class DashboardViewModel(
                     month = monthStr
                 )
             )
+
             calendar.add(Calendar.DAY_OF_MONTH, 1)
         }
+
         return days
     }
+
+    // ---------------------------------------------
+    // HEALTH SUMMARY PDF EXPORT
+    // ---------------------------------------------
 
     fun onExportSummaryPdf(context: android.content.Context) {
         onShareSummaryPdf(context)
     }
 
-    suspend fun getSummaryPdfUrl(context: android.content.Context): String {
-        val healthRecords = repository.observeHealthRecords().first()
-        val dashboardData = repository.observeDashboardData().first()
-        return cit.edu.primera.core.util.DataExportHelper.uploadSummaryPdfAndGetUrl(
+    // Existing QR upload remains unchanged for now.
+    // Do not use it to share real patient data until
+    // controlled-access PDF sharing is implemented.
+    suspend fun getSummaryPdfUrl(
+        context: android.content.Context
+    ): String {
+        val summary = healthSummaryDataLoader.load()
+
+        return DataExportHelper.uploadSummaryPdfAndGetUrl(
             context,
-            healthRecords,
-            dashboardData
+            summary.smartwatchRecords,
+            summary.patient
         )
     }
 
     fun onSaveSummaryPdf(context: android.content.Context) {
         viewModelScope.launch {
-            val healthRecords = repository.observeHealthRecords().first()
-            val dashboardData = repository.observeDashboardData().first()
-            val pdfFile = cit.edu.primera.core.util.DataExportHelper.createSummaryPdfFile(
-                context,
-                healthRecords,
-                dashboardData
-            )
-            cit.edu.primera.core.util.DataExportHelper.savePdfToDownloads(context, pdfFile)
+            try {
+                val summary = healthSummaryDataLoader.load()
+
+                val pdfFile = HealthSummaryPdfRenderer.create(
+                    context,
+                    summary
+                )
+
+                DataExportHelper.savePdfToDownloads(
+                    context,
+                    pdfFile
+                )
+            } catch (e: Exception) {
+                android.util.Log.e(
+                    "DashboardViewModel",
+                    "Failed to save health summary PDF",
+                    e
+                )
+
+                android.widget.Toast.makeText(
+                    context,
+                    "Unable to generate health summary",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+            }
         }
     }
 
     fun onPrintSummaryPdf(context: android.content.Context) {
         viewModelScope.launch {
-            val healthRecords = repository.observeHealthRecords().first()
-            val dashboardData = repository.observeDashboardData().first()
-            val pdfFile = cit.edu.primera.core.util.DataExportHelper.createSummaryPdfFile(
-                context,
-                healthRecords,
-                dashboardData
-            )
-            cit.edu.primera.core.util.DataExportHelper.printPdfFile(context, pdfFile)
+            try {
+                val summary = healthSummaryDataLoader.load()
+
+                val pdfFile = HealthSummaryPdfRenderer.create(
+                    context,
+                    summary
+                )
+
+                DataExportHelper.printPdfFile(
+                    context,
+                    pdfFile
+                )
+            } catch (e: Exception) {
+                android.util.Log.e(
+                    "DashboardViewModel",
+                    "Failed to print health summary PDF",
+                    e
+                )
+
+                android.widget.Toast.makeText(
+                    context,
+                    "Unable to prepare health summary for printing",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+            }
         }
     }
+
 
     fun onShareSummaryPdf(context: android.content.Context) {
         viewModelScope.launch {
-            val healthRecords = repository.observeHealthRecords().first()
-            val dashboardData = repository.observeDashboardData().first()
-            val pdfFile = cit.edu.primera.core.util.DataExportHelper.createSummaryPdfFile(
-                context,
-                healthRecords,
-                dashboardData
-            )
-            cit.edu.primera.core.util.DataExportHelper.sharePdfFile(context, pdfFile)
+            try {
+                val summary = healthSummaryDataLoader.load()
+
+                val pdfFile = HealthSummaryPdfRenderer.create(
+                    context,
+                    summary
+                )
+
+                DataExportHelper.sharePdfFile(
+                    context,
+                    pdfFile
+                )
+            } catch (e: Exception) {
+                android.util.Log.e(
+                    "DashboardViewModel",
+                    "Failed to share health summary PDF",
+                    e
+                )
+
+                android.widget.Toast.makeText(
+                    context,
+                    "Unable to prepare health summary for sharing",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+            }
         }
     }
 
 
+    // ---------------------------------------------
+    // SMARTWATCH SYNC
+    // ---------------------------------------------
 
-    // FEAT-002: Watch Sync with Actual Data
     fun onSyncWatch() {
         viewModelScope.launch {
             try {
-                if (healthConnectManager.isAvailable() && healthConnectManager.hasAllPermissions()) {
-                    // Start sync process
-                    val healthData = healthConnectManager.readTodaySmartwatchHealth()
-                    
-                    // Save to repository (Firestore)
+                if (
+                    healthConnectManager.isAvailable() &&
+                    healthConnectManager.hasAllPermissions()
+                ) {
+                    val healthData =
+                        healthConnectManager.readTodaySmartwatchHealth()
+
                     repository.updateHealthData(
                         steps = healthData.steps,
                         heartRate = healthData.currentHeartRate ?: 0L,
@@ -417,31 +576,53 @@ class DashboardViewModel(
                         sleepMinutes = healthData.sleepMinutes % 60,
                         spO2 = healthData.spO2?.toLong()
                     )
-                    
-                    // Also save to historical records for consistency across all screens
+
                     repository.saveHistoricalRecord(healthData)
-                    
-                    // Mark as synced locally for this user session
-                    val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
-                    preferenceRepository.setWatchSyncEnabled(userId, enabled = true)
+
+                    val userId =
+                        com.google.firebase.auth.FirebaseAuth.getInstance()
+                            .currentUser?.uid ?: ""
+
+                    preferenceRepository.setWatchSyncEnabled(
+                        userId,
+                        enabled = true
+                    )
                 }
             } catch (e: Exception) {
-                android.util.Log.e("DashboardViewModel", "Sync failed during dashboard 'Sync Now' click", e)
+                android.util.Log.e(
+                    "DashboardViewModel",
+                    "Sync failed during dashboard 'Sync Now' click",
+                    e
+                )
             }
         }
     }
 
-    // DB-002: Update Steps Goal
+    // ---------------------------------------------
+    // STEPS GOAL
+    // ---------------------------------------------
+
     fun onUpdateStepsGoal(goal: Long) {
         viewModelScope.launch {
             repository.updateStepsGoal(goal)
         }
     }
 
+    // ---------------------------------------------
+    // PROFILE PICTURE
+    // ---------------------------------------------
+
     fun onPhotoUriSelected(photoUri: String) {
         viewModelScope.launch {
-            val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
-            preferenceRepository.setProfilePictureUri(userId, photoUri)
+            val userId =
+                com.google.firebase.auth.FirebaseAuth.getInstance()
+                    .currentUser?.uid ?: ""
+
+            preferenceRepository.setProfilePictureUri(
+                userId,
+                photoUri
+            )
+
             repository.updatePhotoUri(photoUri)
         }
     }

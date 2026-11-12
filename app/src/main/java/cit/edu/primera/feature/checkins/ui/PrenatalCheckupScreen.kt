@@ -1,4 +1,3 @@
-
 package cit.edu.primera.feature.checkins.ui
 
 import android.app.TimePickerDialog
@@ -37,7 +36,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -623,7 +621,6 @@ fun PrenatalCheckupScreen(
                         "ieFindings" to "IE Findings",
                         "medicines" to "Medicines & Supplements",
                         "instructions" to "Doctor's Instructions",
-                        "nextVisit" to "Next Visit Date",
                         "notes" to "Appointment Notes"
                     )
 
@@ -942,7 +939,12 @@ fun PrenatalCheckupScreen(
                         onClick = {
                             formError = null
 
-                            val details = fields.toMap()
+                            // Remove the obsolete Next Visit Date key
+                            // when saving a new or edited record.
+                            val details = fields.filterKeys {
+                                it != "nextVisit"
+                            }
+
                             val existing = editingRecord
 
                             when {
@@ -1086,7 +1088,6 @@ private fun PrenatalEntryCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Small appointment icon.
             Icon(
                 imageVector = if (completed) {
                     Icons.Default.CheckCircle
@@ -1098,7 +1099,6 @@ private fun PrenatalEntryCard(
                 modifier = Modifier.size(21.dp)
             )
 
-            // Compact title and time.
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(3.dp)
@@ -1126,7 +1126,6 @@ private fun PrenatalEntryCard(
                 }
             }
 
-            // Existing edit functionality.
             TextButton(
                 onClick = onEdit
             ) {
@@ -1138,8 +1137,6 @@ private fun PrenatalEntryCard(
             }
         }
 
-        // Clinic / healthcare provider displayed
-        // without adding excessive vertical space.
         if (clinic.isNotBlank() || provider.isNotBlank()) {
             val secondaryLine = listOf(
                 clinic,
@@ -1395,22 +1392,6 @@ private fun PrenatalResultsForm(
             },
             placeholder = "Advice from your prenatal visit",
             singleLine = false
-        )
-
-        PrenatalFormField(
-            label = "Next Visit Date",
-            value = fields["nextVisit"].orEmpty(),
-            onValueChange = {
-                fields["nextVisit"] = it
-            },
-            placeholder = "YYYY-MM-DD (optional)"
-        )
-
-        Text(
-            text = "A next visit date can be scheduled " +
-                    "as an appointment separately.",
-            fontSize = 11.sp,
-            color = TextSecondary
         )
     }
 }
