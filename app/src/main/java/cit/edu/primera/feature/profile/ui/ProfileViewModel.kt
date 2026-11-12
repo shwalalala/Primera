@@ -438,6 +438,7 @@ class ProfileViewModel(
 
             val profile = OnboardingProfile(
                 email = emailToSave,
+                username = currentUiState.username.trim(),
                 birthday = currentUiState.birthday ?: Date(),
                 weightKg = currentUiState.weightKg,
                 heightCm = currentUiState.heightCm,

@@ -1,3 +1,4 @@
+
 package cit.edu.primera.feature.checkins.ui
 
 import androidx.compose.foundation.background
@@ -38,6 +39,28 @@ import cit.edu.primera.core.theme.TextPrimary
 import cit.edu.primera.core.theme.TextSecondary
 import cit.edu.primera.ui.components.FeatureTopBar
 import cit.edu.primera.ui.components.PrimeraGradientButton
+import java.text.SimpleDateFormat
+import java.util.Locale
+
+// OUR ADDITION: Format the selected Daily Check-In date.
+private fun formatCheckinReviewDate(date: String): String {
+    return runCatching {
+        val inputFormat = SimpleDateFormat(
+            "yyyy-MM-dd",
+            Locale.US
+        ).apply {
+            isLenient = false
+        }
+
+        val parsedDate = inputFormat.parse(date)
+            ?: return@runCatching date
+
+        SimpleDateFormat(
+            "MMMM d, yyyy",
+            Locale.getDefault()
+        ).format(parsedDate)
+    }.getOrDefault(date)
+}
 
 @Composable
 fun CheckinPreviewScreen(
@@ -95,6 +118,16 @@ fun CheckinPreviewContent(
 
             Spacer(Modifier.height(16.dp))
 
+            // OUR ADDITION:
+            // Show the selected date before confirming.
+            SummaryItem(
+                title = "Check-In Date",
+                content = formatCheckinReviewDate(
+                    state.selectedCheckinDate
+                )
+            )
+
+            // TEAMMATES' EXISTING SECTIONS
             SummarySection(
                 title = "Symptoms",
                 items = state.selectedSymptoms.toList()
@@ -124,12 +157,24 @@ fun CheckinPreviewContent(
                 )
             }
 
+            // OUR ADDITION:
+            // Display blood sugar when entered.
+            if (state.bloodSugarMgDl.isNotBlank()) {
+                SummaryItem(
+                    title = "Blood Sugar",
+                    content = "${state.bloodSugarMgDl} mg/dL"
+                )
+            }
+
             state.errorMessage?.let { error ->
                 Text(
                     text = error,
                     color = ErrorRed,
                     fontSize = 14.sp,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(
+                        horizontal = 24.dp,
+                        vertical = 8.dp
+                    )
                 )
             }
 
@@ -137,7 +182,11 @@ fun CheckinPreviewContent(
             Spacer(Modifier.height(32.dp))
 
             PrimeraGradientButton(
-                text = if (state.isSaving) "Saving..." else "Confirm & Save",
+                text = if (state.isSaving) {
+                    "Saving..."
+                } else {
+                    "Confirm & Save"
+                },
                 onClick = onConfirm,
                 enabled = !state.isSaving,
                 modifier = Modifier.padding(horizontal = 24.dp)
@@ -154,14 +203,21 @@ private fun SummarySection(
 ) {
     if (items.isEmpty()) return
 
-    Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp)) {
+    Column(
+        modifier = Modifier.padding(
+            horizontal = 24.dp,
+            vertical = 10.dp
+        )
+    ) {
         Text(
             text = title,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = TextPrimary
         )
+
         Spacer(Modifier.height(8.dp))
+
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -172,8 +228,15 @@ private fun SummarySection(
                     modifier = Modifier
                         .clip(RoundedCornerShape(16.dp))
                         .background(SurfaceWhite)
-                        .border(1.dp, MenuButtonBorder, RoundedCornerShape(16.dp))
-                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                        .border(
+                            1.dp,
+                            MenuButtonBorder,
+                            RoundedCornerShape(16.dp)
+                        )
+                        .padding(
+                            horizontal = 14.dp,
+                            vertical = 8.dp
+                        )
                 ) {
                     Text(
                         text = item,
@@ -192,14 +255,21 @@ private fun SummaryItem(
     title: String,
     content: String
 ) {
-    Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp)) {
+    Column(
+        modifier = Modifier.padding(
+            horizontal = 24.dp,
+            vertical = 10.dp
+        )
+    ) {
         Text(
             text = title,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = TextPrimary
         )
+
         Spacer(Modifier.height(4.dp))
+
         Text(
             text = content,
             fontSize = 14.sp,
@@ -214,10 +284,15 @@ private fun CheckinPreviewPreview() {
     PrimeraTheme {
         CheckinPreviewContent(
             state = DailyCheckinUiState(
-                selectedSymptoms = setOf("Nausea", "Back Pain"),
+                selectedCheckinDate = "2026-11-10",
+                selectedSymptoms = setOf(
+                    "Nausea",
+                    "Back Pain"
+                ),
                 selectedMoods = setOf("Happy"),
                 note = "Feeling good today!",
-                weightKg = "65"
+                weightKg = "65",
+                bloodSugarMgDl = "98"
             ),
             onBack = {},
             onConfirm = {}

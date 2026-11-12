@@ -1,3 +1,4 @@
+
 package cit.edu.primera.core.data
 
 import android.content.Context
@@ -35,6 +36,7 @@ interface PreferenceRepository {
 }
 
 class PreferenceRepositoryImpl(private val context: Context) : PreferenceRepository {
+
     private val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("primera_prefs", Context.MODE_PRIVATE)
 
@@ -54,7 +56,11 @@ class PreferenceRepositoryImpl(private val context: Context) : PreferenceReposit
 
     override fun getDeviceId(): String {
         return try {
-            val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+            val androidId = Settings.Secure.getString(
+                context.contentResolver,
+                Settings.Secure.ANDROID_ID
+            )
+
             if (!androidId.isNullOrBlank() && androidId != "9774d56d682e549c") {
                 androidId
             } else {
@@ -67,25 +73,42 @@ class PreferenceRepositoryImpl(private val context: Context) : PreferenceReposit
 
     private fun getOrCreatePersistentDeviceId(): String {
         var localId = sharedPreferences.getString(KEY_PERSISTENT_DEVICE_ID, null)
+
         if (localId.isNullOrBlank()) {
             localId = UUID.randomUUID().toString()
-            sharedPreferences.edit { putString(KEY_PERSISTENT_DEVICE_ID, localId) }
+            sharedPreferences.edit {
+                putString(KEY_PERSISTENT_DEVICE_ID, localId)
+            }
         }
+
         return localId
     }
 
     override suspend fun shouldShowOnboarding(userId: String): Boolean {
         if (userId.isBlank()) return true
+
         val deviceId = getDeviceId()
-
-        // 1. Evaluate Local Device Key & Active User Match
         val localKey = "${KEY_ONBOARDING_COMPLETED}${userId}_${deviceId}"
-        val isCompletedLocally = sharedPreferences.getBoolean(localKey, false)
-            || sharedPreferences.getBoolean(KEY_ONBOARDING_COMPLETED + userId, false)
-        val lastCompletedUserOnMachine = sharedPreferences.getString(KEY_LAST_COMPLETED_USER_ID, null)
-        val localMatchesActiveUser = isCompletedLocally && (lastCompletedUserOnMachine == userId)
 
-        // 2. Evaluate Backend Database (Server State) for User ID + Device ID pairing
+        // Preserve existing per-device and legacy local checks.
+        val isCompletedLocally =
+            sharedPreferences.getBoolean(localKey, false) ||
+                    sharedPreferences.getBoolean(
+                        KEY_ONBOARDING_COMPLETED + userId,
+                        false
+                    )
+
+        val lastCompletedUserOnMachine =
+            sharedPreferences.getString(
+                KEY_LAST_COMPLETED_USER_ID,
+                null
+            )
+
+        val localMatchesActiveUser =
+            isCompletedLocally &&
+                    lastCompletedUserOnMachine == userId
+
+        // Firebase is the primary source of truth when available.
         val isServerCompletedForUserAndDevice = try {
             val snapshot = FirebaseFirestore.getInstance()
                 .collection("users")
@@ -96,45 +119,90 @@ class PreferenceRepositoryImpl(private val context: Context) : PreferenceReposit
             if (!snapshot.exists()) {
                 false
             } else {
-                val completedDeviceIds = (snapshot.get("completedDeviceIds") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
-                val completedDevicesMap = snapshot.get("completedDevices") as? Map<*, *>
-                val deviceCompletedInMap = completedDevicesMap?.get(deviceId) == true
-                val legacyCompleted = (snapshot.getBoolean("onboardingCompleted") == true)
-                        || (snapshot.get("birthday") != null)
-                        || (snapshot.get("eddDate") != null)
-                        || (snapshot.get("dueDate") != null)
+                val completedDeviceIds =
+                    (snapshot.get("completedDeviceIds") as? List<*>)
+                        ?.mapNotNull { it?.toString() }
+                        ?: emptyList()
 
-                val serverMatchesPairing = completedDeviceIds.contains(deviceId) || deviceCompletedInMap || legacyCompleted
+                val completedDevicesMap =
+                    snapshot.get("completedDevices") as? Map<*, *>
 
-                if (serverMatchesPairing && !completedDeviceIds.contains(deviceId)) {
+                val deviceCompletedInMap =
+                    completedDevicesMap?.get(deviceId) == true
+
+                // Preserve the existing legacy completion checks
+                // for accounts created before device tracking.
+                val legacyCompleted =
+                    snapshot.getBoolean("onboardingCompleted") == true ||
+                            snapshot.get("birthday") != null ||
+                            snapshot.get("eddDate") != null ||
+                            snapshot.get("dueDate") != null
+
+                val serverMatchesPairing =
+                    completedDeviceIds.contains(deviceId) ||
+                            deviceCompletedInMap ||
+                            legacyCompleted
+
+                // Preserve the teammate implementation that
+                // registers a verified completed device.
+                if (
+                    serverMatchesPairing &&
+                    !completedDeviceIds.contains(deviceId)
+                ) {
                     try {
                         FirebaseFirestore.getInstance()
                             .collection("users")
                             .document(userId)
-                            .update("completedDeviceIds", FieldValue.arrayUnion(deviceId))
-                    } catch (_: Exception) {}
+                            .update(
+                                "completedDeviceIds",
+                                FieldValue.arrayUnion(deviceId)
+                            )
+                    } catch (_: Exception) {
+                        // Keep onboarding navigation functional
+                        // if device registration fails.
+                    }
                 }
 
                 serverMatchesPairing
             }
         } catch (_: Exception) {
-            // Offline fallback: rely on local storage matching active user on this machine
-            localMatchesActiveUser
+            // If Firestore cannot be reached, retain the
+            // existing offline fallback behavior.
+            return !localMatchesActiveUser
         }
 
-        // Composite condition: Trigger onboarding/welcome screen if backend shows no completed record for User ID + Device ID,
-        // OR local storage does not actively match current User ID as last person to complete onboarding on this machine.
-        val shouldTrigger = !isServerCompletedForUserAndDevice || !localMatchesActiveUser
+        // FIX:
+        // A completed account verified by Firebase must not
+        // repeat onboarding solely because local preferences
+        // were cleared, changed, or belong to another user.
+        if (isServerCompletedForUserAndDevice) {
 
-        if (!shouldTrigger) {
-            setOnboardingCompleted(userId)
+            // Restore only local completion information.
+            // Do not overwrite the user's profile in Firestore.
+            sharedPreferences.edit {
+                putBoolean(localKey, true)
+                putBoolean(
+                    KEY_ONBOARDING_COMPLETED + userId,
+                    true
+                )
+                putString(
+                    KEY_LAST_COMPLETED_USER_ID,
+                    userId
+                )
+                remove(KEY_ONBOARDING_STEP + userId)
+            }
+
+            return false
         }
 
-        return shouldTrigger
+        // Firestore responded successfully but did not
+        // confirm completed onboarding for this account.
+        return true
     }
 
     override fun setOnboardingCompleted(userId: String) {
         if (userId.isBlank()) return
+
         val deviceId = getDeviceId()
         val localKey = "${KEY_ONBOARDING_COMPLETED}${userId}_${deviceId}"
 
@@ -155,7 +223,8 @@ class PreferenceRepositoryImpl(private val context: Context) : PreferenceReposit
                         "completedDeviceIds" to FieldValue.arrayUnion(deviceId)
                     )
                 )
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
     }
 
     override fun getOnboardingLastStep(userId: String): String? {
@@ -163,33 +232,61 @@ class PreferenceRepositoryImpl(private val context: Context) : PreferenceReposit
     }
 
     override fun setOnboardingLastStep(userId: String, step: String) {
-        sharedPreferences.edit { putString(KEY_ONBOARDING_STEP + userId, step) }
+        sharedPreferences.edit {
+            putString(KEY_ONBOARDING_STEP + userId, step)
+        }
     }
 
     override fun isWatchSyncEnabled(userId: String): Boolean {
-        return sharedPreferences.getBoolean(KEY_WATCH_SYNC_ENABLED + userId, false)
+        return sharedPreferences.getBoolean(
+            KEY_WATCH_SYNC_ENABLED + userId,
+            false
+        )
     }
 
     override fun setWatchSyncEnabled(userId: String, enabled: Boolean) {
-        sharedPreferences.edit { putBoolean(KEY_WATCH_SYNC_ENABLED + userId, enabled) }
+        sharedPreferences.edit {
+            putBoolean(KEY_WATCH_SYNC_ENABLED + userId, enabled)
+        }
     }
 
-    override fun getCustomOptions(userId: String, category: String): Set<String> {
-        return sharedPreferences.getStringSet(KEY_CUSTOM_OPTIONS_PREFIX + category.lowercase() + "_" + userId, emptySet()) ?: emptySet()
+    override fun getCustomOptions(
+        userId: String,
+        category: String
+    ): Set<String> {
+        return sharedPreferences.getStringSet(
+            KEY_CUSTOM_OPTIONS_PREFIX + category.lowercase() + "_" + userId,
+            emptySet()
+        ) ?: emptySet()
     }
 
-    override fun addCustomOption(userId: String, category: String, label: String) {
+    override fun addCustomOption(
+        userId: String,
+        category: String,
+        label: String
+    ) {
         val current = getCustomOptions(userId, category).toMutableSet()
         current.add(label)
-        sharedPreferences.edit { putStringSet(KEY_CUSTOM_OPTIONS_PREFIX + category.lowercase() + "_" + userId, current) }
+
+        sharedPreferences.edit {
+            putStringSet(
+                KEY_CUSTOM_OPTIONS_PREFIX + category.lowercase() + "_" + userId,
+                current
+            )
+        }
     }
 
     override fun hasEverLoggedIn(): Boolean {
-        return sharedPreferences.getBoolean(KEY_HAS_EVER_LOGGED_IN, false)
+        return sharedPreferences.getBoolean(
+            KEY_HAS_EVER_LOGGED_IN,
+            false
+        )
     }
 
     override fun setHasEverLoggedIn(hasLoggedIn: Boolean) {
-        sharedPreferences.edit { putBoolean(KEY_HAS_EVER_LOGGED_IN, hasLoggedIn) }
+        sharedPreferences.edit {
+            putBoolean(KEY_HAS_EVER_LOGGED_IN, hasLoggedIn)
+        }
     }
 
     override fun getSavedEmail(): String? {
@@ -201,18 +298,26 @@ class PreferenceRepositoryImpl(private val context: Context) : PreferenceReposit
             if (email.isNullOrBlank()) {
                 remove(KEY_SAVED_EMAIL)
             } else {
-                putString(KEY_SAVED_EMAIL, email.trim().lowercase())
+                putString(
+                    KEY_SAVED_EMAIL,
+                    email.trim().lowercase()
+                )
             }
         }
     }
 
     override fun getProfilePictureUri(userId: String): String? {
         if (userId.isBlank()) return null
-        return sharedPreferences.getString(KEY_PROFILE_PICTURE_URI + userId, null)
+
+        return sharedPreferences.getString(
+            KEY_PROFILE_PICTURE_URI + userId,
+            null
+        )
     }
 
     override fun setProfilePictureUri(userId: String, uri: String?) {
         if (userId.isBlank()) return
+
         sharedPreferences.edit {
             if (uri.isNullOrBlank()) {
                 remove(KEY_PROFILE_PICTURE_URI + userId)
@@ -227,11 +332,22 @@ class PreferenceRepositoryImpl(private val context: Context) : PreferenceReposit
         val deviceId = getDeviceId()
         val localKey = "${KEY_MIC_COACHMARK_SEEN}${effectiveUser}_${deviceId}"
 
-        val isLocallySeen = sharedPreferences.getBoolean(localKey, false)
-            || sharedPreferences.getBoolean(KEY_MIC_COACHMARK_SEEN + effectiveUser, false)
-        val lastTooltipUser = sharedPreferences.getString(KEY_LAST_TOOLTIP_USER_ID, null)
+        val isLocallySeen =
+            sharedPreferences.getBoolean(localKey, false) ||
+                    sharedPreferences.getBoolean(
+                        KEY_MIC_COACHMARK_SEEN + effectiveUser,
+                        false
+                    )
 
-        val localMatchesCurrentUser = isLocallySeen && (lastTooltipUser == effectiveUser)
+        val lastTooltipUser =
+            sharedPreferences.getString(
+                KEY_LAST_TOOLTIP_USER_ID,
+                null
+            )
+
+        val localMatchesCurrentUser =
+            isLocallySeen && lastTooltipUser == effectiveUser
+
         return localMatchesCurrentUser
     }
 
@@ -251,17 +367,29 @@ class PreferenceRepositoryImpl(private val context: Context) : PreferenceReposit
                 FirebaseFirestore.getInstance()
                     .collection("users")
                     .document(effectiveUser)
-                    .update("seenMicCoachmarkDevices", FieldValue.arrayUnion(deviceId))
-            } catch (_: Exception) {}
+                    .update(
+                        "seenMicCoachmarkDevices",
+                        FieldValue.arrayUnion(deviceId)
+                    )
+            } catch (_: Exception) {
+            }
         }
     }
 
     override fun isReminderEnabled(category: String): Boolean {
-        return sharedPreferences.getBoolean("reminder_enabled_${category.lowercase()}", true)
+        return sharedPreferences.getBoolean(
+            "reminder_enabled_${category.lowercase()}",
+            true
+        )
     }
 
     override fun setReminderEnabled(category: String, enabled: Boolean) {
-        sharedPreferences.edit { putBoolean("reminder_enabled_${category.lowercase()}", enabled) }
+        sharedPreferences.edit {
+            putBoolean(
+                "reminder_enabled_${category.lowercase()}",
+                enabled
+            )
+        }
     }
 
     override fun getReminderTime(category: String): Pair<Int, Int> {
@@ -271,13 +399,27 @@ class PreferenceRepositoryImpl(private val context: Context) : PreferenceReposit
             "wellness" -> 20
             else -> 9
         }
+
         val defaultMinute = 0
-        val hour = sharedPreferences.getInt("reminder_hour_${category.lowercase()}", defaultHour)
-        val minute = sharedPreferences.getInt("reminder_minute_${category.lowercase()}", defaultMinute)
+
+        val hour = sharedPreferences.getInt(
+            "reminder_hour_${category.lowercase()}",
+            defaultHour
+        )
+
+        val minute = sharedPreferences.getInt(
+            "reminder_minute_${category.lowercase()}",
+            defaultMinute
+        )
+
         return Pair(hour, minute)
     }
 
-    override fun setReminderTime(category: String, hour: Int, minute: Int) {
+    override fun setReminderTime(
+        category: String,
+        hour: Int,
+        minute: Int
+    ) {
         sharedPreferences.edit {
             putInt("reminder_hour_${category.lowercase()}", hour)
             putInt("reminder_minute_${category.lowercase()}", minute)
@@ -288,14 +430,18 @@ class PreferenceRepositoryImpl(private val context: Context) : PreferenceReposit
         val savedEmail = getSavedEmail()
         val hasLoggedIn = hasEverLoggedIn()
         val deviceId = getDeviceId()
+
         sharedPreferences.edit {
             clear()
+
             if (!savedEmail.isNullOrBlank()) {
                 putString(KEY_SAVED_EMAIL, savedEmail)
             }
+
             if (hasLoggedIn) {
                 putBoolean(KEY_HAS_EVER_LOGGED_IN, true)
             }
+
             putString(KEY_PERSISTENT_DEVICE_ID, deviceId)
         }
     }

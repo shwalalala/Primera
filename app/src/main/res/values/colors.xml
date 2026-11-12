@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Placeholder for custom colors if needed in XML layouts -->
+    <color name="primera_violet">#8B5CF6</color>
 </resources>

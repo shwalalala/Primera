@@ -1,7 +1,11 @@
+
 package cit.edu.primera.feature.checkins.ui
 
 import cit.edu.primera.feature.dashboard.ui.DashboardLogUiItem
 import cit.edu.primera.feature.dashboard.ui.DashboardWeekDayItem
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 data class CheckinsOverviewUiState(
     val isLoading: Boolean = false,
@@ -27,7 +31,15 @@ data class DailyCheckinUiState(
     val shouldShowWeightUpdateAlert: Boolean = false,
     val isSaving: Boolean = false,
     val errorMessage: String? = null,
-    val success: Boolean = false
+    val success: Boolean = false,
+
+    // Our additions: selectable check-in date and measurements
+    val selectedCheckinDate: String = SimpleDateFormat(
+        "yyyy-MM-dd",
+        Locale.US
+    ).format(Date()),
+    val bloodSugarMgDl: String = "",
+    val originalTimestamp: Date? = null
 )
 
 data class CheckinOption(
