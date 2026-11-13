@@ -325,6 +325,19 @@ class CheckinsViewModel(
         }
     }
 
+    fun deleteLog(logId: String) {
+        viewModelScope.launch {
+            repository.deleteLog(logId).onSuccess {
+                cachedLogs = cachedLogs.filterNot { it.id == logId }
+                _overviewState.update {
+                    it.copy(
+                        logs = mapLogs(cachedLogs)
+                    )
+                }
+            }
+        }
+    }
+
     fun onSymptomToggle(symptom: String) {
         _dailyState.update { state ->
             val newSet = if (state.selectedSymptoms.contains(symptom)) {

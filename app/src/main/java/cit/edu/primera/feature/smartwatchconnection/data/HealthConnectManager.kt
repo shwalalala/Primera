@@ -55,24 +55,48 @@ class HealthConnectManager(
     }
 
     /**
-     * Checks if the Health Connect package is actually installed,
-     * even if the SDK reports it as unavailable.
+     * Checks if Health Connect is available or installed on this device.
+     * On Android 14+ (API 34+), Health Connect is a core Android system framework service
+     * rather than a standalone APK download from Google Play.
      */
     fun isPackageInstalled(): Boolean {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            val status = getAvailabilityStatus()
+            return status != HealthConnectClient.SDK_UNAVAILABLE
+        }
         return try {
             context.packageManager.getPackageInfo("com.google.android.apps.healthdata", 0)
             true
-        } catch (e: Exception) {
-            false
+        } catch (_: Exception) {
+            getAvailabilityStatus() == HealthConnectClient.SDK_AVAILABLE
         }
     }
 
     fun openHealthConnect() {
         try {
-            val intent = context.packageManager.getLaunchIntentForPackage("com.google.android.apps.healthdata")
-            if (intent != null) {
-                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(intent)
+            // First attempt: Intent from HealthConnectClient (works on system framework and standalone)
+            val manageIntent = HealthConnectClient.getHealthConnectManageDataIntent(context).apply {
+                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            if (manageIntent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(manageIntent)
+                return
+            }
+
+            // Fallback for Android 13- standalone app
+            val launchIntent = context.packageManager.getLaunchIntentForPackage("com.google.android.apps.healthdata")
+            if (launchIntent != null) {
+                launchIntent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(launchIntent)
+                return
+            }
+
+            // Direct settings action fallback
+            val settingsIntent = android.content.Intent("androidx.health.action.HEALTH_CONNECT_SETTINGS").apply {
+                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            if (settingsIntent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(settingsIntent)
             }
         } catch (e: Exception) {
             android.util.Log.e("HealthConnectManager", "Could not open Health Connect", e)

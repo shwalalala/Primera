@@ -35,6 +35,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Translate
@@ -132,6 +133,7 @@ fun TranscriptionScreen(
             }
         },
         onDismissError = viewModel::dismissError,
+        onStartManualInput = viewModel::startManualInput,
         onBack = onBack
     )
 }
@@ -152,6 +154,7 @@ private fun TranscriptionContent(
     onSave: () -> Unit,
     onUseInCheckin: () -> Unit,
     onDismissError: () -> Unit,
+    onStartManualInput: () -> Unit,
     onBack: () -> Unit
 ) {
     val scrollState = rememberScrollState()
@@ -232,6 +235,33 @@ private fun TranscriptionContent(
                     }
                 }
             )
+
+            if (uiState !is TranscriptionUiState.Listening &&
+                uiState !is TranscriptionUiState.Success &&
+                uiState !is TranscriptionUiState.AnalyzingWithAi &&
+                uiState !is TranscriptionUiState.Uploading &&
+                uiState !is TranscriptionUiState.Uploaded
+            ) {
+                TextButton(
+                    onClick = onStartManualInput,
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = PrimeraViolet
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "Or type your notes manually",
+                        color = PrimeraViolet,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    )
+                }
+            }
 
             Spacer(Modifier.height(16.dp))
 
@@ -463,11 +493,19 @@ private fun TranscriptionContent(
         if (uiState is TranscriptionUiState.Error) {
             AlertDialog(
                 onDismissRequest = onDismissError,
-                title = { Text("Error") },
+                title = { Text("Speech Recognition Notice") },
                 text = { Text(uiState.message) },
                 confirmButton = {
+                    TextButton(onClick = {
+                        onDismissError()
+                        onStartManualInput()
+                    }) {
+                        Text("Type Manually")
+                    }
+                },
+                dismissButton = {
                     TextButton(onClick = onDismissError) {
-                        Text("OK")
+                        Text("Dismiss")
                     }
                 }
             )
@@ -597,6 +635,7 @@ private fun TranscriptionScreenPreview() {
             onSave = {},
             onUseInCheckin = {},
             onDismissError = {},
+            onStartManualInput = {},
             onBack = {}
         )
     }
@@ -627,6 +666,7 @@ private fun TranscriptionScreenSuccessPreview() {
             onSave = {},
             onUseInCheckin = {},
             onDismissError = {},
+            onStartManualInput = {},
             onBack = {}
         )
     }

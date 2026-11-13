@@ -38,6 +38,8 @@ class CheckinsViewModelTest {
             return Result.success(Unit)
         }
 
+        override suspend fun deleteLog(logId: String): Result<Unit> = Result.success(Unit)
+
         override suspend fun updateUserWeight(weightKg: Int): Result<Unit> = Result.success(Unit)
 
         override fun getCustomOptions(category: String): Set<String> {

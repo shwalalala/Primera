@@ -33,16 +33,20 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -235,6 +239,7 @@ fun CheckinsOverviewScreen(
         onNavigateToPrenatalCheckup = onNavigateToPrenatalCheckup,
         onPrenatalRecordClick = onPrenatalRecordClick,
         onLogClick = onLogClick,
+        onDeleteLog = viewModel::deleteLog,
         onOpenDrawer = onOpenDrawer,
         onPrintQrClick = onPrintQrClick,
         modifier = modifier
@@ -253,6 +258,7 @@ fun CheckinsOverviewContent(
     onFilterChange: (String) -> Unit,
     onNavigateToDailyCheckin: () -> Unit,
     onLogClick: (DashboardLogUiItem) -> Unit,
+    onDeleteLog: ((String) -> Unit)? = null,
     onOpenDrawer: () -> Unit = {},
     onPrintQrClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -964,6 +970,13 @@ fun CheckinsOverviewContent(
                     selectedDailyLog = null
                     onLogClick(activeDailyLog)
                 },
+                onDelete = {
+                    val id = activeDailyLog.id
+                    selectedDailyLog = null
+                    if (!id.isNullOrBlank()) {
+                        onDeleteLog?.invoke(id)
+                    }
+                },
                 onClose = {
                     selectedDailyLog = null
                 }
@@ -980,8 +993,59 @@ fun CheckinsOverviewContent(
 private fun DailyCheckinDetailsSheet(
     log: DashboardLogUiItem,
     onEdit: () -> Unit,
+    onDelete: () -> Unit,
     onClose: () -> Unit
 ) {
+    var showDeleteConfirmation by remember {
+        mutableStateOf(false)
+    }
+
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = {
+                Text(
+                    text = "Delete Daily Check-In",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to delete this check-in entry? This action cannot be undone.",
+                    fontSize = 14.sp,
+                    color = TextSecondary
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteConfirmation = false
+                        onDelete()
+                    }
+                ) {
+                    Text(
+                        text = "Delete",
+                        color = Color(0xFFE53935),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteConfirmation = false }
+                ) {
+                    Text(
+                        text = "Cancel",
+                        color = TextSecondary
+                    )
+                }
+            },
+            containerColor = SurfaceWhite
+        )
+    }
+
     val savedFields = remember(log) {
         dailyPreviewFields(log)
     }
@@ -1057,6 +1121,27 @@ private fun DailyCheckinDetailsSheet(
             text = "Edit Daily Check-In",
             onClick = onEdit
         )
+
+        OutlinedButton(
+            onClick = { showDeleteConfirmation = true },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = Color(0xFFE53935)
+            ),
+            border = BorderStroke(1.dp, Color(0xFFE53935).copy(alpha = 0.5f)),
+            shape = RoundedCornerShape(14.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Delete Daily Check-In",
+                fontWeight = FontWeight.SemiBold
+            )
+        }
 
         TextButton(
             onClick = onClose,

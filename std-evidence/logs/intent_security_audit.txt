@@ -1,0 +1,59 @@
+================================================================================
+PRIMERA MOBILE INTENT & COMPONENT SECURITY AUDIT
+Package: cit.edu.primera
+Target SDK: 36 | Compile SDK: 37
+================================================================================
+
+1. ACTIVITIES
+--------------------------------------------------------------------------------
+- cit.edu.primera.MainActivity:
+  * Exported: true
+  * Intent Filters: [android.intent.action.MAIN, android.intent.category.LAUNCHER]
+  * Permission: None (Launcher Activity)
+  * Findings: PASS. Handles EXTRA_DESTINATION_ROUTE intent extra. Enforces authentication validation; unauthenticated intents are safely redirected to Login/Welcome.
+
+- cit.edu.primera.PermissionsRationaleActivity:
+  * Exported: true
+  * Intent Filters: [androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE]
+  * Permission: None (Health Connect integration requirement)
+  * Findings: PASS. Standard Health Connect rationale activity.
+
+- cit.edu.primera.ViewPermissionUsageActivity (alias):
+  * Exported: true
+  * Intent Filters: [android.intent.action.VIEW_PERMISSION_USAGE, android.intent.category.HEALTH_PERMISSIONS]
+  * Permission: android.permission.START_VIEW_PERMISSION_USAGE
+  * Findings: PASS. Guarded by signature/system permission.
+
+- com.facebook.FacebookActivity:
+  * Exported: false (default without intent filters)
+  * Findings: PASS.
+
+- com.facebook.CustomTabActivity:
+  * Exported: true
+  * Intent Filters: [android.intent.action.VIEW, DEFAULT, BROWSABLE, data: fb{id}://authorize]
+  * Findings: PASS. Standard OAuth callback scheme.
+
+2. CONTENT PROVIDERS
+--------------------------------------------------------------------------------
+- androidx.core.content.FileProvider:
+  * Exported: false
+  * Authorities: cit.edu.primera.fileprovider
+  * GrantUriPermissions: true
+  * Paths: @xml/file_paths
+  * Findings: PASS. Secure configuration.
+
+3. BROADCAST RECEIVERS
+--------------------------------------------------------------------------------
+- cit.edu.primera.core.notification.ReminderReceiver:
+  * Exported: true
+  * Findings: MEDIUM RISK / RECOMMENDATION. ReminderReceiver does not require system broadcast actions or external sender permissions. Alarms are delivered locally via AlarmManager PendingIntent. Setting exported="false" prevents potential spoofed alarm triggers by third-party applications.
+
+- cit.edu.primera.core.notification.BootReceiver:
+  * Exported: true
+  * Intent Filters: [android.intent.action.BOOT_COMPLETED, android.intent.action.MY_PACKAGE_REPLACED]
+  * Permission: Protected by Android OS (only system can broadcast BOOT_COMPLETED).
+  * Findings: PASS.
+
+================================================================================
+AUDIT SUMMARY: 1 Recommendation (ReminderReceiver exported status), 0 Critical Vulnerabilities.
+================================================================================

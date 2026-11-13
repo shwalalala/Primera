@@ -378,6 +378,11 @@ private class FakeCheckinsRepository : CheckinsRepository {
         return Result.success(Unit)
     }
 
+    override suspend fun deleteLog(logId: String): Result<Unit> {
+        logsFlow.value = logsFlow.value.filterNot { it.id == logId }
+        return Result.success(Unit)
+    }
+
     override suspend fun updateUserWeight(weightKg: Int): Result<Unit> {
         weightFlow.value = CheckinUserDto(weightKg = weightKg)
         return Result.success(Unit)

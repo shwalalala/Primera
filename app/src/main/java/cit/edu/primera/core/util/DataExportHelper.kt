@@ -331,12 +331,7 @@ object DataExportHelper {
     ): String {
         val pdfFile = createSummaryPdfFile(context, healthRecords, dashboardData)
 
-        val publicUrl = uploadPdfToPublicHost(pdfFile)
-        if (!publicUrl.isNullOrBlank()) {
-            android.util.Log.d("DataExportHelper", "Public PDF URL generated: $publicUrl")
-            return publicUrl
-        }
-
+        // Upload securely to Firebase Storage for authenticated user
         try {
             val bytes = pdfFile.readBytes()
             val userId =
@@ -354,13 +349,14 @@ object DataExportHelper {
             storageRef.putBytes(bytes).await()
             val downloadUrl = storageRef.downloadUrl.await().toString()
             if (downloadUrl.isNotBlank()) {
-                android.util.Log.d("DataExportHelper", "PDF Uploaded successfully: $downloadUrl")
+                android.util.Log.d("DataExportHelper", "PDF Uploaded successfully to secure storage: $downloadUrl")
                 return downloadUrl
             }
         } catch (e: Exception) {
             android.util.Log.e("DataExportHelper", "Firebase Storage upload failed", e)
         }
 
+        // Fallback to local server or local file provider URI for privacy preservation
         val localServerUrl = LocalPdfServer.startServer(pdfFile)
         if (!localServerUrl.isNullOrBlank()) {
             android.util.Log.d("DataExportHelper", "Using Local PDF Server URL: $localServerUrl")
@@ -369,109 +365,6 @@ object DataExportHelper {
 
         return "file://${pdfFile.absolutePath}"
     }
-
-    private suspend fun uploadPdfToPublicHost(pdfFile: File): String? =
-        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            // Attempt 1: tmpfiles.org
-            try {
-                val boundary = "---PrimeraBoundary" + System.currentTimeMillis()
-                val url = java.net.URL("https://tmpfiles.org/api/v1/upload")
-                val conn = url.openConnection() as java.net.HttpURLConnection
-                conn.requestMethod = "POST"
-                conn.doOutput = true
-                conn.setRequestProperty(
-                    "User-Agent",
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                )
-                conn.setRequestProperty("Accept", "application/json")
-                conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
-                conn.connectTimeout = 12000
-                conn.readTimeout = 12000
-
-                conn.outputStream.use { os ->
-                    val writer = java.io.PrintWriter(java.io.OutputStreamWriter(os, "UTF-8"), true)
-                    writer.append("--$boundary\r\n")
-                    writer.append("Content-Disposition: form-data; name=\"file\"; filename=\"${pdfFile.name}\"\r\n")
-                    writer.append("Content-Type: application/pdf\r\n\r\n")
-                    writer.flush()
-
-                    pdfFile.inputStream().use { input ->
-                        input.copyTo(os)
-                    }
-                    os.flush()
-
-                    writer.append("\r\n--$boundary--\r\n")
-                    writer.flush()
-                }
-
-                val code = conn.responseCode
-                android.util.Log.d("DataExportHelper", "tmpfiles.org response code: $code")
-                if (code == 200) {
-                    val response = conn.inputStream.bufferedReader().use { it.readText() }
-                    android.util.Log.d("DataExportHelper", "tmpfiles.org response: $response")
-                    val urlIndex = response.indexOf("\"url\":\"")
-                    if (urlIndex != -1) {
-                        val start = urlIndex + 7
-                        val end = response.indexOf("\"", start)
-                        if (end != -1) {
-                            val rawUrl = response.substring(start, end).replace("\\/", "/")
-                            return@withContext rawUrl.replace("tmpfiles.org/", "tmpfiles.org/dl/")
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("DataExportHelper", "tmpfiles.org upload failed", e)
-            }
-
-            // Attempt 2: file.io
-            try {
-                val boundary = "---PrimeraBoundary" + System.currentTimeMillis()
-                val url = java.net.URL("https://file.io")
-                val conn = url.openConnection() as java.net.HttpURLConnection
-                conn.requestMethod = "POST"
-                conn.doOutput = true
-                conn.setRequestProperty(
-                    "User-Agent",
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                )
-                conn.setRequestProperty("Accept", "application/json")
-                conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
-                conn.connectTimeout = 12000
-                conn.readTimeout = 12000
-
-                conn.outputStream.use { os ->
-                    val writer = java.io.PrintWriter(java.io.OutputStreamWriter(os, "UTF-8"), true)
-                    writer.append("--$boundary\r\n")
-                    writer.append("Content-Disposition: form-data; name=\"file\"; filename=\"${pdfFile.name}\"\r\n")
-                    writer.append("Content-Type: application/pdf\r\n\r\n")
-                    writer.flush()
-
-                    pdfFile.inputStream().use { input ->
-                        input.copyTo(os)
-                    }
-                    os.flush()
-
-                    writer.append("\r\n--$boundary--\r\n")
-                    writer.flush()
-                }
-
-                if (conn.responseCode == 200) {
-                    val response = conn.inputStream.bufferedReader().use { it.readText() }
-                    val linkIndex = response.indexOf("\"link\":\"")
-                    if (linkIndex != -1) {
-                        val start = linkIndex + 8
-                        val end = response.indexOf("\"", start)
-                        if (end != -1) {
-                            return@withContext response.substring(start, end).replace("\\/", "/")
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("DataExportHelper", "file.io upload failed", e)
-            }
-
-            null
-        }
 
     object LocalPdfServer {
         private var serverSocket: java.net.ServerSocket? = null

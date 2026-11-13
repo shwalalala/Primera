@@ -13,6 +13,8 @@ class CheckinsRepositoryImpl(
     override fun observeUserWeight(): Flow<CheckinUserDto?> = dataSource.observeUserWeight()
     
     override suspend fun saveLog(log: CheckinLogDto): Result<Unit> = dataSource.saveLog(log)
+
+    override suspend fun deleteLog(logId: String): Result<Unit> = dataSource.deleteLog(logId)
     
     override suspend fun updateUserWeight(weightKg: Int): Result<Unit> = dataSource.updateUserWeight(weightKg)
 
