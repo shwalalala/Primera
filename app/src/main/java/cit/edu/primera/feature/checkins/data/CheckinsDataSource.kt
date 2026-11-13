@@ -204,6 +204,18 @@ class CheckinsDataSource {
         }
     }
 
+    suspend fun deleteLog(logId: String): Result<Unit> {
+        return try {
+            firestore.collection("checkins")
+                .document(logId)
+                .delete()
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun updateUserWeight(weightKg: Int): Result<Unit> {
         return try {
             val userId = auth.currentUser?.uid ?: "anonymous"

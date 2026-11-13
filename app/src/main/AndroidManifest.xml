@@ -37,7 +37,7 @@
 
     <application
         android:name="cit.edu.primera.PrimeraApplication"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
         android:fullBackupContent="@xml/backup_rules"
@@ -100,7 +100,7 @@
 
         <receiver
             android:name="cit.edu.primera.core.notification.ReminderReceiver"
-            android:exported="true" />
+            android:exported="false" />
 
         <receiver
             android:name="cit.edu.primera.core.notification.BootReceiver"

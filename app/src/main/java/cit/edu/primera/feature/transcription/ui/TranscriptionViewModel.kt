@@ -147,6 +147,17 @@ class TranscriptionViewModel(
         _uiState.value = TranscriptionUiState.Idle
     }
 
+    fun startManualInput() {
+        val currentText = _transcribedText.value
+        _uiState.value = TranscriptionUiState.Success(
+            text = currentText,
+            confidence = 1.0f,
+            durationMs = 0L,
+            rawSpokenText = _rawTranscribedText.value.ifBlank { currentText },
+            isAiCorrected = _isAiCorrected.value
+        )
+    }
+
     override fun onListeningStarted() {
         _uiState.value = TranscriptionUiState.Listening
     }

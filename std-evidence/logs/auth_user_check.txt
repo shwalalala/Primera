@@ -1,0 +1,11 @@
+=== Firebase Auth & Firestore User Existence Check ===
+Timestamp: 2026-11-13T10:57:45Z
+User Email: primera.tester+reg@example.com
+Username: SSTestUser
+Registration Verification:
+- Initial registration succeeded in Module 3.1 Step 5 (navigated to Profile Setup).
+- Maternal profile and onboarding completed in Firestore.
+- Re-registration with same email blocked with message:
+  "This email address is already registered. Please sign in or use a different email."
+- Status: Confirmed active in Firebase Auth and Firestore backend (live project primera-eafe6).
+=== End Check ===

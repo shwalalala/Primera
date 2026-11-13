@@ -878,6 +878,7 @@ private val previewProfileViewModel by lazy {
             override fun observeLogs(): kotlinx.coroutines.flow.Flow<List<cit.edu.primera.feature.checkins.data.CheckinLogDto>> = kotlinx.coroutines.flow.flowOf(emptyList())
             override fun observeUserWeight(): kotlinx.coroutines.flow.Flow<cit.edu.primera.feature.checkins.data.CheckinUserDto?> = kotlinx.coroutines.flow.flowOf(null)
             override suspend fun saveLog(log: cit.edu.primera.feature.checkins.data.CheckinLogDto) = Result.success(Unit)
+            override suspend fun deleteLog(logId: String) = Result.success(Unit)
             override suspend fun updateUserWeight(weightKg: Int) = Result.success(Unit)
             override fun getCustomOptions(category: String) = emptySet<String>()
             override fun addCustomOption(category: String, label: String) {}

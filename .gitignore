@@ -17,6 +17,7 @@ local.properties
 .env
 .env.*
 !.env.example
+std-evidence/.test-users.env
 
 # --- OS System Files ---
 .DS_Store

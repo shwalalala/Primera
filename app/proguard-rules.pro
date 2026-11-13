@@ -12,10 +12,13 @@
 #   public *;
 #}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Keep model DTO classes for Firestore and reflection-based serialization
+-keep class cit.edu.primera.feature.**.data.** { *; }
+-keep class cit.edu.primera.feature.**.domain.** { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Strip debug and verbose logs in release builds to prevent leakage of user data in logcat
+-assumenosideeffects class android.util.Log {
+    public static boolean isLoggable(java.lang.String, int);
+    public static int v(...);
+    public static int d(...);
+}

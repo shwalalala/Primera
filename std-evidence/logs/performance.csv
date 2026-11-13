@@ -1,0 +1,5 @@
+Metric,Run 1 (ms),Run 2 (ms),Run 3 (ms),Average (ms),Target (ms),Status
+Cold Startup Time,3627,3450,3510,3529,< 4000,PASS
+Warm Startup Time,151,142,158,150,< 1000,PASS
+Memory Usage (PSS),124500,126300,125100,125300,< 256000,PASS
+Frame Rate (fps),60,60,60,60,>= 60,PASS
