@@ -17,7 +17,7 @@ healthConnect = "1.1.0"
 kotlinxCoroutines = "1.11.0"
 googleid = "1.2.1"
 coil = "2.6.0"
-zxing = "3.5.3"
+zxing = "3.5.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
