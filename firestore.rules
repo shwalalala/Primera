@@ -189,6 +189,18 @@ service cloud.firestore {
       allow read, write: if isOwner(userId) || isAssignedDoctor(userId);
     }
 
+    match /system_validation_logs/{logId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    match /user_activity_metrics/{participantCode} {
+      allow create, update: if isSignedIn();
+      allow read: if isSignedIn();
+      allow delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

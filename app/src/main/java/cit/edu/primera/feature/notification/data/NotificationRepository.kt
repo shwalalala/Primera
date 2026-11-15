@@ -31,7 +31,8 @@ interface NotificationRepository {
 }
 
 class NotificationRepositoryImpl(
-    private val context: Context
+    private val context: Context,
+    private val validationLogger: cit.edu.primera.core.logging.SystemValidationLogger? = null
 ) : NotificationRepository {
 
     private val firestore = FirebaseFirestore.getInstance()
@@ -339,6 +340,13 @@ class NotificationRepositoryImpl(
             removePendingId(
                 effectiveUserId,
                 notification.id
+            )
+
+            validationLogger?.logReminderEvent(
+                reminderType = notification.category,
+                notificationSent = true,
+                notificationStatus = "delivered",
+                markedCompleted = false
             )
 
             Log.d(

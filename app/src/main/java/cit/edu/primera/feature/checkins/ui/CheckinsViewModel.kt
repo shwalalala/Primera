@@ -28,8 +28,12 @@ import kotlin.math.roundToInt
 
 class CheckinsViewModel(
     private val repository: CheckinsRepository,
-    private val symptomExtractor: cit.edu.primera.feature.transcription.domain.SymptomExtractor
+    private val symptomExtractor: cit.edu.primera.feature.transcription.domain.SymptomExtractor,
+    private val validationLogger: cit.edu.primera.core.logging.SystemValidationLogger? = null
 ) : ViewModel() {
+
+    private var checkinStartTime: Long = System.currentTimeMillis()
+    private var usedVoiceInput: Boolean = false
 
     private val _overviewState = MutableStateFlow(CheckinsOverviewUiState())
     val overviewState: StateFlow<CheckinsOverviewUiState> =
@@ -420,6 +424,7 @@ class CheckinsViewModel(
     fun applyVoiceInputToCheckin(
         transcribedText: String
     ) {
+        usedVoiceInput = true
         val trimmedText = transcribedText.trim()
 
         if (trimmedText.isNotBlank()) {
@@ -614,6 +619,38 @@ class CheckinsViewModel(
                             ).getOrThrow()
                         }
                     }
+
+                    // Log system validation evidence for GO2 & GO3
+                    val durationMs = System.currentTimeMillis() - checkinStartTime
+                    val completedFields = listOf(
+                        state.selectedCheckinDate.isNotBlank(),
+                        state.bloodSugarMgDl.isNotBlank(),
+                        state.selectedSymptoms.isNotEmpty(),
+                        state.selectedMoods.isNotEmpty(),
+                        state.selectedMedicines.isNotEmpty() || state.note.isNotBlank()
+                    ).count { it }
+
+                    val method = if (usedVoiceInput) "voice" else "manual"
+                    validationLogger?.logHealthCheckin(
+                        inputMethod = method,
+                        requiredFieldsTotal = 5,
+                        requiredFieldsCompleted = completedFields,
+                        validationPassed = true,
+                        entrySaved = true,
+                        submissionDurationMs = durationMs
+                    )
+
+                    validationLogger?.logMaternalHealthLog(
+                        logType = "symptom_checkin",
+                        logCompleted = true
+                    )
+
+                    if (state.weightKg.isNotBlank()) {
+                        validationLogger?.logMaternalHealthLog(
+                            logType = "weight_log",
+                            logCompleted = true
+                        )
+                    }
                 }
 
                 _dailyState.update {
@@ -636,6 +673,8 @@ class CheckinsViewModel(
     }
 
     fun prepareNewCheckin() {
+        checkinStartTime = System.currentTimeMillis()
+        usedVoiceInput = false
         _dailyState.update { state ->
             DailyCheckinUiState(
                 availableSymptoms = state.availableSymptoms,

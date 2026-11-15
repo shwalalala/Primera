@@ -18,8 +18,11 @@ class TranscriptionViewModel(
     private val repository: TranscriptionRepository,
     private val symptomExtractor: SymptomExtractor,
     private val voiceTextCorrector: VoiceTextCorrector,
-    private val speechManager: SpeechRecognitionManager
+    private val speechManager: SpeechRecognitionManager,
+    private val validationLogger: cit.edu.primera.core.logging.SystemValidationLogger? = null
 ) : ViewModel(), SpeechRecognitionManager.SpeechRecognitionCallback {
+
+    private var isTranscriptEdited: Boolean = false
 
     private val _uiState = MutableStateFlow<TranscriptionUiState>(TranscriptionUiState.Idle)
     val uiState: StateFlow<TranscriptionUiState> = _uiState.asStateFlow()
@@ -58,6 +61,9 @@ class TranscriptionViewModel(
     }
 
     fun onTextEdited(text: String) {
+        if (_transcribedText.value != text) {
+            isTranscriptEdited = true
+        }
         _transcribedText.value = text
     }
 
@@ -131,11 +137,26 @@ class TranscriptionViewModel(
                 repository.save(model).fold(
                     onSuccess = {
                         _uiState.value = TranscriptionUiState.Uploaded
+                        validationLogger?.logVoiceTranscription(
+                            transcriptionStatus = "successful",
+                            transcriptionDurationMs = currentState.durationMs,
+                            transcriptReviewed = true,
+                            transcriptEdited = isTranscriptEdited,
+                            entrySaved = true
+                        )
                     },
                     onFailure = { error ->
                         _uiState.value = TranscriptionUiState.Error(
                             message = error.message ?: "Failed to upload transcription",
                             isRetryable = true
+                        )
+                        validationLogger?.logVoiceTranscription(
+                            transcriptionStatus = "failed",
+                            transcriptionDurationMs = currentState.durationMs,
+                            transcriptReviewed = true,
+                            transcriptEdited = isTranscriptEdited,
+                            entrySaved = false,
+                            failureReason = error.message
                         )
                     }
                 )
@@ -220,6 +241,14 @@ class TranscriptionViewModel(
         _uiState.value = TranscriptionUiState.Error(
             message = errorMessage,
             isRetryable = true
+        )
+        validationLogger?.logVoiceTranscription(
+            transcriptionStatus = "failed",
+            transcriptionDurationMs = lastDurationMs,
+            transcriptReviewed = false,
+            transcriptEdited = isTranscriptEdited,
+            entrySaved = false,
+            failureReason = errorMessage
         )
     }
 

@@ -37,7 +37,8 @@ object ViewModelProvider {
 
                 AuthViewModel::class.java -> AuthViewModel(
                     container.authRepository,
-                    container.preferenceRepository
+                    container.preferenceRepository,
+                    container.systemValidationLogger
                 )
 
                 DashboardViewModel::class.java -> DashboardViewModel(
@@ -47,7 +48,8 @@ object ViewModelProvider {
                     preferenceRepository = container.preferenceRepository,
                     networkMonitor = container.networkMonitor,
                     geminiContentRepository = container.geminiContentRepository,
-                    healthSummaryDataLoader = container.healthSummaryDataLoader
+                    healthSummaryDataLoader = container.healthSummaryDataLoader,
+                    validationLogger = container.systemValidationLogger
                 )
 
                 OnboardingViewModel::class.java -> OnboardingViewModel(
@@ -63,14 +65,16 @@ object ViewModelProvider {
 
                 CheckinsViewModel::class.java -> CheckinsViewModel(
                     container.checkinsRepository,
-                    container.symptomExtractor
+                    container.symptomExtractor,
+                    container.systemValidationLogger
                 )
 
                 TranscriptionViewModel::class.java -> TranscriptionViewModel(
                     container.transcriptionRepository,
                     container.symptomExtractor,
                     container.voiceTextCorrector,
-                    SpeechRecognitionManager(application)
+                    SpeechRecognitionManager(application),
+                    container.systemValidationLogger
                 )
                 InsightsViewModel::class.java -> InsightsViewModel(
                     container.dashboardRepository,
@@ -83,7 +87,8 @@ object ViewModelProvider {
                     container.healthConnectManager,
                     container.preferenceRepository,
                     container.dashboardRepository,
-                    container.networkMonitor
+                    container.networkMonitor,
+                    container.systemValidationLogger
                 )
 
                 ProfileViewModel::class.java -> ProfileViewModel(
