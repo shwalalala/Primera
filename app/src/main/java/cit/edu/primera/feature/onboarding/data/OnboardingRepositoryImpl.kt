@@ -37,7 +37,6 @@ class OnboardingRepositoryImpl : OnboardingRepository {
 
             val profileData = hashMapOf<String, Any?>(
                 "email" to userEmail,
-                "username" to profile.username,
                 "birthday" to CryptoManager.encryptDate(profile.birthday),
                 "weightKg" to CryptoManager.encryptInt(profile.weightKg),
                 "heightCm" to CryptoManager.encryptInt(profile.heightCm),
@@ -60,6 +59,10 @@ class OnboardingRepositoryImpl : OnboardingRepository {
                 "onboardingCompleted" to true,
                 "updatedAt" to Date()
             )
+
+            if (!profile.username.isNullOrBlank()) {
+                profileData["username"] = profile.username
+            }
 
             // Update the user document. Using merge(true) to avoid failing if user document isn't fully created yet
             firestore.collection("users").document(userId)

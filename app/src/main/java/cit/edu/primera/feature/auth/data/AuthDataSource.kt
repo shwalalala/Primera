@@ -159,7 +159,9 @@ class AuthDataSource {
             updateData["email"] = cleanEmail
         }
 
-        val currentUsername = (userDoc.get("username") as? String)?.takeIf { it.isNotBlank() }
+        val rawDocUsername = userDoc.get("username") as? String
+        val currentUsername = (cit.edu.primera.core.util.CryptoManager.decrypt(rawDocUsername)
+            ?: rawDocUsername)?.takeIf { it.isNotBlank() }
             ?: user.displayName?.takeIf { it.isNotBlank() }
             ?: fallbackUsername
 

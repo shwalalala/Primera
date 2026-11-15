@@ -41,44 +41,48 @@ class ProfileViewModel(
                 if (data != null) {
                     val currentLocalPhoto = preferenceRepository.getProfilePictureUri(userId)
                     _uiState.update { currentState ->
-                        currentState.copy(
-                            email = data.email ?: currentState.email,
-                            username = data.userName.ifBlank { currentState.username },
-                            photoUri = data.photoUri?.takeIf { u -> u.isNotBlank() }
-                                ?: currentLocalPhoto
-                                ?: currentState.photoUri,
-                            birthday = data.birthday ?: currentState.birthday,
-                            weightKg = if (data.weightKg != null && data.weightKg != 0) data.weightKg else (weightData?.weightKg
-                                ?: currentState.weightKg),
-                            heightCm = if (data.heightCm != null && data.heightCm != 0) data.heightCm else currentState.heightCm,
-                            lmpDate = data.lmpDate ?: currentState.lmpDate,
-                            eddDate = data.dueDate ?: currentState.eddDate,
-                            isFirstPregnancy = data.isFirstPregnancy
-                                ?: currentState.isFirstPregnancy,
-                            isCycleRegular = data.isCycleRegular ?: currentState.isCycleRegular,
-                            shortestCycleDays = data.shortestCycleDays
-                                ?: currentState.shortestCycleDays,
-                            longestCycleDays = data.longestCycleDays
-                                ?: currentState.longestCycleDays,
-                            hasHadUltrasound = data.hasHadUltrasound
-                                ?: currentState.hasHadUltrasound,
-                            positiveTestDate = data.positiveTestDate
-                                ?: currentState.positiveTestDate,
-                            scanDate = data.scanDate ?: currentState.scanDate,
-                            scanWeeks = data.scanWeeks ?: currentState.scanWeeks,
-                            scanDays = data.scanDays ?: currentState.scanDays,
-                            pregnancyHistories = if (data.pregnancyHistories.isNotEmpty()) data.pregnancyHistories else currentState.pregnancyHistories,
-                            emergencyContact = cit.edu.primera.feature.profile.domain.EmergencyContact(
-                                name = data.iceName ?: currentState.emergencyContact.name,
-                                relationship = data.iceRelationship
-                                    ?: currentState.emergencyContact.relationship,
-                                primaryPhone = data.icePrimaryPhone
-                                    ?: currentState.emergencyContact.primaryPhone,
-                                secondaryPhone = data.iceSecondaryPhone
-                                    ?: currentState.emergencyContact.secondaryPhone
-                            ),
-                            isLoading = false
-                        )
+                        if (currentState.isEditing) {
+                            currentState.copy(isLoading = false)
+                        } else {
+                            currentState.copy(
+                                email = data.email ?: currentState.email,
+                                username = data.userName.ifBlank { currentState.username },
+                                photoUri = data.photoUri?.takeIf { u -> u.isNotBlank() }
+                                    ?: currentLocalPhoto
+                                    ?: currentState.photoUri,
+                                birthday = data.birthday ?: currentState.birthday,
+                                weightKg = if (data.weightKg != null && data.weightKg != 0) data.weightKg else (weightData?.weightKg
+                                    ?: currentState.weightKg),
+                                heightCm = if (data.heightCm != null && data.heightCm != 0) data.heightCm else currentState.heightCm,
+                                lmpDate = data.lmpDate ?: currentState.lmpDate,
+                                eddDate = data.dueDate ?: currentState.eddDate,
+                                isFirstPregnancy = data.isFirstPregnancy
+                                    ?: currentState.isFirstPregnancy,
+                                isCycleRegular = data.isCycleRegular ?: currentState.isCycleRegular,
+                                shortestCycleDays = data.shortestCycleDays
+                                    ?: currentState.shortestCycleDays,
+                                longestCycleDays = data.longestCycleDays
+                                    ?: currentState.longestCycleDays,
+                                hasHadUltrasound = data.hasHadUltrasound
+                                    ?: currentState.hasHadUltrasound,
+                                positiveTestDate = data.positiveTestDate
+                                    ?: currentState.positiveTestDate,
+                                scanDate = data.scanDate ?: currentState.scanDate,
+                                scanWeeks = data.scanWeeks ?: currentState.scanWeeks,
+                                scanDays = data.scanDays ?: currentState.scanDays,
+                                pregnancyHistories = if (data.pregnancyHistories.isNotEmpty()) data.pregnancyHistories else currentState.pregnancyHistories,
+                                emergencyContact = cit.edu.primera.feature.profile.domain.EmergencyContact(
+                                    name = data.iceName ?: currentState.emergencyContact.name,
+                                    relationship = data.iceRelationship
+                                        ?: currentState.emergencyContact.relationship,
+                                    primaryPhone = data.icePrimaryPhone
+                                        ?: currentState.emergencyContact.primaryPhone,
+                                    secondaryPhone = data.iceSecondaryPhone
+                                        ?: currentState.emergencyContact.secondaryPhone
+                                ),
+                                isLoading = false
+                            )
+                        }
                     }
                 }
             }.collect {}
@@ -436,9 +440,11 @@ class ProfileViewModel(
                 positiveTestDate = currentUiState.positiveTestDate
             )
 
+            val newUsername = currentUiState.username.trim()
+
             val profile = OnboardingProfile(
                 email = emailToSave,
-                username = currentUiState.username.trim(),
+                username = newUsername,
                 birthday = currentUiState.birthday ?: Date(),
                 weightKg = currentUiState.weightKg,
                 heightCm = currentUiState.heightCm,
@@ -462,6 +468,18 @@ class ProfileViewModel(
 
             onboardingRepository.saveProfile(profile).fold(
                 onSuccess = {
+                    try {
+                        val currentUser =
+                            com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                        if (currentUser != null && newUsername.isNotBlank()) {
+                            val profileUpdates = com.google.firebase.auth.userProfileChangeRequest {
+                                displayName = newUsername
+                            }
+                            currentUser.updateProfile(profileUpdates)
+                        }
+                    } catch (_: Exception) {
+                    }
+
                     _uiState.update { it.copy(isSaving = false, isEditing = false, successMessage = "Profile updated successfully") }
                 }
             ) { error ->

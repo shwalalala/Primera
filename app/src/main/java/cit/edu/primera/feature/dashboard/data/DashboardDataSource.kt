@@ -66,9 +66,13 @@ class DashboardDataSource(
                                             positiveTestDate = rawPositiveTestDate
                                         )
 
+                                    val rawUsername = snapshot.getString("username")
+                                    val resolvedUsername = (CryptoManager.decrypt(rawUsername)
+                                        ?: rawUsername)?.takeIf { it.isNotBlank() }
+
                                     UserDto(
                                         email = snapshot.getString("email"),
-                                        username = snapshot.getString("username"),
+                                        username = resolvedUsername,
                                         photoUri = resolvedPhotoUri,
                                         firstName = CryptoManager.decrypt(snapshot.getString("firstName")),
                                         lastName = CryptoManager.decrypt(snapshot.getString("lastName")),
