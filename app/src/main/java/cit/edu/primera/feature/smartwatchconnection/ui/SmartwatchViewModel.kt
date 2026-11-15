@@ -20,7 +20,10 @@ class SmartwatchViewModel(
     private val preferenceRepository: PreferenceRepository,
     private val dashboardRepository: cit.edu.primera.feature.dashboard.data.DashboardRepository,
     private val networkMonitor: cit.edu.primera.core.util.NetworkMonitor,
+    private val validationLogger: cit.edu.primera.core.logging.SystemValidationLogger? = null
 ) : ViewModel() {
+
+    private var syncAttemptCount = 0
 
     private val _uiState = MutableStateFlow(SmartwatchUiState())
     val uiState: StateFlow<SmartwatchUiState> = _uiState.asStateFlow()
@@ -116,6 +119,8 @@ class SmartwatchViewModel(
     }
 
     fun readAndSaveSmartwatchHealth() {
+        syncAttemptCount++
+        val startTime = System.currentTimeMillis()
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(
@@ -177,6 +182,27 @@ class SmartwatchViewModel(
                 val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
                 preferenceRepository.setWatchSyncEnabled(userId, enabled = true)
 
+                // Log system validation evidence
+                val durationMs = System.currentTimeMillis() - startTime
+                val hrSync = if ((smartwatchHealth.currentHeartRate
+                        ?: 0L) > 0 || (smartwatchHealth.averageHeartRate ?: 0L) > 0
+                ) "successful" else "missing"
+                val stepsSync = if (smartwatchHealth.steps > 0) "successful" else "missing"
+                val sleepSync = if (smartwatchHealth.sleepMinutes > 0) "successful" else "missing"
+                val missingDetected =
+                    hrSync == "missing" || stepsSync == "missing" || sleepSync == "missing"
+
+                validationLogger?.logSmartwatchSync(
+                    syncAttempt = syncAttemptCount,
+                    syncStatus = "successful",
+                    syncDurationMs = durationMs,
+                    heartRateSync = hrSync,
+                    stepsSync = stepsSync,
+                    sleepSync = sleepSync,
+                    dashboardUpdate = "successful",
+                    missingDataDetected = missingDetected
+                )
+
             } catch (e: Exception) {
                 Log.e("SmartwatchViewModel", "Sync failed", e)
                 
@@ -194,6 +220,19 @@ class SmartwatchViewModel(
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     message = errorMessage
+                )
+
+                val durationMs = System.currentTimeMillis() - startTime
+                validationLogger?.logSmartwatchSync(
+                    syncAttempt = syncAttemptCount,
+                    syncStatus = "failed",
+                    syncDurationMs = durationMs,
+                    heartRateSync = "failed",
+                    stepsSync = "failed",
+                    sleepSync = "failed",
+                    dashboardUpdate = "failed",
+                    missingDataDetected = true,
+                    failureReason = errorMessage
                 )
             }
         }

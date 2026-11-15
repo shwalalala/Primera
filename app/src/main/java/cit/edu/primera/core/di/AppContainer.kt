@@ -4,6 +4,7 @@ package cit.edu.primera.core.di
 import android.content.Context
 import cit.edu.primera.core.data.PreferenceRepository
 import cit.edu.primera.core.data.PreferenceRepositoryImpl
+import cit.edu.primera.core.logging.SystemValidationLogger
 import cit.edu.primera.core.util.ConnectivityManagerNetworkMonitor
 import cit.edu.primera.core.util.HealthSummaryDataLoader
 import cit.edu.primera.core.util.NetworkMonitor
@@ -19,6 +20,7 @@ import cit.edu.primera.feature.dashboard.data.DashboardRepository
 import cit.edu.primera.feature.dashboard.data.DashboardRepositoryImpl
 import cit.edu.primera.feature.goals.data.GoalsRepository
 import cit.edu.primera.feature.goals.data.GoalsRepositoryImpl
+import cit.edu.primera.feature.newseducation.data.NewsEducationRepository
 import cit.edu.primera.feature.onboarding.data.OnboardingRepository
 import cit.edu.primera.feature.onboarding.data.OnboardingRepositoryImpl
 import cit.edu.primera.feature.smartwatchconnection.data.HealthConnectManager
@@ -31,7 +33,6 @@ import cit.edu.primera.feature.transcription.domain.KeywordSymptomExtractor
 import cit.edu.primera.feature.transcription.domain.SymptomExtractor
 import cit.edu.primera.feature.transcription.domain.VoiceTextCorrector
 import cit.edu.primera.feature.vaccination.data.VaccinationRepository
-import cit.edu.primera.feature.newseducation.data.NewsEducationRepository
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -65,11 +66,18 @@ interface AppContainer {
     // Local changes: Vaccination and News Education
     val vaccinationRepository: VaccinationRepository
     val newsEducationRepository: NewsEducationRepository
+
+    // System Validation & Evidence Logging
+    val systemValidationLogger: SystemValidationLogger
 }
 
 class AppContainerImpl(
     private val context: Context
 ) : AppContainer {
+
+    override val systemValidationLogger: SystemValidationLogger by lazy {
+        SystemValidationLogger(context)
+    }
 
     // Network monitoring
     override val networkMonitor: NetworkMonitor by lazy {
@@ -215,7 +223,7 @@ class AppContainerImpl(
     // ---------------------------------------------
 
     override val goalsRepository: GoalsRepository by lazy {
-        GoalsRepositoryImpl()
+        GoalsRepositoryImpl(systemValidationLogger)
     }
 
     // ---------------------------------------------
@@ -234,7 +242,8 @@ class AppContainerImpl(
             cit.edu.primera.feature.notification.data.NotificationRepository by lazy {
 
         cit.edu.primera.feature.notification.data.NotificationRepositoryImpl(
-            context
+            context,
+            systemValidationLogger
         )
     }
 

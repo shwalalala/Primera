@@ -110,6 +110,9 @@ class MainActivity : ComponentActivity() {
 
         // Start listening for scheduled appointments.
         startAppointmentSynchronization()
+
+        // Log application engagement activity
+        (application as? PrimeraApplication)?.container?.systemValidationLogger?.logAppActivity("app_open")
     }
 
     override fun onResume() {

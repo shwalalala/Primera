@@ -10,6 +10,7 @@ import cit.edu.primera.core.theme.LogOther
 import cit.edu.primera.core.theme.LogPain
 import cit.edu.primera.core.util.DataExportHelper
 import cit.edu.primera.core.util.HealthSummaryDataLoader
+import cit.edu.primera.core.util.HealthSummaryPdfRenderer
 import cit.edu.primera.feature.dashboard.data.DashboardRepository
 import cit.edu.primera.feature.dashboard.domain.DashboardBusinessLogic
 import cit.edu.primera.feature.dashboard.domain.DashboardData
@@ -27,7 +28,6 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import cit.edu.primera.core.util.HealthSummaryPdfRenderer
 
 class DashboardViewModel(
     private val repository: DashboardRepository,
@@ -37,7 +37,8 @@ class DashboardViewModel(
     private val networkMonitor: cit.edu.primera.core.util.NetworkMonitor,
     private val geminiContentRepository:
     cit.edu.primera.feature.dashboard.data.GeminiContentRepository? = null,
-    private val healthSummaryDataLoader: HealthSummaryDataLoader
+    private val healthSummaryDataLoader: HealthSummaryDataLoader,
+    private val validationLogger: cit.edu.primera.core.logging.SystemValidationLogger? = null
 ) : ViewModel() {
 
     private val _weeklyContent =
@@ -454,30 +455,65 @@ class DashboardViewModel(
     suspend fun getSummaryPdfUrl(
         context: android.content.Context
     ): String {
-        val summary = healthSummaryDataLoader.load()
-
-        return DataExportHelper.uploadSummaryPdfAndGetUrl(
-            context,
-            summary.smartwatchRecords,
-            summary.patient
-        )
+        val startTime = System.currentTimeMillis()
+        return try {
+            val summary = healthSummaryDataLoader.load()
+            val url = DataExportHelper.uploadSummaryPdfAndGetUrl(
+                context,
+                summary.smartwatchRecords,
+                summary.patient
+            )
+            val duration = System.currentTimeMillis() - startTime
+            validationLogger?.logHealthSummary(
+                "successful",
+                duration,
+                qrGenerationStatus = "successful"
+            )
+            validationLogger?.logPerformanceEvent("qr_generation", "successful", duration)
+            url
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            validationLogger?.logHealthSummary("failed", duration, qrGenerationStatus = "failed")
+            validationLogger?.logPerformanceEvent(
+                "qr_generation",
+                "failed",
+                duration,
+                failureReason = e.message
+            )
+            throw e
+        }
     }
 
     fun onSaveSummaryPdf(context: android.content.Context) {
         viewModelScope.launch {
+            val startTime = System.currentTimeMillis()
             try {
                 val summary = healthSummaryDataLoader.load()
-
                 val pdfFile = HealthSummaryPdfRenderer.create(
                     context,
                     summary
                 )
-
                 DataExportHelper.savePdfToDownloads(
                     context,
                     pdfFile
                 )
+                val duration = System.currentTimeMillis() - startTime
+                validationLogger?.logHealthSummary(
+                    "successful",
+                    duration,
+                    qrGenerationStatus = "n/a",
+                    printGenerationStatus = "n/a"
+                )
+                validationLogger?.logPerformanceEvent("health_summary_save", "successful", duration)
             } catch (e: Exception) {
+                val duration = System.currentTimeMillis() - startTime
+                validationLogger?.logHealthSummary("failed", duration)
+                validationLogger?.logPerformanceEvent(
+                    "health_summary_save",
+                    "failed",
+                    duration,
+                    failureReason = e.message
+                )
                 android.util.Log.e(
                     "DashboardViewModel",
                     "Failed to save health summary PDF",
@@ -495,19 +531,38 @@ class DashboardViewModel(
 
     fun onPrintSummaryPdf(context: android.content.Context) {
         viewModelScope.launch {
+            val startTime = System.currentTimeMillis()
             try {
                 val summary = healthSummaryDataLoader.load()
-
                 val pdfFile = HealthSummaryPdfRenderer.create(
                     context,
                     summary
                 )
-
                 DataExportHelper.printPdfFile(
                     context,
                     pdfFile
                 )
+                val duration = System.currentTimeMillis() - startTime
+                validationLogger?.logHealthSummary(
+                    "successful",
+                    duration,
+                    qrGenerationStatus = "n/a",
+                    printGenerationStatus = "successful"
+                )
+                validationLogger?.logPerformanceEvent("print_generation", "successful", duration)
             } catch (e: Exception) {
+                val duration = System.currentTimeMillis() - startTime
+                validationLogger?.logHealthSummary(
+                    "failed",
+                    duration,
+                    printGenerationStatus = "failed"
+                )
+                validationLogger?.logPerformanceEvent(
+                    "print_generation",
+                    "failed",
+                    duration,
+                    failureReason = e.message
+                )
                 android.util.Log.e(
                     "DashboardViewModel",
                     "Failed to print health summary PDF",
@@ -526,19 +581,28 @@ class DashboardViewModel(
 
     fun onShareSummaryPdf(context: android.content.Context) {
         viewModelScope.launch {
+            val startTime = System.currentTimeMillis()
             try {
                 val summary = healthSummaryDataLoader.load()
-
                 val pdfFile = HealthSummaryPdfRenderer.create(
                     context,
                     summary
                 )
-
                 DataExportHelper.sharePdfFile(
                     context,
                     pdfFile
                 )
+                val duration = System.currentTimeMillis() - startTime
+                validationLogger?.logHealthSummary("successful", duration)
             } catch (e: Exception) {
+                val duration = System.currentTimeMillis() - startTime
+                validationLogger?.logHealthSummary("failed", duration)
+                validationLogger?.logPerformanceEvent(
+                    "health_summary_share",
+                    "failed",
+                    duration,
+                    failureReason = e.message
+                )
                 android.util.Log.e(
                     "DashboardViewModel",
                     "Failed to share health summary PDF",
@@ -560,6 +624,7 @@ class DashboardViewModel(
     // ---------------------------------------------
 
     fun onSyncWatch() {
+        val startTime = System.currentTimeMillis()
         viewModelScope.launch {
             try {
                 if (
@@ -587,12 +652,34 @@ class DashboardViewModel(
                         userId,
                         enabled = true
                     )
+
+                    val duration = System.currentTimeMillis() - startTime
+                    val hrSync =
+                        if ((healthData.currentHeartRate ?: 0L) > 0) "successful" else "missing"
+                    val stepsSync = if (healthData.steps > 0) "successful" else "missing"
+                    val sleepSync = if (healthData.sleepMinutes > 0) "successful" else "missing"
+
+                    validationLogger?.logSmartwatchSync(
+                        syncAttempt = 1,
+                        syncStatus = "successful",
+                        syncDurationMs = duration,
+                        heartRateSync = hrSync,
+                        stepsSync = stepsSync,
+                        sleepSync = sleepSync,
+                        dashboardUpdate = "successful"
+                    )
                 }
             } catch (e: Exception) {
-                android.util.Log.e(
-                    "DashboardViewModel",
-                    "Sync failed during dashboard 'Sync Now' click",
-                    e
+                val duration = System.currentTimeMillis() - startTime
+                validationLogger?.logSmartwatchSync(
+                    syncAttempt = 1,
+                    syncStatus = "failed",
+                    syncDurationMs = duration,
+                    heartRateSync = "failed",
+                    stepsSync = "failed",
+                    sleepSync = "failed",
+                    dashboardUpdate = "failed",
+                    failureReason = e.message
                 )
             }
         }

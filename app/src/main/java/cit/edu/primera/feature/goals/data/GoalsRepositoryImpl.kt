@@ -16,7 +16,9 @@ import kotlinx.coroutines.tasks.await
 import java.util.Calendar
 import java.util.Date
 
-class GoalsRepositoryImpl : GoalsRepository {
+class GoalsRepositoryImpl(
+    private val validationLogger: cit.edu.primera.core.logging.SystemValidationLogger? = null
+) : GoalsRepository {
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
@@ -83,6 +85,12 @@ class GoalsRepositoryImpl : GoalsRepository {
                 "timestamp" to (goal.timestamp ?: Date())
             )
             firestore.collection("goals").add(goalData).await()
+            validationLogger?.logWellnessGoal(
+                goalType = goal.title ?: "custom",
+                goalCreated = true,
+                goalCompleted = goal.currentValue >= goal.targetValue && goal.targetValue > 0,
+                goalPeriod = goal.period ?: "daily"
+            )
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -94,6 +102,12 @@ class GoalsRepositoryImpl : GoalsRepository {
             firestore.collection("goals").document(goalId)
                 .update("currentValue", newValue)
                 .await()
+            validationLogger?.logWellnessGoal(
+                goalType = "progress_update",
+                goalCreated = false,
+                goalCompleted = true,
+                goalPeriod = "daily"
+            )
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -114,6 +128,12 @@ class GoalsRepositoryImpl : GoalsRepository {
                 "category" to goal.category
             )
             firestore.collection("goals").document(goalId).update(goalData).await()
+            validationLogger?.logWellnessGoal(
+                goalType = goal.title ?: "custom",
+                goalCreated = false,
+                goalCompleted = goal.currentValue >= goal.targetValue && goal.targetValue > 0,
+                goalPeriod = goal.period ?: "daily"
+            )
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

@@ -24,7 +24,8 @@ import kotlinx.coroutines.launch
 
 class AuthViewModel(
     private val authRepository: AuthRepository,
-    private val preferenceRepository: PreferenceRepository
+    private val preferenceRepository: PreferenceRepository,
+    private val validationLogger: cit.edu.primera.core.logging.SystemValidationLogger? = null
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthUiState())
@@ -154,19 +155,29 @@ class AuthViewModel(
         if (currentState.isLoading || currentState.cooldownSeconds > 0) return
         val trimmedEmail = currentState.email.trim()
         if (!validateLoginForm()) return
+        val startTime = System.currentTimeMillis()
 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
             val result = authRepository.login(trimmedEmail, currentState.password)
+            val duration = System.currentTimeMillis() - startTime
 
             result.fold(
                 onSuccess = {
+                    validationLogger?.logPerformanceEvent("login", "successful", duration)
+                    validationLogger?.logAppActivity("login")
                     handleSuccessfulAuthentication(
                         trimmedEmail,
                         currentState.rememberMe
                     )
                 },
                 onFailure = { error ->
+                    validationLogger?.logPerformanceEvent(
+                        "login",
+                        "failed",
+                        duration,
+                        failureReason = error.message
+                    )
                     handleAuthenticationFailure(error, "Invalid email or password")
                 }
             )
@@ -179,6 +190,7 @@ class AuthViewModel(
         val trimmedUsername = currentState.username.trim()
         val trimmedEmail = currentState.email.trim()
         if (!validateRegisterForm()) return
+        val startTime = System.currentTimeMillis()
 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
@@ -187,9 +199,12 @@ class AuthViewModel(
                 trimmedEmail,
                 currentState.password
             )
+            val duration = System.currentTimeMillis() - startTime
 
             result.fold(
                 onSuccess = {
+                    validationLogger?.logPerformanceEvent("registration", "successful", duration)
+                    validationLogger?.logAppActivity("login")
                     handleSuccessfulAuthentication(trimmedEmail, false)
                 },
                 onFailure = { error ->
@@ -222,6 +237,12 @@ class AuthViewModel(
                         !error.message.isNullOrBlank() -> error.message!!
                         else -> "Registration failed. Please check your details."
                     }
+                    validationLogger?.logPerformanceEvent(
+                        "registration",
+                        "failed",
+                        duration,
+                        failureReason = specificMessage
+                    )
                     handleAuthenticationFailure(error, specificMessage)
                 }
             )
