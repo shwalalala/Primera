@@ -3,7 +3,15 @@ package cit.edu.primera.ui.components
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -31,10 +39,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cit.edu.primera.core.theme.PrimeraTheme
+import cit.edu.primera.core.theme.PrimeraViolet
 import cit.edu.primera.core.theme.SurfaceWhite
 import cit.edu.primera.core.theme.TextPrimary
 import cit.edu.primera.core.theme.TextSecondary
-import cit.edu.primera.core.theme.PrimeraViolet
 
 @Composable
 fun ChartContainer(
@@ -83,8 +91,8 @@ fun SimpleBarChart(
     highlightedIndex: Int = -1,
     onBarClick: (Int) -> Unit = {}
 ) {
-    if (data.isEmpty()) {
-        EmptyChartPlaceholder(modifier = modifier)
+    if (data.isEmpty() || data.all { it == 0f }) {
+        EmptyChartPlaceholder(message = "No data available", modifier = modifier)
         return
     }
 
@@ -179,7 +187,9 @@ fun SimpleLineChart(
     val minValue = data.minOrNull() ?: 0f
     val range = if (maxValue == minValue) 1f else maxValue - minValue
 
-    Canvas(modifier = modifier.fillMaxWidth().height(150.dp)) {
+    Canvas(modifier = modifier
+        .fillMaxWidth()
+        .height(150.dp)) {
         if (data.size < 2) {
             // Can't draw a line with one point, just draw a circle
             val x = size.width / 2f
@@ -231,8 +241,12 @@ fun MoodLineChart(
         fontSize = 10.sp,
         textAlign = TextAlign.Center
     )
-    val emojiStyle = TextStyle(fontSize = 14.sp)
-    val moods = listOf("😄", "🙂", "😐", "😕", "☹️") // Corresponds to values 5 down to 1
+    val moodLabelStyle = TextStyle(
+        color = TextSecondary,
+        fontSize = 10.sp,
+        fontWeight = FontWeight.SemiBold
+    )
+    val moods = listOf("Great", "Good", "Okay", "Low", "Poor") // Corresponds to values 5 down to 1
 
     Column(modifier = modifier.fillMaxWidth()) {
         Canvas(
@@ -240,21 +254,21 @@ fun MoodLineChart(
                 .fillMaxWidth()
                 .height(180.dp)
         ) {
-            val leftPadding = 35.dp.toPx()
+            val leftPadding = 45.dp.toPx()
             val bottomPadding = 25.dp.toPx()
             val topPadding = 15.dp.toPx()
             val chartWidth = size.width - leftPadding - 16.dp.toPx()
             val chartHeight = size.height - bottomPadding - topPadding
 
-            // Draw Y-axis emojis and horizontal lines
-            moods.forEachIndexed { index, emoji ->
+            // Draw Y-axis mood labels and horizontal lines
+            moods.forEachIndexed { index, moodLabel ->
                 val y = topPadding + (index.toFloat() / (moods.size - 1)) * chartHeight
-                
-                // Draw Emoji
-                val measuredEmoji = textMeasurer.measure(emoji, emojiStyle)
+
+                // Draw Label
+                val measuredMood = textMeasurer.measure(moodLabel, moodLabelStyle)
                 drawText(
-                    textLayoutResult = measuredEmoji,
-                    topLeft = Offset(8.dp.toPx(), y - measuredEmoji.size.height / 2f)
+                    textLayoutResult = measuredMood,
+                    topLeft = Offset(4.dp.toPx(), y - measuredMood.size.height / 2f)
                 )
                 
                 // Draw Horizontal Guide Line
@@ -310,7 +324,10 @@ fun MoodLineChart(
 }
 
 @Composable
-fun EmptyChartPlaceholder(modifier: Modifier = Modifier) {
+fun EmptyChartPlaceholder(
+    message: String = "No data available",
+    modifier: Modifier = Modifier
+) {
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -318,9 +335,10 @@ fun EmptyChartPlaceholder(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            "No data recorded yet",
-            color = TextSecondary.copy(alpha = 0.5f),
-            fontSize = 12.sp
+            message,
+            color = TextSecondary,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium
         )
     }
 }

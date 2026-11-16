@@ -2,6 +2,7 @@ package cit.edu.primera.feature.smartwatchconnection.data
 
 data class SmartwatchHealthDto(
     val date: String = "",
+    val time: String = "",
     val steps: Long = 0,
 
     val currentHeartRate: Long? = null,
@@ -12,5 +13,7 @@ data class SmartwatchHealthDto(
     val spO2: Double? = null,
 
     val sleepMinutes: Long = 0,
-    val syncedAt: Long = System.currentTimeMillis()
+    val syncedAt: Long = System.currentTimeMillis(),
+    val isManualEntry: Boolean = false,
+    val source: String = "smartwatch"
 )

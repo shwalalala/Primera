@@ -22,6 +22,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -178,62 +181,66 @@ fun StatsGrid(
     state: DashboardUiModel,
     modifier: Modifier = Modifier,
     onInputManually: () -> Unit,
+    onAttributeClick: (cit.edu.primera.ui.components.HealthAttribute) -> Unit = {},
     onSyncWatch: () -> Unit,
 ) {
     Column(
         modifier = modifier.padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             HealthStatCard(
                 title = "Heart Rate",
-                value = if (state.isWatchSynced) state.heartRateBpm.toString() else "--",
+                value = if (state.heartRateBpm > 0) state.heartRateBpm.toString() else "--",
                 unit = "bpm",
                 icon = painterResource(R.drawable.heart),
                 iconBgColor = HeartRateBg,
-                trendText = if (state.isWatchSynced) "${if (state.heartRateTrendingUp) "▲" else "▼"} ${state.heartRateVsLastWeek}% vs last wk" else null,
+                trendText = if (state.heartRateBpm > 0) "${if (state.heartRateTrendingUp) "▲" else "▼"} ${state.heartRateVsLastWeek}% vs last wk" else null,
                 trendColor = if (state.heartRateTrendingUp) TrendGreen else TrendRed,
+                onAddClick = { onAttributeClick(cit.edu.primera.ui.components.HealthAttribute.HEART_RATE) },
                 modifier = Modifier.weight(1f)
             )
             HealthStatCard(
                 title = "Steps",
-                value = if (state.isWatchSynced) "%,d".format(state.steps) else "--",
+                value = if (state.steps > 0) "%,d".format(state.steps) else "--",
                 unit = "steps",
                 icon = painterResource(R.drawable.steps),
                 iconBgColor = StepsBg,
-                trendText = if (state.isWatchSynced) "Goal: %,d".format(state.stepsGoal) else "Goal: --",
+                trendText = if (state.stepsGoal > 0) "Goal: %,d".format(state.stepsGoal) else "Goal: --",
+                onAddClick = { onAttributeClick(cit.edu.primera.ui.components.HealthAttribute.STEPS) },
                 modifier = Modifier.weight(1f)
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             HealthStatCard(
                 title = "Sleep",
-                value = if (state.isWatchSynced) "${state.sleepHours}h ${state.sleepMinutes}m" else "--",
+                value = if (state.sleepHours > 0 || state.sleepMinutes > 0) "${state.sleepHours}h ${state.sleepMinutes}m" else "--",
                 unit = "",
                 icon = painterResource(R.drawable.sleep),
                 iconBgColor = SleepBg,
                 trendText = null,
+                onAddClick = { onAttributeClick(cit.edu.primera.ui.components.HealthAttribute.SLEEP) },
                 modifier = Modifier.weight(1f)
             )
             HealthStatCard(
                 title = "SpO₂",
-                value = if (state.isWatchSynced) (state.spO2?.toString() ?: "--") else "--",
+                value = state.spO2?.toString() ?: "--",
                 unit = "%",
                 icon = painterResource(R.drawable.sp02),
                 iconBgColor = Color(0xFFFFEBEE),
                 trendText = null,
+                onAddClick = { onAttributeClick(cit.edu.primera.ui.components.HealthAttribute.SPO2) },
                 modifier = Modifier.weight(1f)
             )
         }
 
-        if (!state.isWatchSynced) {
-            SyncWatchButton(
-                onClick = onSyncWatch, modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 0.dp)
-            )
-        }
+        // Synchronization Controls
+        SyncWatchButton(
+            onClick = onSyncWatch,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 0.dp)
+        )
     }
 }
 
@@ -378,7 +385,12 @@ fun ArticleCard(
                     .background(PrimeraLilac.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text("📚", fontSize = 32.sp)
+                Icon(
+                    imageVector = Icons.Default.MenuBook,
+                    contentDescription = null,
+                    tint = PrimeraViolet,
+                    modifier = Modifier.size(32.dp)
+                )
             }
             
             Spacer(Modifier.height(8.dp))
@@ -419,7 +431,12 @@ fun ArticleDetailDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("📚", fontSize = 28.sp)
+                Icon(
+                    imageVector = Icons.Default.MenuBook,
+                    contentDescription = null,
+                    tint = PrimeraViolet,
+                    modifier = Modifier.size(24.dp)
+                )
                 Spacer(Modifier.width(12.dp))
                 Text(
                     text = article.title,
@@ -453,7 +470,7 @@ fun ArticleDetailDialog(
                 ) {
                     Column {
                         Text(
-                            text = "💡 Maternal Care Guidance",
+                            text = "Maternal Care Guidance",
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
                             color = PrimeraViolet
@@ -550,7 +567,12 @@ fun PrenatalRemindersSection(
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(if (reminder.isUrgent) "⚠️" else "🩺", fontSize = 18.sp)
+                            Icon(
+                                imageVector = if (reminder.isUrgent) Icons.Default.Warning else Icons.Default.MedicalServices,
+                                contentDescription = null,
+                                tint = if (reminder.isUrgent) Color(0xFFE65100) else PrimeraViolet,
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
                         Spacer(Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {

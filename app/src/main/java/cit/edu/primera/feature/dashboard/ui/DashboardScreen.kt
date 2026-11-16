@@ -61,8 +61,32 @@ fun DashboardScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
     val summaryQrContent by viewModel.summaryQrContent.collectAsStateWithLifecycle()
+    val showManualEntryDialog by viewModel.showManualEntryDialog.collectAsStateWithLifecycle()
+    val selectedAttribute by viewModel.selectedAttribute.collectAsStateWithLifecycle()
+    val manualEntryError by viewModel.manualEntryError.collectAsStateWithLifecycle()
     var showQrDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    selectedAttribute?.let { attr ->
+        cit.edu.primera.ui.components.SingleAttributeEntryDialog(
+            attribute = attr,
+            errorMessage = manualEntryError,
+            onDismiss = viewModel::onDismissAttributeEntryDialog,
+            onSave = { date, time, value, extraValue ->
+                viewModel.saveAttributeHealthData(attr, date, time, value, extraValue)
+            }
+        )
+    }
+
+    if (showManualEntryDialog) {
+        cit.edu.primera.ui.components.ManualHealthEntryDialog(
+            errorMessage = manualEntryError,
+            onDismiss = viewModel::onDismissManualEntryDialog,
+            onSave = { date, time, hr, spO2, steps, sleepH, sleepM ->
+                viewModel.saveManualHealthData(date, time, hr, spO2, steps, sleepH, sleepM)
+            }
+        )
+    }
 
     if (showQrDialog) {
         val patientName = (uiState as? DashboardUiState.Success)?.data?.userName
@@ -105,7 +129,8 @@ fun DashboardScreen(
 
                     DashboardContent(
                         state = state.data,
-                        onInputManually = onInputManually,
+                        onInputManually = { viewModel.onOpenManualEntryDialog() },
+                        onAttributeClick = { attr -> viewModel.onOpenAttributeEntryDialog(attr) },
                         onSyncWatch = { viewModel.onSyncWatch() }
                     )
                 }
@@ -119,6 +144,7 @@ fun DashboardContent(
     state: DashboardUiModel,
     onInputManually: () -> Unit,
     onSyncWatch: () -> Unit,
+    onAttributeClick: (cit.edu.primera.ui.components.HealthAttribute) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val pagerState = rememberPagerState(pageCount = { 2 })
@@ -179,6 +205,7 @@ fun DashboardContent(
                         StatsGrid(
                             state = state,
                             onInputManually = onInputManually,
+                            onAttributeClick = onAttributeClick,
                             onSyncWatch = onSyncWatch
                         )
                     }

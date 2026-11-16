@@ -19,5 +19,7 @@ data class SmartwatchUiState(
     val sleepTrendText: String = "",
     val sleepTrendColor: Long = 0xFF757575,
     val spO2TrendText: String = "",
-    val spO2TrendColor: Long = 0xFF757575
+    val spO2TrendColor: Long = 0xFF757575,
+    val showManualEntryDialog: Boolean = false,
+    val manualEntryError: String? = null
 )

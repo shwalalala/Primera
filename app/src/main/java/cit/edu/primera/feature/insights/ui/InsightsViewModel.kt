@@ -625,43 +625,55 @@ class InsightsViewModel(
         logs: List<cit.edu.primera.feature.checkins.data.CheckinLogDto>
     ): List<String> {
         val insights = mutableListOf<String>()
-        
-        // HR Trend
-        val allHr = records.mapNotNull { it.averageHeartRate }.filter { it > 0 }
-        if (allHr.size >= 14) {
-            val latestAvg = allHr.takeLast(7).average()
-            val baselineAvg = allHr.dropLast(7).average()
-            val diff = ((latestAvg - baselineAvg) / baselineAvg) * 100
-            if (diff > 5) {
-                insights.add("Your heart rate is trending %.1f%% higher than your baseline.".format(diff))
-            } else if (diff < -5) {
-                insights.add("Your heart rate is trending %.1f%% lower than your baseline.".format(
-                    abs(diff)
-                ))
-            }
-        }
-        
-        // Steps Trend
-        if (records.size >= 14) {
-            val latestSteps = records.takeLast(7).map { it.steps }.average()
-            val previousSteps = records.dropLast(7).takeLast(7).map { it.steps }.average()
-            if (latestSteps > previousSteps * 1.2) {
-                insights.add("You're 20% more active this week compared to last week!")
+
+        val validHrRecords =
+            records.filter { (it.averageHeartRate ?: it.currentHeartRate ?: 0L) > 0 }
+        if (validHrRecords.size >= 7) {
+            val latestAvg =
+                validHrRecords.take(7).mapNotNull { it.averageHeartRate ?: it.currentHeartRate }
+                    .average()
+            val baselineAvg = validHrRecords.drop(7).take(7)
+                .mapNotNull { it.averageHeartRate ?: it.currentHeartRate }.average()
+            if (!latestAvg.isNaN() && !baselineAvg.isNaN() && baselineAvg > 0) {
+                val diff = ((latestAvg - baselineAvg) / baselineAvg) * 100
+                if (abs(diff) >= 5.0) {
+                    val direction = if (diff > 0) "higher" else "lower"
+                    insights.add(
+                        "Based on ${validHrRecords.size} recorded entries, your heart rate is trending %.1f%% $direction than baseline.".format(
+                            abs(diff)
+                        )
+                    )
+                }
             }
         }
 
-        // Mood Trend
+        val validStepRecords = records.filter { it.steps > 0 }
+        if (validStepRecords.size >= 7) {
+            val latestAvg = validStepRecords.take(7).map { it.steps }.average()
+            val previousAvg = validStepRecords.drop(7).take(7).map { it.steps }.average()
+            if (!latestAvg.isNaN() && !previousAvg.isNaN() && previousAvg > 0) {
+                val ratio = (latestAvg / previousAvg)
+                if (ratio >= 1.15) {
+                    insights.add(
+                        "Across ${validStepRecords.size} active recording days, movement is up %.0f%% vs previous recorded period.".format(
+                            (ratio - 1) * 100
+                        )
+                    )
+                }
+            }
+        }
+
         val moodValues = extractMoodValues(logs)
-        if (moodValues.size >= 10) {
-            val latestMood = moodValues.takeLast(5).average()
-            val previousMood = moodValues.dropLast(5).takeLast(5).average()
+        if (moodValues.size >= 7) {
+            val latestMood = moodValues.take(4).average()
+            val previousMood = moodValues.drop(4).take(4).average()
             if (latestMood < previousMood - 0.5) {
-                insights.add("Your mood has been slightly lower recently. Take some time for self-care.")
+                insights.add("Your mood has been slightly lower recently. Take time for self-care.")
             }
         }
 
         if (insights.isEmpty()) {
-            insights.add("Keep logging your health data to see advanced trends and analysis.")
+            insights.add("Not enough data to generate insights. Continue recording measurements!")
         }
 
         return insights
