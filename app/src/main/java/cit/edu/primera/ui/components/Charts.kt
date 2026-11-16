@@ -138,28 +138,37 @@ fun SimpleBarChart(
             val chartHeight = size.height - bottomPadding - topPadding
 
             data.forEachIndexed { index, value ->
-                val barHeight = (value / maxValue) * chartHeight
                 val x = spacing + index * (barWidth + spacing)
-                val y = size.height - bottomPadding - barHeight
-                
-                // Draw Bar
-                drawRoundRect(
-                    color = if (index == highlightedIndex) barColor else barColor.copy(alpha = 0.6f),
-                    topLeft = Offset(x, y),
-                    size = Size(barWidth, barHeight),
-                    cornerRadius = CornerRadius(4.dp.toPx())
-                )
 
-                // Draw Value above bar
-                val valueText = if (value % 1f == 0f) value.toInt().toString() else "%.1f".format(value)
-                val measuredValue = textMeasurer.measure(valueText, valueTextStyle)
-                drawText(
-                    textLayoutResult = measuredValue,
-                    topLeft = Offset(x + (barWidth - measuredValue.size.width) / 2f, y - measuredValue.size.height - 4.dp.toPx())
-                )
+                if (value > 0f) {
+                    val barHeight = ((value / maxValue) * chartHeight).coerceAtLeast(4.dp.toPx())
+                    val y = size.height - bottomPadding - barHeight
+
+                    // Draw Bar
+                    drawRoundRect(
+                        color = if (index == highlightedIndex) barColor else barColor.copy(alpha = 0.6f),
+                        topLeft = Offset(x, y),
+                        size = Size(barWidth, barHeight),
+                        cornerRadius = CornerRadius(4.dp.toPx())
+                    )
+
+                    // Draw Value above bar
+                    if (barWidth > 14.dp.toPx()) {
+                        val valueText =
+                            if (value % 1f == 0f) value.toInt().toString() else "%.1f".format(value)
+                        val measuredValue = textMeasurer.measure(valueText, valueTextStyle)
+                        drawText(
+                            textLayoutResult = measuredValue,
+                            topLeft = Offset(
+                                x + (barWidth - measuredValue.size.width) / 2f,
+                                y - measuredValue.size.height - 4.dp.toPx()
+                            )
+                        )
+                    }
+                }
 
                 // Draw Label below bar
-                if (index < labels.size) {
+                if (index < labels.size && barWidth > 12.dp.toPx()) {
                     val labelText = labels[index]
                     val measuredLabel = textMeasurer.measure(labelText, labelTextStyle)
                     drawText(

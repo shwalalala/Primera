@@ -37,22 +37,40 @@ class SmartwatchViewModel(
         viewModelScope.launch {
             dashboardRepository.observeHealthRecords().collect { records ->
                 if (records.isNotEmpty()) {
-                    val sortedRecords = records.sortedBy { it.date }
-                    val bpmHistory = sortedRecords.map {
-                        (it.averageHeartRate ?: it.currentHeartRate ?: 0L).toFloat()
+                    val recordsByDate = records.groupBy { it.date }
+                    val sortedDates = recordsByDate.keys.sorted().takeLast(7)
+
+                    val bpmHistory = sortedDates.map { date ->
+                        val dayRecords = recordsByDate[date].orEmpty()
+                        val validBpm =
+                            dayRecords.mapNotNull { it.averageHeartRate ?: it.currentHeartRate }
+                                .filter { it > 0 }
+                        if (validBpm.isNotEmpty()) validBpm.average().toFloat() else 0f
                     }
-                    val sleepHistory = sortedRecords.map { (it.sleepMinutes).toFloat() / 60f }
-                    val labels = sortedRecords.map { record ->
+
+                    val sleepHistory = sortedDates.map { date ->
+                        val dayRecords = recordsByDate[date].orEmpty()
+                        val validSleep = dayRecords.map { it.sleepMinutes }.filter { it > 0 }
+                        if (validSleep.isNotEmpty()) (validSleep.maxOrNull()
+                            ?: 0L).toFloat() / 60f else 0f
+                    }
+
+                    val labels = sortedDates.map { dateStr ->
                         try {
-                            val parsed = java.time.LocalDate.parse(record.date)
-                            "${parsed.monthValue}.${parsed.dayOfMonth}"
+                            val parsed = java.time.LocalDate.parse(dateStr)
+                            "${parsed.monthValue}/${parsed.dayOfMonth}"
                         } catch (_: Exception) {
-                            record.date
+                            dateStr.takeLast(5)
                         }
                     }
-                    val hrTrend = calculateTrend(bpmHistory)
-                    val sleepTrend = calculateTrend(sleepHistory)
-                    val spO2Trend = calculateTrend(sortedRecords.map { it.spO2?.toFloat() ?: 0f })
+
+                    val hrTrend = calculateTrend(bpmHistory.filter { it > 0f })
+                    val sleepTrend = calculateTrend(sleepHistory.filter { it > 0f })
+                    val spO2Trend = calculateTrend(
+                        sortedDates.mapNotNull { date ->
+                            recordsByDate[date]?.mapNotNull { it.spO2 }?.lastOrNull()?.toFloat()
+                        }
+                    )
 
                     _uiState.update { state ->
                         state.copy(

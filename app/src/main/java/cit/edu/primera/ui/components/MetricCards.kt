@@ -57,7 +57,7 @@ fun StatCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Card(
-        modifier = modifier.height(130.dp),
+        modifier = modifier.heightIn(min = 132.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -66,7 +66,7 @@ fun StatCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(14.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) { content() }
     }
@@ -99,20 +99,20 @@ fun HealthStatCard(
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .size(28.dp)
+                        .size(26.dp)
                         .clip(CircleShape)
                         .background(iconBgColor)
                 ) {
                     Image(
                         painter = icon,
                         contentDescription = title,
-                        modifier = Modifier.size(13.dp)
+                        modifier = Modifier.size(12.dp)
                     )
                 }
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(6.dp))
                 Text(
                     text = title,
-                    fontSize = 12.sp,
+                    fontSize = 11.5.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = TextPrimary,
                     maxLines = 1,
@@ -136,29 +136,34 @@ fun HealthStatCard(
                 }
             }
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(6.dp))
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
                 text = value,
-                fontSize = 24.sp,
+                fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             if (unit.isNotBlank()) {
                 Spacer(Modifier.width(3.dp))
                 Text(
                     text = unit,
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     color = TextSecondary,
-                    modifier = Modifier.padding(bottom = 3.dp)
+                    maxLines = 1,
+                    modifier = Modifier.padding(bottom = 2.dp)
                 )
             }
         }
-        if (trendText != null) {
-            Spacer(Modifier.height(4.dp))
+        if (!trendText.isNullOrBlank()) {
+            Spacer(Modifier.height(2.dp))
             Text(
                 text = trendText,
-                fontSize = 11.sp,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Medium,
+                lineHeight = 12.sp,
                 color = trendColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
