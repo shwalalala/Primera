@@ -203,7 +203,9 @@ private fun MonthDropdown(
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(SurfaceWhite).heightIn(max = 300.dp)
+            modifier = Modifier
+                .background(SurfaceWhite)
+                .heightIn(max = 300.dp)
         ) {
             months.forEachIndexed { index, month ->
                 DropdownMenuItem(
@@ -247,7 +249,9 @@ private fun YearDropdown(
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(SurfaceWhite).heightIn(max = 300.dp)
+            modifier = Modifier
+                .background(SurfaceWhite)
+                .heightIn(max = 300.dp)
         ) {
             years.forEach { year ->
                 DropdownMenuItem(
@@ -358,7 +362,9 @@ fun LabeledField(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall.copy(fontFamily = NunitoSans),
-            color = TextSecondary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextPrimary,
             modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
         )
         PrimeraTextField(

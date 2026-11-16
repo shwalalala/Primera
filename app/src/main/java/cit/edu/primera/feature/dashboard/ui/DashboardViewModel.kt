@@ -50,6 +50,217 @@ class DashboardViewModel(
     val showMicCoachmark: StateFlow<Boolean> =
         _showMicCoachmark.asStateFlow()
 
+    private val _showManualEntryDialog = MutableStateFlow(false)
+    val showManualEntryDialog: StateFlow<Boolean> = _showManualEntryDialog.asStateFlow()
+
+    private val _selectedAttribute =
+        MutableStateFlow<cit.edu.primera.ui.components.HealthAttribute?>(null)
+    val selectedAttribute: StateFlow<cit.edu.primera.ui.components.HealthAttribute?> =
+        _selectedAttribute.asStateFlow()
+
+    private val _manualEntryError = MutableStateFlow<String?>(null)
+    val manualEntryError: StateFlow<String?> = _manualEntryError.asStateFlow()
+
+    fun onOpenManualEntryDialog() {
+        _manualEntryError.value = null
+        _showManualEntryDialog.value = true
+    }
+
+    fun onDismissManualEntryDialog() {
+        _manualEntryError.value = null
+        _showManualEntryDialog.value = false
+    }
+
+    fun onOpenAttributeEntryDialog(attribute: cit.edu.primera.ui.components.HealthAttribute) {
+        _manualEntryError.value = null
+        _selectedAttribute.value = attribute
+    }
+
+    fun onDismissAttributeEntryDialog() {
+        _manualEntryError.value = null
+        _selectedAttribute.value = null
+    }
+
+    fun saveAttributeHealthData(
+        attribute: cit.edu.primera.ui.components.HealthAttribute,
+        date: Date,
+        timeStr: String,
+        valueStr: String,
+        extraValueStr: String?
+    ) {
+        var heartRate: Long? = null
+        var steps: Long = 0L
+        var sleepHours: Long = 0L
+        var sleepMinutes: Long = 0L
+        var spO2: Double? = null
+
+        val currentDashboardData = (uiState.value as? DashboardUiState.Success)?.data
+
+        when (attribute) {
+            cit.edu.primera.ui.components.HealthAttribute.HEART_RATE -> {
+                val parsed = valueStr.trim().toLongOrNull()
+                if (parsed == null || parsed < 30 || parsed > 250) {
+                    _manualEntryError.value = "Heart rate must be between 30 and 250 bpm."
+                    return
+                }
+                heartRate = parsed
+                steps = currentDashboardData?.steps?.toLong() ?: 0L
+                sleepHours = currentDashboardData?.sleepHours?.toLong() ?: 0L
+                sleepMinutes = currentDashboardData?.sleepMinutes?.toLong() ?: 0L
+                spO2 = currentDashboardData?.spO2?.toDouble()
+            }
+
+            cit.edu.primera.ui.components.HealthAttribute.STEPS -> {
+                val parsed = valueStr.trim().toLongOrNull()
+                if (parsed == null || parsed < 0) {
+                    _manualEntryError.value = "Steps count must be 0 or greater."
+                    return
+                }
+                steps = parsed
+                heartRate = currentDashboardData?.heartRateBpm?.toLong()?.takeIf { it > 0 }
+                sleepHours = currentDashboardData?.sleepHours?.toLong() ?: 0L
+                sleepMinutes = currentDashboardData?.sleepMinutes?.toLong() ?: 0L
+                spO2 = currentDashboardData?.spO2?.toDouble()
+            }
+
+            cit.edu.primera.ui.components.HealthAttribute.SLEEP -> {
+                val parsedHours = valueStr.trim().toLongOrNull() ?: 0L
+                val parsedMins = extraValueStr?.trim()?.toLongOrNull() ?: 0L
+                if (parsedHours < 0 || parsedHours > 24) {
+                    _manualEntryError.value = "Sleep hours must be between 0 and 24."
+                    return
+                }
+                if (parsedMins < 0 || parsedMins >= 60) {
+                    _manualEntryError.value = "Sleep minutes must be between 0 and 59."
+                    return
+                }
+                sleepHours = parsedHours
+                sleepMinutes = parsedMins
+                heartRate = currentDashboardData?.heartRateBpm?.toLong()?.takeIf { it > 0 }
+                steps = currentDashboardData?.steps?.toLong() ?: 0L
+                spO2 = currentDashboardData?.spO2?.toDouble()
+            }
+
+            cit.edu.primera.ui.components.HealthAttribute.SPO2 -> {
+                val parsed = valueStr.trim().toDoubleOrNull()
+                if (parsed == null || parsed < 50.0 || parsed > 100.0) {
+                    _manualEntryError.value = "SpO₂ percentage must be between 50% and 100%."
+                    return
+                }
+                spO2 = parsed
+                heartRate = currentDashboardData?.heartRateBpm?.toLong()?.takeIf { it > 0 }
+                steps = currentDashboardData?.steps?.toLong() ?: 0L
+                sleepHours = currentDashboardData?.sleepHours?.toLong() ?: 0L
+                sleepMinutes = currentDashboardData?.sleepMinutes?.toLong() ?: 0L
+            }
+        }
+
+        val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(date)
+        val totalSleepMinutes = sleepHours * 60 + sleepMinutes
+
+        val record = cit.edu.primera.feature.smartwatchconnection.domain.SmartwatchHealth(
+            date = dateStr,
+            time = timeStr,
+            steps = steps,
+            currentHeartRate = heartRate,
+            averageHeartRate = heartRate,
+            minimumHeartRate = heartRate,
+            maximumHeartRate = heartRate,
+            spO2 = spO2,
+            sleepMinutes = totalSleepMinutes,
+            syncedAt = date.time,
+            isManualEntry = true,
+            source = "manual"
+        )
+
+        viewModelScope.launch {
+            try {
+                repository.saveHistoricalRecord(record)
+                repository.updateHealthData(
+                    steps = steps,
+                    heartRate = heartRate ?: 0L,
+                    sleepHours = sleepHours,
+                    sleepMinutes = sleepMinutes,
+                    spO2 = spO2?.toLong()
+                )
+                _selectedAttribute.value = null
+                _manualEntryError.value = null
+            } catch (e: Exception) {
+                _manualEntryError.value = "Failed to save: ${e.localizedMessage}"
+            }
+        }
+    }
+
+    fun saveManualHealthData(
+        date: Date,
+        timeStr: String,
+        heartRate: Long?,
+        spO2: Double?,
+        steps: Long,
+        sleepHours: Long,
+        sleepMinutes: Long
+    ) {
+        if (heartRate != null && (heartRate < 30 || heartRate > 250)) {
+            _manualEntryError.value = "Heart rate must be between 30 and 250 bpm."
+            return
+        }
+        if (steps < 0) {
+            _manualEntryError.value = "Steps count must be 0 or greater."
+            return
+        }
+        if (sleepHours < 0 || sleepHours > 24) {
+            _manualEntryError.value = "Sleep hours must be between 0 and 24."
+            return
+        }
+        if (sleepMinutes < 0 || sleepMinutes >= 60) {
+            _manualEntryError.value = "Sleep minutes must be between 0 and 59."
+            return
+        }
+        if (spO2 != null && (spO2 < 50.0 || spO2 > 100.0)) {
+            _manualEntryError.value = "SpO₂ percentage must be between 50% and 100%."
+            return
+        }
+        if (heartRate == null && spO2 == null && steps == 0L && sleepHours == 0L && sleepMinutes == 0L) {
+            _manualEntryError.value = "Please enter at least one health measurement."
+            return
+        }
+
+        val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(date)
+        val totalSleepMinutes = sleepHours * 60 + sleepMinutes
+
+        val record = cit.edu.primera.feature.smartwatchconnection.domain.SmartwatchHealth(
+            date = dateStr,
+            time = timeStr,
+            steps = steps,
+            currentHeartRate = heartRate,
+            averageHeartRate = heartRate,
+            minimumHeartRate = heartRate,
+            maximumHeartRate = heartRate,
+            spO2 = spO2,
+            sleepMinutes = totalSleepMinutes,
+            syncedAt = date.time,
+            isManualEntry = true,
+            source = "manual"
+        )
+
+        viewModelScope.launch {
+            try {
+                repository.saveHistoricalRecord(record)
+                repository.updateHealthData(
+                    steps = steps,
+                    heartRate = heartRate ?: 0L,
+                    sleepHours = sleepHours,
+                    sleepMinutes = sleepMinutes,
+                    spO2 = spO2?.toLong()
+                )
+                _showManualEntryDialog.value = false
+                _manualEntryError.value = null
+            } catch (e: Exception) {
+                _manualEntryError.value = "Failed to save: ${e.localizedMessage}"
+            }
+        }
+    }
+
     init {
         viewModelScope.launch {
             goalsRepository.ensureMandatoryGoals()

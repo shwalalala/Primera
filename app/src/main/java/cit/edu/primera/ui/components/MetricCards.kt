@@ -19,8 +19,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -78,32 +81,60 @@ fun HealthStatCard(
     iconBgColor: Color,
     modifier: Modifier = Modifier,
     trendText: String? = null,
-    trendColor: Color = TextSecondary
+    trendColor: Color = TextSecondary,
+    onAddClick: (() -> Unit)? = null
 ) {
-    StatCard(modifier = modifier) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(28.dp)
-                    .clip(CircleShape)
-                    .background(iconBgColor)
+    StatCard(
+        modifier = if (onAddClick != null) modifier.clickable { onAddClick() } else modifier
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f, fill = false)
             ) {
-                Image(
-                    painter = icon,
-                    contentDescription = title,
-                    modifier = Modifier.size(13.dp)
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(iconBgColor)
+                ) {
+                    Image(
+                        painter = icon,
+                        contentDescription = title,
+                        modifier = Modifier.size(13.dp)
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = title,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = title,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = TextPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (onAddClick != null) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .background(PrimeraViolet.copy(alpha = 0.12f))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add $title manually",
+                        tint = PrimeraViolet,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
         }
         Spacer(Modifier.height(12.dp))
         Row(verticalAlignment = Alignment.Bottom) {
@@ -113,13 +144,15 @@ fun HealthStatCard(
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary
             )
-            Spacer(Modifier.width(3.dp))
-            Text(
-                text = unit,
-                fontSize = 12.sp,
-                color = TextSecondary,
-                modifier = Modifier.padding(bottom = 3.dp)
-            )
+            if (unit.isNotBlank()) {
+                Spacer(Modifier.width(3.dp))
+                Text(
+                    text = unit,
+                    fontSize = 12.sp,
+                    color = TextSecondary,
+                    modifier = Modifier.padding(bottom = 3.dp)
+                )
+            }
         }
         if (trendText != null) {
             Spacer(Modifier.height(4.dp))
@@ -214,7 +247,11 @@ fun LogCard(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
-                            .background(if (isClinicianRecorded) Color(0xFFE8F5E9) else Color(0xFFEDE7F6))
+                            .background(
+                                if (isClinicianRecorded) Color(0xFFE8F5E9) else Color(
+                                    0xFFEDE7F6
+                                )
+                            )
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(

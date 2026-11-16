@@ -189,6 +189,7 @@ class DashboardDataSource(
                                 try {
                                     SmartwatchHealth(
                                         date = doc.getString("date") ?: "",
+                                        time = doc.getString("time") ?: "",
                                         steps = doc.getLong("steps") ?: 0L,
                                         currentHeartRate = doc.getLong("currentHeartRate"),
                                         averageHeartRate = doc.getLong("averageHeartRate"),
@@ -196,7 +197,9 @@ class DashboardDataSource(
                                         maximumHeartRate = doc.getLong("maximumHeartRate"),
                                         spO2 = doc.getDouble("spO2"),
                                         sleepMinutes = doc.getLong("sleepMinutes") ?: 0L,
-                                        syncedAt = doc.getLong("syncedAt") ?: 0L
+                                        syncedAt = doc.getLong("syncedAt") ?: 0L,
+                                        isManualEntry = doc.getBoolean("isManualEntry") ?: false,
+                                        source = doc.getString("source") ?: "smartwatch"
                                     )
                                 } catch (_: Exception) {
                                     null
@@ -212,8 +215,14 @@ class DashboardDataSource(
     suspend fun saveHistoricalRecord(record: SmartwatchHealth): Result<Unit> {
         return try {
             val userId = auth.currentUser?.uid ?: return Result.failure(Exception("Not authenticated"))
+            val docId = if (record.isManualEntry) {
+                "${record.date}_manual_${record.syncedAt}"
+            } else {
+                record.date
+            }
             val updates = mapOf(
                 "date" to record.date,
+                "time" to record.time,
                 "steps" to record.steps,
                 "currentHeartRate" to record.currentHeartRate,
                 "averageHeartRate" to record.averageHeartRate,
@@ -221,11 +230,13 @@ class DashboardDataSource(
                 "maximumHeartRate" to record.maximumHeartRate,
                 "spO2" to record.spO2,
                 "sleepMinutes" to record.sleepMinutes,
-                "syncedAt" to record.syncedAt
+                "syncedAt" to record.syncedAt,
+                "isManualEntry" to record.isManualEntry,
+                "source" to record.source
             )
             firestore.collection("users").document(userId)
                 .collection("smartwatchHealthRecords")
-                .document(record.date)
+                .document(docId)
                 .set(updates)
                 .await()
             Result.success(Unit)

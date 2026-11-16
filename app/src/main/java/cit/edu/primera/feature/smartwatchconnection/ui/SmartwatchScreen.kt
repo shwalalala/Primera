@@ -55,6 +55,7 @@ import cit.edu.primera.core.theme.TextSecondary
 import cit.edu.primera.core.theme.TrendGreen
 import cit.edu.primera.ui.components.ChartContainer
 import cit.edu.primera.ui.components.HealthStatCard
+import cit.edu.primera.ui.components.ManualHealthEntryDialog
 import cit.edu.primera.ui.components.PrimeraGradientButton
 import cit.edu.primera.ui.components.PrimeraOutlinedButton
 import cit.edu.primera.ui.components.SimpleBarChart
@@ -68,6 +69,9 @@ fun SmartwatchScreen(
     onReadAndSave: () -> Unit,
     onBackToSources: () -> Unit,
     onOpenHealthConnect: () -> Unit,
+    onOpenManualEntry: () -> Unit = {},
+    onDismissManualEntry: () -> Unit = {},
+    onSaveManualStats: (date: Date, time: String, heartRate: Long?, spO2: Double?, steps: Long, sleepHours: Long, sleepMinutes: Long) -> Unit = { _, _, _, _, _, _, _ -> },
     onBack: (() -> Unit)? = null,
     onOpenDrawer: () -> Unit = {},
     onPrintQrClick: (() -> Unit)? = null
@@ -92,7 +96,8 @@ fun SmartwatchScreen(
                 HealthDataContent(
                     uiState = uiState,
                     onBack = onBackToSources,
-                    onSyncNow = onReadAndSave
+                    onSyncNow = onReadAndSave,
+                    onSaveManualStats = onSaveManualStats
                 )
             } else {
                 ConnectDeviceContent(
@@ -100,11 +105,22 @@ fun SmartwatchScreen(
                     onRequestPermissions = onRequestPermissions,
                     onConnectAndSync = onReadAndSave,
                     onOpenHealthConnect = onOpenHealthConnect,
+                    onSaveManualStats = onSaveManualStats,
                     onBack = onBack,
                     onOpenDrawer = onOpenDrawer,
                     onPrintQrClick = onPrintQrClick
                 )
             }
+        }
+
+        if (uiState.showManualEntryDialog) {
+            ManualHealthEntryDialog(
+                initialHealth = uiState.smartwatchHealth,
+                errorMessage = uiState.manualEntryError,
+                isLoading = uiState.isLoading,
+                onDismiss = onDismissManualEntry,
+                onSave = onSaveManualStats
+            )
         }
     }
 }
@@ -115,6 +131,7 @@ private fun ConnectDeviceContent(
     onRequestPermissions: () -> Unit,
     onConnectAndSync: () -> Unit,
     onOpenHealthConnect: () -> Unit,
+    onSaveManualStats: (date: Date, time: String, heartRate: Long?, spO2: Double?, steps: Long, sleepHours: Long, sleepMinutes: Long) -> Unit,
     onBack: (() -> Unit)? = null,
     onOpenDrawer: () -> Unit = {},
     onPrintQrClick: (() -> Unit)? = null
@@ -197,7 +214,8 @@ private fun ConnectDeviceContent(
                 if (uiState.message.isNotBlank()) {
                     val isError = uiState.message.contains("Error", ignoreCase = true) || 
                                  uiState.message.contains("not available", ignoreCase = true) ||
-                                 uiState.message.contains("not support", ignoreCase = true)
+                            uiState.message.contains("not support", ignoreCase = true) ||
+                            uiState.message.contains("failed", ignoreCase = true)
                     Text(
                         text = uiState.message,
                         color = if (isError) ErrorRed else TextPrimary,
@@ -262,7 +280,18 @@ private fun ConnectDeviceContent(
                     enabled = uiState.isOnline && !uiState.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 )
-                
+
+                Spacer(Modifier.height(28.dp))
+
+                cit.edu.primera.ui.components.InlineManualEntryForm(
+                    initialHealth = uiState.smartwatchHealth,
+                    errorMessage = uiState.manualEntryError,
+                    isLoading = uiState.isLoading,
+                    onSave = { date, time, hr, spO2, steps, sleepH, sleepM ->
+                        onSaveManualStats(date, time, hr, spO2, steps, sleepH, sleepM)
+                    }
+                )
+
                 Spacer(Modifier.height(40.dp))
             }
         }
@@ -307,7 +336,8 @@ private fun SourceAppLauncher(modifier: Modifier = Modifier) {
 private fun HealthDataContent(
     uiState: SmartwatchUiState,
     onBack: () -> Unit,
-    onSyncNow: () -> Unit
+    onSyncNow: () -> Unit,
+    onSaveManualStats: (date: Date, time: String, heartRate: Long?, spO2: Double?, steps: Long, sleepHours: Long, sleepMinutes: Long) -> Unit
 ) {
     val scrollState = rememberScrollState()
     val sdf = SimpleDateFormat("h:mm a", LocalLocale.current.platformLocale)
@@ -325,7 +355,7 @@ private fun HealthDataContent(
                 color = MaterialTheme.colorScheme.errorContainer
             ) {
                 Text(
-                    text = "You're offline. Sync is unavailable.",
+                    text = "You're offline. Auto-sync is unavailable, but manual entry works.",
                     modifier = Modifier.padding(8.dp),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.labelMedium,
@@ -462,11 +492,22 @@ private fun HealthDataContent(
 
             Spacer(Modifier.height(24.dp))
 
+            cit.edu.primera.ui.components.InlineManualEntryForm(
+                initialHealth = uiState.smartwatchHealth,
+                errorMessage = uiState.manualEntryError,
+                isLoading = uiState.isLoading,
+                onSave = onSaveManualStats,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(Modifier.height(16.dp))
+
             PrimeraGradientButton(
                 text = if (uiState.isOnline) "Sync Now" else "Offline",
                 onClick = onSyncNow,
                 isLoading = uiState.isLoading,
-                enabled = uiState.isOnline && !uiState.isLoading
+                enabled = uiState.isOnline && !uiState.isLoading,
+                modifier = Modifier.fillMaxWidth()
             )
             
             Spacer(Modifier.height(80.dp)) // Extra space for bottom nav

@@ -34,6 +34,43 @@ class SmartwatchViewModel(
                 _uiState.update { it.copy(isOnline = isOnline) }
             }
         }
+        viewModelScope.launch {
+            dashboardRepository.observeHealthRecords().collect { records ->
+                if (records.isNotEmpty()) {
+                    val sortedRecords = records.sortedBy { it.date }
+                    val bpmHistory = sortedRecords.map {
+                        (it.averageHeartRate ?: it.currentHeartRate ?: 0L).toFloat()
+                    }
+                    val sleepHistory = sortedRecords.map { (it.sleepMinutes).toFloat() / 60f }
+                    val labels = sortedRecords.map { record ->
+                        try {
+                            val parsed = java.time.LocalDate.parse(record.date)
+                            "${parsed.monthValue}.${parsed.dayOfMonth}"
+                        } catch (_: Exception) {
+                            record.date
+                        }
+                    }
+                    val hrTrend = calculateTrend(bpmHistory)
+                    val sleepTrend = calculateTrend(sleepHistory)
+                    val spO2Trend = calculateTrend(sortedRecords.map { it.spO2?.toFloat() ?: 0f })
+
+                    _uiState.update { state ->
+                        state.copy(
+                            bpmHistory = bpmHistory,
+                            sleepHistory = sleepHistory,
+                            historyLabels = labels,
+                            hrTrendText = hrTrend.first,
+                            hrTrendColor = hrTrend.second,
+                            sleepTrendText = sleepTrend.first,
+                            sleepTrendColor = sleepTrend.second,
+                            spO2TrendText = spO2Trend.first,
+                            spO2TrendColor = spO2Trend.second,
+                            smartwatchHealth = state.smartwatchHealth ?: records.firstOrNull()
+                        )
+                    }
+                }
+            }
+        }
     }
 
     val permissions = healthConnectManager.permissions
@@ -261,5 +298,113 @@ class SmartwatchViewModel(
 
     fun onOpenHealthConnect() {
         healthConnectManager.openHealthConnect()
+    }
+
+    fun onOpenManualEntryDialog() {
+        _uiState.update { it.copy(showManualEntryDialog = true, manualEntryError = null) }
+    }
+
+    fun onDismissManualEntryDialog() {
+        _uiState.update { it.copy(showManualEntryDialog = false, manualEntryError = null) }
+    }
+
+    fun saveManualWatchStats(
+        date: java.util.Date,
+        timeStr: String,
+        heartRate: Long?,
+        spO2: Double?,
+        steps: Long,
+        sleepHours: Long,
+        sleepMinutes: Long
+    ) {
+        if (heartRate != null && (heartRate < 30 || heartRate > 250)) {
+            _uiState.update { it.copy(manualEntryError = "Heart rate must be between 30 and 250 bpm.") }
+            return
+        }
+        if (steps < 0) {
+            _uiState.update { it.copy(manualEntryError = "Steps count must be 0 or greater.") }
+            return
+        }
+        if (sleepHours < 0 || sleepHours > 24) {
+            _uiState.update { it.copy(manualEntryError = "Sleep hours must be between 0 and 24.") }
+            return
+        }
+        if (sleepMinutes < 0 || sleepMinutes >= 60) {
+            _uiState.update { it.copy(manualEntryError = "Sleep minutes must be between 0 and 59.") }
+            return
+        }
+        if (spO2 != null && (spO2 < 50.0 || spO2 > 100.0)) {
+            _uiState.update { it.copy(manualEntryError = "SpO₂ percentage must be between 50% and 100%.") }
+            return
+        }
+        if (heartRate == null && spO2 == null && steps == 0L && sleepHours == 0L && sleepMinutes == 0L) {
+            _uiState.update { it.copy(manualEntryError = "Please enter at least one health measurement.") }
+            return
+        }
+
+        val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(date)
+        val totalSleepMinutes = sleepHours * 60 + sleepMinutes
+
+        val manualHealth = cit.edu.primera.feature.smartwatchconnection.domain.SmartwatchHealth(
+            date = dateStr,
+            time = timeStr,
+            steps = steps,
+            currentHeartRate = heartRate,
+            averageHeartRate = heartRate,
+            minimumHeartRate = heartRate,
+            maximumHeartRate = heartRate,
+            spO2 = spO2,
+            sleepMinutes = totalSleepMinutes,
+            syncedAt = date.time,
+            isManualEntry = true,
+            source = "manual"
+        )
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, manualEntryError = null) }
+            try {
+                dashboardRepository.saveHistoricalRecord(manualHealth)
+                dashboardRepository.updateHealthData(
+                    steps = steps,
+                    heartRate = heartRate ?: 0L,
+                    sleepHours = sleepHours,
+                    sleepMinutes = sleepMinutes,
+                    spO2 = spO2?.toLong()
+                )
+
+                val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+                preferenceRepository.setWatchSyncEnabled(userId, enabled = true)
+
+                syncAttemptCount++
+                validationLogger?.logSmartwatchSync(
+                    syncAttempt = syncAttemptCount,
+                    syncStatus = "successful",
+                    syncDurationMs = 0L,
+                    heartRateSync = if (heartRate != null) "successful" else "n/a",
+                    stepsSync = if (steps > 0) "successful" else "n/a",
+                    sleepSync = if (totalSleepMinutes > 0) "successful" else "n/a",
+                    dashboardUpdate = "successful",
+                    missingDataDetected = false
+                )
+
+                _uiState.update { state ->
+                    state.copy(
+                        isLoading = false,
+                        showManualEntryDialog = false,
+                        smartwatchHealth = manualHealth,
+                        isDataVisible = true,
+                        message = "Manual watch stats saved successfully!"
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("SmartwatchViewModel", "Failed to save manual watch stats", e)
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        manualEntryError = "Failed to save: ${e.localizedMessage}"
+                    )
+                }
+            }
+        }
     }
 }

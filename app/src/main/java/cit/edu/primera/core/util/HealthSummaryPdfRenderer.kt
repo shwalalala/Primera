@@ -667,34 +667,40 @@ object HealthSummaryPdfRenderer {
             }
 
             // ======================================
-            // 5. SMARTWATCH HISTORY
+            // 5. SMARTWATCH & MANUAL HEALTH HISTORY
             // ======================================
 
-            section("5. Connected Smartwatch Measurements")
+            section("5. Smartwatch & Manual Health Measurements")
 
             val watchRecords =
                 summary.smartwatchRecords
-                    .sortedByDescending { it.date }
-                    .take(7)
+                    .sortedByDescending { it.syncedAt }
+                    .take(10)
 
             if (watchRecords.isEmpty()) {
                 drawText(
-                    "No synchronized smartwatch history available."
+                    "No smartwatch or manual health history available."
                 )
             } else {
                 drawText(
-                    "Recorded measurements from the " +
-                            "connected device, where available."
+                    "Recorded measurements from connected smartwatch devices and self-reported manual entries."
                 )
 
                 watchRecords.forEach { record ->
-                    ensureSpace(80f)
+                    ensureSpace(90f)
+
+                    val sourceTag =
+                        if (record.isManualEntry) " [Self-Reported Manual]" else " [Smartwatch Synced]"
+                    val timeTag = if (record.time.isNotBlank()) " at ${record.time}" else ""
 
                     heading(
                         "Measurement Date: " +
-                                record.date.ifBlank {
-                                    "Date unavailable"
-                                }
+                                (record.date.ifBlank { "Date unavailable" }) + timeTag + sourceTag
+                    )
+
+                    field(
+                        "Entry Source",
+                        if (record.isManualEntry) "Self-Reported (Manual Entry)" else "Smartwatch Synchronized"
                     )
 
                     field(

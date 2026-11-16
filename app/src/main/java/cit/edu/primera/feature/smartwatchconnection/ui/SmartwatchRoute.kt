@@ -58,6 +58,15 @@ fun SmartwatchRoute(
         onOpenHealthConnect = {
             viewModel.onOpenHealthConnect()
         },
+        onOpenManualEntry = {
+            viewModel.onOpenManualEntryDialog()
+        },
+        onDismissManualEntry = {
+            viewModel.onDismissManualEntryDialog()
+        },
+        onSaveManualStats = { date, time, hr, spO2, steps, sleepH, sleepM ->
+            viewModel.saveManualWatchStats(date, time, hr, spO2, steps, sleepH, sleepM)
+        },
         onOpenDrawer = onOpenDrawer,
         onPrintQrClick = onPrintQrClick
     )

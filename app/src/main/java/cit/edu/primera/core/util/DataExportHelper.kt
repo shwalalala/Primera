@@ -483,14 +483,18 @@ object DataExportHelper {
         }
 
         if (healthRecords.isNotEmpty()) {
-            val latest = healthRecords.first()
             sb.append("\nRecent Health Vitals:\n")
-            sb.append("• Steps: ${latest.steps}\n")
-            sb.append("• Heart Rate: ${latest.averageHeartRate ?: "--"} bpm\n")
-            val hours = latest.sleepMinutes / 60
-            val mins = latest.sleepMinutes % 60
-            sb.append("• Sleep: ${hours}h ${mins}m\n")
-            sb.append("• SpO2: ${latest.spO2 ?: "--"}%\n")
+            healthRecords.take(5).forEach { record ->
+                val sourceLabel =
+                    if (record.isManualEntry) " [Self-Reported Manual]" else " [Smartwatch Synced]"
+                val timeLabel = if (record.time.isNotBlank()) " ${record.time}" else ""
+                sb.append("• Date: ${record.date}$timeLabel$sourceLabel\n")
+                val hrStr =
+                    (record.averageHeartRate ?: record.currentHeartRate)?.let { "$it bpm" } ?: "--"
+                val sleepStr = "${record.sleepMinutes / 60}h ${record.sleepMinutes % 60}m"
+                val spO2Str = record.spO2?.let { String.format(Locale.US, "%.1f%%", it) } ?: "--"
+                sb.append("  Steps: ${record.steps} | HR: $hrStr | Sleep: $sleepStr | SpO2: $spO2Str\n")
+            }
         }
 
         val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
