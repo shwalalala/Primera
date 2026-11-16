@@ -49,8 +49,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.graphics.toColorInt
+import cit.edu.primera.core.theme.BackgroundCream
 import cit.edu.primera.core.theme.InputBorder
 import cit.edu.primera.core.theme.NunitoSans
+import cit.edu.primera.core.theme.PrimeraLilac
 import cit.edu.primera.core.theme.PrimeraTheme
 import cit.edu.primera.core.theme.PrimeraViolet
 import cit.edu.primera.core.theme.SurfaceWhite
@@ -80,24 +82,26 @@ fun AddGoalDialog(
     initialPeriod: String = "Daily",
     onConfirm: (GoalDto) -> Unit
 ) {
+    val isEditMode = editingGoal != null
+
     val goalOptions = remember {
         listOf(
             GoalOption("Hydration", "L", 2.5, "R.drawable.water", "#93C5FD"),
             GoalOption("Movement", "min", 30.0, "R.drawable.steps", "#AED581"),
-            GoalOption("Yoga", "min", 20.0, "🧘", "#A1D386"),
+            GoalOption("Yoga", "min", 20.0, "R.drawable.log", "#A1D386"),
             GoalOption("Walking", "steps", 6000.0, "R.drawable.steps", "#FFAB91"),
             GoalOption("Pelvic Floor Exercise", "reps", 15.0, "R.drawable.heart", "#CE93D8"),
             GoalOption("Prenatal Vitamins", "count", 1.0, "R.drawable.log", "#FFF176"),
-            GoalOption("Meditation", "min", 15.0, "🧘", "#81C784"),
+            GoalOption("Meditation", "min", 15.0, "R.drawable.log", "#81C784"),
             GoalOption("Fruits & Veggies", "servings", 5.0, "R.drawable.apple", "#FF8A65"),
             GoalOption("Journaling", "pages", 1.0, "R.drawable.log", "#BA68C8"),
-            GoalOption("Stretching", "min", 15.0, "🧘", "#4DB6AC"),
+            GoalOption("Stretching", "min", 15.0, "R.drawable.log", "#4DB6AC"),
             GoalOption("Nap / Rest Time", "hours", 1.0, "R.drawable.sleep", "#9575CD"),
             GoalOption("Reading", "pages", 10.0, "R.drawable.log", "#F06292"),
             GoalOption("Deep Breathing", "min", 10.0, "R.drawable.heart", "#4DD0E1"),
             GoalOption("Foot Care", "min", 15.0, "R.drawable.log", "#FFD54F"),
             GoalOption("Belly Massage", "min", 10.0, "R.drawable.heart", "#F48FB1"),
-            GoalOption("Custom Goal", "times", 1.0, "🎯", "#64B5F6")
+            GoalOption("Custom Goal", "times", 1.0, "R.drawable.log", "#64B5F6")
         )
     }
 
@@ -133,15 +137,10 @@ fun AddGoalDialog(
         )
     }
 
-    var currentValueText by remember {
-        val initial = editingGoal?.currentValue
-        mutableStateOf(
-            if (initial != null) {
-                if (initial % 1.0 == 0.0) initial.toInt().toString() else initial.toString()
-            } else "0"
-        )
-    }
-    
+    // Saved current progress in DB - STARTS AT SAVED VALUE AND NEVER REVERTS TO 0
+    val savedProgress = editingGoal?.currentValue ?: 0.0
+    var currentProgressVal by remember { mutableStateOf(savedProgress) }
+
     var selectedColorHex by remember {
         mutableStateOf(editingGoal?.accentColorHex ?: "#93C5FD") 
     }
@@ -151,7 +150,7 @@ fun AddGoalDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(28.dp),
+            shape = RoundedCornerShape(24.dp),
             color = SurfaceWhite,
             modifier = Modifier
                 .fillMaxWidth()
@@ -160,17 +159,17 @@ fun AddGoalDialog(
             Column(
                 modifier = Modifier
                     .padding(24.dp)
-                    .heightIn(max = 580.dp)
+                    .heightIn(max = 600.dp)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
 
                 Text(
-                    text = if (editingGoal == null) "Add New Goal" else "Edit Goal",
+                    text = if (!isEditMode) "Add New Goal" else "Edit Goal",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = NunitoSans,
-                    color = PrimeraViolet
+                    color = TextPrimary
                 )
 
                 // Goal Preset Dropdown / Title Input
@@ -182,7 +181,14 @@ fun AddGoalDialog(
                     OutlinedTextField(
                         value = goalTitle,
                         onValueChange = { goalTitle = it },
-                        label = { Text("Goal Title", fontFamily = NunitoSans) },
+                        label = {
+                            Text(
+                                "Goal Title",
+                                fontFamily = NunitoSans,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
+                            )
+                        },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = presetDropdownExpanded) },
                         leadingIcon = {
                             GoalIcon(
@@ -195,7 +201,7 @@ fun AddGoalDialog(
                                 modifier = Modifier.size(20.dp)
                             )
                         },
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(24.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .menuAnchor(
@@ -206,7 +212,9 @@ fun AddGoalDialog(
                             focusedBorderColor = PrimeraViolet,
                             unfocusedBorderColor = InputBorder,
                             focusedContainerColor = SurfaceWhite,
-                            unfocusedContainerColor = SurfaceWhite
+                            unfocusedContainerColor = SurfaceWhite,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary
                         )
                     )
 
@@ -215,7 +223,7 @@ fun AddGoalDialog(
                         onDismissRequest = { presetDropdownExpanded = false },
                         modifier = Modifier
                             .background(SurfaceWhite)
-                            .border(1.dp, InputBorder, RoundedCornerShape(12.dp))
+                            .border(1.dp, InputBorder, RoundedCornerShape(16.dp))
                     ) {
                         goalOptions.forEach { option ->
                             DropdownMenuItem(
@@ -270,9 +278,16 @@ fun AddGoalDialog(
                             value = selectedPeriod,
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Period", fontFamily = NunitoSans) },
+                            label = {
+                                Text(
+                                    "Period",
+                                    fontFamily = NunitoSans,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimary
+                                )
+                            },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = periodDropdownExpanded) },
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(24.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .menuAnchor(
@@ -281,7 +296,9 @@ fun AddGoalDialog(
                                 ),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = PrimeraViolet,
-                                unfocusedBorderColor = InputBorder
+                                unfocusedBorderColor = InputBorder,
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary
                             )
                         )
 
@@ -312,12 +329,21 @@ fun AddGoalDialog(
                     OutlinedTextField(
                         value = goalUnit,
                         onValueChange = { goalUnit = it },
-                        label = { Text("Unit", fontFamily = NunitoSans) },
-                        shape = RoundedCornerShape(16.dp),
+                        label = {
+                            Text(
+                                "Unit",
+                                fontFamily = NunitoSans,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
+                            )
+                        },
+                        shape = RoundedCornerShape(24.dp),
                         modifier = Modifier.weight(1f),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = PrimeraViolet,
-                            unfocusedBorderColor = InputBorder
+                            unfocusedBorderColor = InputBorder,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary
                         )
                     )
                 }
@@ -328,60 +354,131 @@ fun AddGoalDialog(
                     onValueChange = {
                         if (it.all { char -> char.isDigit() || char == '.' }) targetValueText = it
                     },
-                    label = { Text("Target Goal", fontFamily = NunitoSans) },
+                    label = {
+                        Text(
+                            "Target Goal",
+                            fontFamily = NunitoSans,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     suffix = { Text(goalUnit, fontFamily = NunitoSans, color = TextSecondary) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(24.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = PrimeraViolet,
-                        unfocusedBorderColor = InputBorder
+                        unfocusedBorderColor = InputBorder,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary
                     )
                 )
 
-                // Accomplished Slider
-                val targetFloat = targetValueText.toFloatOrNull() ?: 1f
-                val currentFloat =
-                    (currentValueText.toFloatOrNull() ?: 0f).coerceIn(0f, max(1f, targetFloat))
+                // ----------------------------------------------------
+                // SLIDER & PERSISTENT APPENDING PROGRESS SECTION
+                // ----------------------------------------------------
+                val targetVal = targetValueText.toDoubleOrNull() ?: 1.0
+                val maxSliderRange =
+                    max(targetVal * 1.5, currentProgressVal.coerceAtLeast(targetVal))
 
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Bottom
+                Surface(
+                    color = BackgroundCream,
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Text(
-                            text = "Current Progress",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
-                            fontFamily = NunitoSans,
-                            color = TextSecondary
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Current Progress",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = NunitoSans,
+                                color = TextPrimary
+                            )
+                            Text(
+                                text = "${
+                                    if (currentProgressVal % 1.0 == 0.0) currentProgressVal.toInt() else String.format(
+                                        Locale.US,
+                                        "%.1f",
+                                        currentProgressVal
+                                    )
+                                } / $targetValueText $goalUnit",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = NunitoSans,
+                                color = PrimeraViolet
+                            )
+                        }
+
+                        if (isEditMode && currentProgressVal > savedProgress) {
+                            val diff = currentProgressVal - savedProgress
+                            Text(
+                                text = "(+ ${
+                                    if (diff % 1.0 == 0.0) diff.toInt() else String.format(
+                                        Locale.US,
+                                        "%.1f",
+                                        diff
+                                    )
+                                } $goalUnit added)",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = PrimeraViolet
+                            )
+                        }
+
+                        Slider(
+                            value = currentProgressVal.toFloat(),
+                            onValueChange = { valVal ->
+                                currentProgressVal = (valVal % 1f).let { rem ->
+                                    if (rem == 0f) valVal.toDouble() else String.format(
+                                        Locale.US,
+                                        "%.1f",
+                                        valVal
+                                    ).toDoubleOrNull() ?: valVal.toDouble()
+                                }
+                            },
+                            valueRange = 0f..maxSliderRange.toFloat(),
+                            colors = SliderDefaults.colors(
+                                thumbColor = PrimeraViolet,
+                                activeTrackColor = PrimeraViolet,
+                                inactiveTrackColor = PrimeraViolet.copy(alpha = 0.2f)
+                            )
                         )
-                        Text(
-                            text = "$currentValueText $goalUnit",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = NunitoSans,
-                            color = PrimeraViolet
-                        )
+
+                        // Quick Increment Chips
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            listOf(0.5, 1.0, 2.0, 5.0).forEach { inc ->
+                                Surface(
+                                    onClick = {
+                                        currentProgressVal += inc
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = PrimeraLilac.copy(alpha = 0.4f)
+                                ) {
+                                    Text(
+                                        text = "+$inc",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = PrimeraViolet,
+                                        modifier = Modifier.padding(
+                                            horizontal = 12.dp,
+                                            vertical = 6.dp
+                                        )
+                                    )
+                                }
+                            }
+                        }
                     }
-                    Slider(
-                        value = currentFloat,
-                        onValueChange = { valVal ->
-                            currentValueText =
-                                if (valVal % 1f == 0f) valVal.toInt().toString() else String.format(
-                                    Locale.US,
-                                    "%.1f",
-                                    valVal
-                                )
-                        },
-                        valueRange = 0f..max(1f, targetFloat),
-                        colors = SliderDefaults.colors(
-                            thumbColor = PrimeraViolet,
-                            activeTrackColor = PrimeraViolet,
-                            inactiveTrackColor = PrimeraViolet.copy(alpha = 0.2f)
-                        )
-                    )
                 }
 
                 // Accent Color Selector
@@ -389,9 +486,9 @@ fun AddGoalDialog(
                     Text(
                         text = "Accent Color",
                         fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.Bold,
                         fontFamily = NunitoSans,
-                        color = TextSecondary
+                        color = TextPrimary
                     )
                     
                     LazyRow(
@@ -444,10 +541,9 @@ fun AddGoalDialog(
                     )
 
                     PrimeraGradientButton(
-                        text = if (editingGoal == null) "Add Goal" else "Save Changes",
+                        text = if (!isEditMode) "Add Goal" else "Save Changes",
                         onClick = {
                             val target = targetValueText.toDoubleOrNull() ?: 0.0
-                            val current = currentValueText.toDoubleOrNull() ?: 0.0
                             if (target > 0) {
                                 onConfirm(
                                     GoalDto(
@@ -460,7 +556,7 @@ fun AddGoalDialog(
                                         category = editingGoal?.category ?: "Wellness",
                                         period = selectedPeriod,
                                         accentColorHex = selectedColorHex,
-                                        currentValue = current,
+                                        currentValue = currentProgressVal,
                                         timestamp = editingGoal?.timestamp ?: Date()
                                     )
                                 )
