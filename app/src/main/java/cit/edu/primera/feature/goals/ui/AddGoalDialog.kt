@@ -42,12 +42,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.toColorInt
 import cit.edu.primera.core.theme.BackgroundCream
 import cit.edu.primera.core.theme.InputBorder
@@ -148,20 +152,23 @@ fun AddGoalDialog(
     var presetDropdownExpanded by remember { mutableStateOf(false) }
     var periodDropdownExpanded by remember { mutableStateOf(false) }
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = SurfaceWhite,
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+                .fillMaxWidth(0.92f)
+                .padding(vertical = 12.dp)
         ) {
             Column(
                 modifier = Modifier
-                    .padding(24.dp)
-                    .heightIn(max = 600.dp)
+                    .padding(18.dp)
+                    .heightIn(max = 620.dp)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
 
                 Text(
@@ -181,12 +188,17 @@ fun AddGoalDialog(
                     OutlinedTextField(
                         value = goalTitle,
                         onValueChange = { goalTitle = it },
+                        singleLine = true,
+                        maxLines = 1,
+                        textStyle = TextStyle(fontFamily = NunitoSans, fontSize = 14.sp),
                         label = {
                             Text(
                                 "Goal Title",
                                 fontFamily = NunitoSans,
                                 fontWeight = FontWeight.Bold,
-                                color = TextPrimary
+                                color = TextPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = presetDropdownExpanded) },
@@ -237,14 +249,16 @@ fun AddGoalDialog(
                                                 PrimeraViolet
                                             },
                                             modifier = Modifier
-                                                .padding(end = 12.dp)
-                                                .size(20.dp)
+                                                .padding(end = 10.dp)
+                                                .size(18.dp)
                                         )
                                         Text(
                                             text = option.title,
                                             fontFamily = NunitoSans,
                                             color = TextPrimary,
-                                            fontWeight = FontWeight.Medium
+                                            fontWeight = FontWeight.Medium,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
                                 },
@@ -266,24 +280,28 @@ fun AddGoalDialog(
                 // Period Selection & Unit
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Period dropdown
+                    // Period dropdown (1.5f weight so "Weekly" / "Monthly" NEVER break into 2 lines)
                     ExposedDropdownMenuBox(
                         expanded = periodDropdownExpanded,
                         onExpandedChange = { periodDropdownExpanded = it },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1.5f)
                     ) {
                         OutlinedTextField(
                             value = selectedPeriod,
                             onValueChange = {},
                             readOnly = true,
+                            singleLine = true,
+                            maxLines = 1,
+                            textStyle = TextStyle(fontFamily = NunitoSans, fontSize = 13.sp),
                             label = {
                                 Text(
                                     "Period",
                                     fontFamily = NunitoSans,
                                     fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
+                                    color = TextPrimary,
+                                    maxLines = 1
                                 )
                             },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = periodDropdownExpanded) },
@@ -313,7 +331,8 @@ fun AddGoalDialog(
                                         Text(
                                             period,
                                             fontFamily = NunitoSans,
-                                            color = TextPrimary
+                                            color = TextPrimary,
+                                            maxLines = 1
                                         )
                                     },
                                     onClick = {
@@ -325,20 +344,24 @@ fun AddGoalDialog(
                         }
                     }
 
-                    // Unit text field
+                    // Unit text field (0.8f weight)
                     OutlinedTextField(
                         value = goalUnit,
                         onValueChange = { goalUnit = it },
+                        singleLine = true,
+                        maxLines = 1,
+                        textStyle = TextStyle(fontFamily = NunitoSans, fontSize = 13.sp),
                         label = {
                             Text(
                                 "Unit",
                                 fontFamily = NunitoSans,
                                 fontWeight = FontWeight.Bold,
-                                color = TextPrimary
+                                color = TextPrimary,
+                                maxLines = 1
                             )
                         },
                         shape = RoundedCornerShape(24.dp),
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(0.8f),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = PrimeraViolet,
                             unfocusedBorderColor = InputBorder,
@@ -354,16 +377,27 @@ fun AddGoalDialog(
                     onValueChange = {
                         if (it.all { char -> char.isDigit() || char == '.' }) targetValueText = it
                     },
+                    singleLine = true,
+                    maxLines = 1,
+                    textStyle = TextStyle(fontFamily = NunitoSans, fontSize = 14.sp),
                     label = {
                         Text(
                             "Target Goal",
                             fontFamily = NunitoSans,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = TextPrimary,
+                            maxLines = 1
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    suffix = { Text(goalUnit, fontFamily = NunitoSans, color = TextSecondary) },
+                    suffix = {
+                        Text(
+                            goalUnit,
+                            fontFamily = NunitoSans,
+                            color = TextSecondary,
+                            maxLines = 1
+                        )
+                    },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     shape = RoundedCornerShape(24.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -387,8 +421,8 @@ fun AddGoalDialog(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -397,7 +431,7 @@ fun AddGoalDialog(
                         ) {
                             Text(
                                 text = "Current Progress",
-                                fontSize = 13.sp,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = NunitoSans,
                                 color = TextPrimary
@@ -410,7 +444,7 @@ fun AddGoalDialog(
                                         currentProgressVal
                                     )
                                 } / $targetValueText $goalUnit",
-                                fontSize = 14.sp,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = NunitoSans,
                                 color = PrimeraViolet
@@ -452,9 +486,9 @@ fun AddGoalDialog(
                             )
                         )
 
-                        // Quick Increment Chips
+                        // Quick Increment Chips (equal weight 1f so +5.0 NEVER breaks vertically)
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             listOf(0.5, 1.0, 2.0, 5.0).forEach { inc ->
@@ -463,17 +497,18 @@ fun AddGoalDialog(
                                         currentProgressVal += inc
                                     },
                                     shape = RoundedCornerShape(12.dp),
-                                    color = PrimeraLilac.copy(alpha = 0.4f)
+                                    color = PrimeraLilac.copy(alpha = 0.4f),
+                                    modifier = Modifier.weight(1f)
                                 ) {
                                     Text(
                                         text = "+$inc",
-                                        fontSize = 12.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = PrimeraViolet,
-                                        modifier = Modifier.padding(
-                                            horizontal = 12.dp,
-                                            vertical = 6.dp
-                                        )
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(vertical = 6.dp)
                                     )
                                 }
                             }
@@ -482,18 +517,18 @@ fun AddGoalDialog(
                 }
 
                 // Accent Color Selector
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
                         text = "Accent Color",
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = NunitoSans,
                         color = TextPrimary
                     )
                     
                     LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        contentPadding = PaddingValues(vertical = 4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(vertical = 2.dp)
                     ) {
                         items(availableColors) { hex ->
                             val color = try {
@@ -503,7 +538,7 @@ fun AddGoalDialog(
                             }
                             Box(
                                 modifier = Modifier
-                                    .size(32.dp)
+                                    .size(30.dp)
                                     .clip(CircleShape)
                                     .background(color)
                                     .border(
@@ -525,14 +560,14 @@ fun AddGoalDialog(
                     }
                 }
 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(4.dp))
 
                 val isValid =
                     goalTitle.isNotBlank() && (targetValueText.toDoubleOrNull() ?: 0.0) > 0.0
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     PrimeraOutlinedButton(
                         text = "Cancel",
