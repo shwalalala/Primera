@@ -64,24 +64,37 @@ adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
 
 # 4. Run connected Android test suite via Gradle
-echo "[3/6] Running Android instrumented test suite via Gradle..."
-./gradlew connectedDebugAndroidTest || echo "Some tests completed with warnings/failures."
+echo "[3/6] Running Android instrumented test suite via Gradle (excluding post-reboot tests)..."
+./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.notClass=cit.edu.primera.M19AfterRebootTest || echo "Some tests completed with warnings/failures."
 
 # 5. Hook for M19 Reboot step
-echo "[4/6] Checking for M19 Reboot step hook..."
-# ==============================================================================
-# [HOOK: M19 REBOOT STEP] - Implemented in Prompt D
-# When Prompt D is executed, this hook orchestrates the device reboot and executes
-# post-reboot verification for scheduled notifications:
-#
-#   echo "Rebooting emulator via adb reboot..."
-#   adb reboot || true
-#   adb wait-for-device
-#   while [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" != "1" ]; do
-#       sleep 3
-#   done
-#   ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=cit.edu.primera.M19ScheduledNotificationsTest#test02_scheduledReminderAfterReboot
-# ==============================================================================
+echo "[4/6] Executing M19 Reboot orchestration hook..."
+echo "Running M19BeforeRebootTest before reboot..."
+./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=cit.edu.primera.M19BeforeRebootTest || echo "M19BeforeRebootTest completed with warnings/failures."
+
+# Pull pre-reboot screenshots before restarting emulator
+adb pull /storage/emulated/0/Android/data/cit.edu.primera/files/screenshots/. "${SCREENSHOT_DIR}/" 2>/dev/null || true
+adb pull /sdcard/screenshots/. "${SCREENSHOT_DIR}/" 2>/dev/null || true
+
+echo "Rebooting emulator via adb reboot..."
+adb reboot || true
+echo "Waiting for Android device to finish booting..."
+adb wait-for-device
+while [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" != "1" ]; do
+    sleep 3
+done
+echo "Emulator is online and fully booted. Unlocking device..."
+adb shell input keyevent 82 || true
+adb shell wm dismiss-keyguard || true
+sleep 3
+
+# Disable system animations for stable UI testing after reboot
+adb shell settings put global window_animation_scale 0
+adb shell settings put global transition_animation_scale 0
+adb shell settings put global animator_duration_scale 0
+
+echo "Running M19AfterRebootTest post-reboot verification..."
+./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=cit.edu.primera.M19AfterRebootTest || echo "M19AfterRebootTest completed with warnings/failures."
 
 # 6. Pull screenshots and JUnit XML results
 echo "[5/6] Pulling screenshots and collecting reports..."
