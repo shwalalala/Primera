@@ -27,6 +27,7 @@ data class DailyCheckinUiState(
     val selectedMedicines: Set<String> = emptySet(),
     val note: String = "",
     val weightKg: String = "",
+    val weightError: String? = null,
     val lastWeightUpdateDate: String? = null,
     val shouldShowWeightUpdateAlert: Boolean = false,
     val isSaving: Boolean = false,
