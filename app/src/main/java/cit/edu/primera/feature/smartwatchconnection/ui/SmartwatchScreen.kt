@@ -253,21 +253,26 @@ private fun ConnectDeviceContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top
             ) {
+                val isFailureOrError = uiState.message.contains("Error", ignoreCase = true) || 
+                             uiState.message.contains("not available", ignoreCase = true) ||
+                             uiState.message.contains("not support", ignoreCase = true) ||
+                             uiState.message.contains("failed", ignoreCase = true) ||
+                             uiState.message.contains("not installed", ignoreCase = true) ||
+                             uiState.message.contains("slow", ignoreCase = true)
+
                 if (uiState.message.isNotBlank()) {
-                    val isError = uiState.message.contains("Error", ignoreCase = true) || 
-                                 uiState.message.contains("not available", ignoreCase = true) ||
-                            uiState.message.contains("not support", ignoreCase = true) ||
-                            uiState.message.contains("failed", ignoreCase = true)
                     Text(
                         text = uiState.message,
-                        color = if (isError) ErrorRed else TextPrimary,
+                        color = if (isFailureOrError) ErrorRed else TextPrimary,
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(bottom = 24.dp).testTag("smartwatch_status_message")
+                        modifier = Modifier
+                            .testTag("smartwatch_status_message")
+                            .padding(bottom = 24.dp)
                     )
                 }
 
-                if (uiState.hasPermissions) {
+                if (uiState.hasPermissions && !isFailureOrError) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
