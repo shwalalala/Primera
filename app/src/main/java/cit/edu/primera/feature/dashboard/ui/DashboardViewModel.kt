@@ -450,9 +450,21 @@ class DashboardViewModel(
             .mapNotNull { it.averageHeartRate }
             .average()
 
+        val latestHealthRecord = healthRecords.firstOrNull()
+        val effectiveHr = if (data.heartRateBpm > 0) data.heartRateBpm else (latestHealthRecord?.currentHeartRate ?: latestHealthRecord?.averageHeartRate)?.toInt() ?: 0
+        val effectiveSteps = if (data.steps > 0) data.steps else latestHealthRecord?.steps?.toInt() ?: 0
+        val effectiveSleepTotal = if (data.sleepHours > 0 || data.sleepMinutes > 0) {
+            data.sleepHours * 60 + data.sleepMinutes
+        } else {
+            latestHealthRecord?.sleepMinutes?.toInt() ?: 0
+        }
+        val effectiveSleepHours = effectiveSleepTotal / 60
+        val effectiveSleepMinutes = effectiveSleepTotal % 60
+        val effectiveSpO2 = data.spO2 ?: latestHealthRecord?.spO2?.toInt()
+
         val hrVsLastWeek =
-            if (!avgHrLastWeek.isNaN() && data.heartRateBpm > 0) {
-                (data.heartRateBpm - avgHrLastWeek).toInt()
+            if (!avgHrLastWeek.isNaN() && effectiveHr > 0) {
+                (effectiveHr - avgHrLastWeek).toInt()
             } else {
                 0
             }
@@ -467,18 +479,18 @@ class DashboardViewModel(
             babySize = DashboardBusinessLogic.getBabySize(week),
             babyEmoji = DashboardBusinessLogic.getBabyEmoji(week),
             babyIllustration = DashboardBusinessLogic.getBabyIllustration(week),
-            heartRateBpm = data.heartRateBpm,
+            heartRateBpm = effectiveHr,
             heartRateTrendingUp = hrVsLastWeek > 0,
             heartRateVsLastWeek = hrVsLastWeek,
-            steps = data.steps,
+            steps = effectiveSteps,
             stepsGoal = data.stepsGoal,
-            sleepHours = data.sleepHours,
-            sleepMinutes = data.sleepMinutes,
+            sleepHours = effectiveSleepHours,
+            sleepMinutes = effectiveSleepMinutes,
             sleepQuality = DashboardBusinessLogic.getSleepQuality(
-                data.sleepHours,
-                data.sleepMinutes
+                effectiveSleepHours,
+                effectiveSleepMinutes
             ),
-            spO2 = data.spO2,
+            spO2 = effectiveSpO2,
             isWatchSynced = isWatchSynced,
             isGestationalAgeTentative = isTentative,
             inaccuracyWarning = warning,
@@ -845,9 +857,10 @@ class DashboardViewModel(
                     val healthData =
                         healthConnectManager.readTodaySmartwatchHealth()
 
+                    val effectiveHeartRate = (healthData.currentHeartRate ?: healthData.averageHeartRate ?: 0L).coerceAtLeast(0L)
                     repository.updateHealthData(
                         steps = healthData.steps,
-                        heartRate = healthData.currentHeartRate ?: 0L,
+                        heartRate = effectiveHeartRate,
                         sleepHours = healthData.sleepMinutes / 60,
                         sleepMinutes = healthData.sleepMinutes % 60,
                         spO2 = healthData.spO2?.toLong()

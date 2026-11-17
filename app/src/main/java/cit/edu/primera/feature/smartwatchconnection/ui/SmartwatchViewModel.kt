@@ -77,6 +77,7 @@ class SmartwatchViewModel(
                             bpmHistory = bpmHistory,
                             sleepHistory = sleepHistory,
                             historyLabels = labels,
+                            trendDateRange = formatCurrentWeekRange(sortedDates),
                             hrTrendText = hrTrend.first,
                             hrTrendColor = hrTrend.second,
                             sleepTrendText = sleepTrend.first,
@@ -226,9 +227,10 @@ class SmartwatchViewModel(
                 }
 
                 // Update main dashboard data fields as well
+                val effectiveHeartRate = (smartwatchHealth.currentHeartRate ?: smartwatchHealth.averageHeartRate ?: 0L).coerceAtLeast(0L)
                 dashboardRepository.updateHealthData(
                     steps = smartwatchHealth.steps,
-                    heartRate = smartwatchHealth.currentHeartRate ?: 0L,
+                    heartRate = effectiveHeartRate,
                     sleepHours = smartwatchHealth.sleepMinutes / 60,
                     sleepMinutes = smartwatchHealth.sleepMinutes % 60,
                     spO2 = smartwatchHealth.spO2?.toLong()

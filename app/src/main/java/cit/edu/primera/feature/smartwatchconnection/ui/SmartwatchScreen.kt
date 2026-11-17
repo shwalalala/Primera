@@ -61,7 +61,48 @@ import cit.edu.primera.ui.components.PrimeraGradientButton
 import cit.edu.primera.ui.components.PrimeraOutlinedButton
 import cit.edu.primera.ui.components.SimpleBarChart
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
+import java.util.Locale
+
+fun formatCurrentWeekRange(dates: List<String> = emptyList()): String {
+    val locale = Locale.US
+    val monthDayFormat = SimpleDateFormat("MMMM d", locale)
+    val dayOnlyFormat = SimpleDateFormat("d", locale)
+    val yearFormat = SimpleDateFormat("yyyy", locale)
+
+    if (dates.size >= 2) {
+        try {
+            val sdf = SimpleDateFormat("yyyy-MM-dd", locale)
+            val start = sdf.parse(dates.first())
+            val end = sdf.parse(dates.last())
+            if (start != null && end != null) {
+                val startCal = Calendar.getInstance().apply { time = start }
+                val endCal = Calendar.getInstance().apply { time = end }
+                return if (startCal.get(Calendar.MONTH) == endCal.get(Calendar.MONTH) &&
+                    startCal.get(Calendar.YEAR) == endCal.get(Calendar.YEAR)
+                ) {
+                    "${monthDayFormat.format(start)} - ${dayOnlyFormat.format(end)}, ${yearFormat.format(end)}"
+                } else {
+                    "${monthDayFormat.format(start)} - ${monthDayFormat.format(end)}, ${yearFormat.format(end)}"
+                }
+            }
+        } catch (_: Exception) {}
+    }
+
+    val endCal = Calendar.getInstance()
+    val startCal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -6) }
+    val start = startCal.time
+    val end = endCal.time
+
+    return if (startCal.get(Calendar.MONTH) == endCal.get(Calendar.MONTH) &&
+        startCal.get(Calendar.YEAR) == endCal.get(Calendar.YEAR)
+    ) {
+        "${monthDayFormat.format(start)} - ${dayOnlyFormat.format(end)}, ${yearFormat.format(end)}"
+    } else {
+        "${monthDayFormat.format(start)} - ${monthDayFormat.format(end)}, ${yearFormat.format(end)}"
+    }
+}
 
 @Composable
 fun SmartwatchScreen(
@@ -396,55 +437,74 @@ private fun HealthDataContent(
 
         // Stats Grid
         uiState.smartwatchHealth?.let { health ->
+            val effectiveHr = (health.currentHeartRate ?: health.averageHeartRate)?.takeIf { it > 0 }?.toString() ?: "--"
+            val effectiveSteps = if (health.steps > 0) "%,d".format(health.steps) else "--"
+            val effectiveSleep = if (health.sleepMinutes > 0) "${health.sleepMinutes / 60}h ${health.sleepMinutes % 60}m" else "--"
+            val effectiveSpO2 = health.spO2?.takeIf { it > 0 }?.toInt()?.toString() ?: "--"
+
             Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     HealthStatCard(
                         title = "Heart Rate",
-                        value = health.currentHeartRate?.toString() ?: "--",
+                        value = effectiveHr,
                         unit = "bpm",
                         icon = painterResource(R.drawable.heart),
                         iconBgColor = HeartRateBg,
                         trendText = uiState.hrTrendText,
                         trendColor = Color(uiState.hrTrendColor),
-                        modifier = Modifier.weight(1f).testTag("health_data_card_heart_rate")
+                        modifier = Modifier
+                            .testTag("heart_rate_card")
+                            .testTag("health_data_card_heart_rate")
+                            .weight(1f)
                     )
                     HealthStatCard(
                         title = "Steps",
-                        value = "%,d".format(health.steps),
+                        value = effectiveSteps,
                         unit = "steps",
                         icon = painterResource(R.drawable.steps),
                         iconBgColor = StepsBg,
                         trendText = uiState.stepsTrendText,
-                        modifier = Modifier.weight(1f).testTag("health_data_card_steps")
+                        modifier = Modifier
+                            .testTag("steps_card")
+                            .testTag("health_data_card_steps")
+                            .weight(1f)
                     )
                 }
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     HealthStatCard(
                         title = "Sleep",
-                        value = "${health.sleepMinutes / 60}h ${health.sleepMinutes % 60}m",
+                        value = effectiveSleep,
                         unit = "",
                         icon = painterResource(R.drawable.sleep),
                         iconBgColor = SleepBg,
                         trendText = uiState.sleepTrendText,
                         trendColor = Color(uiState.sleepTrendColor),
-                        modifier = Modifier.weight(1f).testTag("health_data_card_sleep")
+                        modifier = Modifier
+                            .testTag("sleep_card")
+                            .testTag("health_data_card_sleep")
+                            .weight(1f)
                     )
                     HealthStatCard(
                         title = "SpO₂",
-                        value = health.spO2?.toInt()?.toString() ?: "--",
+                        value = effectiveSpO2,
                         unit = "%",
                         icon = painterResource(R.drawable.sp02),
                         iconBgColor = Color(0xFFFFEBEE),
                         trendText = uiState.spO2TrendText,
                         trendColor = Color(uiState.spO2TrendColor),
-                        modifier = Modifier.weight(1f).testTag("health_data_card_spo2")
+                        modifier = Modifier
+                            .testTag("spo2_card")
+                            .testTag("health_data_card_spo2")
+                            .weight(1f)
                     )
                 }
             }
         }
 
         Spacer(Modifier.height(32.dp))
+
+        val currentWeekRange = uiState.trendDateRange.ifBlank { formatCurrentWeekRange() }
 
         // Trends
         Column(
@@ -464,9 +524,10 @@ private fun HealthDataContent(
 
             ChartContainer(
                 title = { Text("Bpm", fontWeight = FontWeight.SemiBold, fontSize = 14.sp) },
-                dateRange = "March 10 - March 16, 2024",
+                dateRange = currentWeekRange,
                 onPrevious = {},
-                onNext = {}
+                onNext = {},
+                modifier = Modifier.testTag("bpm_chart_container")
             ) {
                 SimpleBarChart(
                     data = uiState.bpmHistory.ifEmpty { listOf(0f) },
@@ -480,9 +541,10 @@ private fun HealthDataContent(
 
             ChartContainer(
                 title = { Text("Sleep", fontWeight = FontWeight.SemiBold, fontSize = 14.sp) },
-                dateRange = "March 10 - March 16, 2024",
+                dateRange = currentWeekRange,
                 onPrevious = {},
-                onNext = {}
+                onNext = {},
+                modifier = Modifier.testTag("sleep_chart_container")
             ) {
                 SimpleBarChart(
                     data = uiState.sleepHistory.ifEmpty { listOf(0f) },

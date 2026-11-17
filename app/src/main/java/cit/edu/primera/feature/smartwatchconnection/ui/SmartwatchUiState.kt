@@ -21,5 +21,6 @@ data class SmartwatchUiState(
     val spO2TrendText: String = "",
     val spO2TrendColor: Long = 0xFF757575,
     val showManualEntryDialog: Boolean = false,
-    val manualEntryError: String? = null
+    val manualEntryError: String? = null,
+    val trendDateRange: String = ""
 )
