@@ -235,6 +235,13 @@ fun DashboardContent(
             }
         }
 
+        Spacer(Modifier.height(16.dp))
+        RecentHealthLogsSection(
+            logs = state.recentLogs,
+            onViewAll = {},
+            onAdd = onInputManually,
+            onLogClick = {}
+        )
         Spacer(Modifier.height(24.dp))
         cit.edu.primera.ui.components.MonitoringDisclaimerFooter()
         Spacer(Modifier.height(8.dp))

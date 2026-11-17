@@ -56,9 +56,11 @@ class DashboardDataSource(
                                     val rawPositiveTestDate =
                                         CryptoManager.decryptDate(snapshot.get("positiveTestDate"))
 
+                                    val hasValidScan =
+                                        rawScanDate != null && (rawScanWeeks != null || rawScanDays != null)
                                     val resolvedDueDate =
                                         cit.edu.primera.core.util.PregnancyCalculator.calculateEdd(
-                                            eddDate = rawEdd,
+                                            eddDate = if (hasValidScan || rawLmp != null) null else rawEdd,
                                             scanDate = rawScanDate,
                                             scanWeeks = rawScanWeeks,
                                             scanDays = rawScanDays,

@@ -431,9 +431,11 @@ class ProfileViewModel(
                 com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.email
             val emailToSave = currentUiState.email.ifBlank { currentUserEmail ?: "" }
 
+            val hasValidScan = currentUiState.hasHadUltrasound == true && currentUiState.scanDate != null &&
+                (currentUiState.scanWeeks != null || currentUiState.scanDays != null)
             val resolvedEdd = cit.edu.primera.core.util.PregnancyCalculator.calculateEdd(
-                eddDate = currentUiState.eddDate,
-                scanDate = currentUiState.scanDate,
+                eddDate = if (hasValidScan || currentUiState.lmpDate != null) null else currentUiState.eddDate,
+                scanDate = if (currentUiState.hasHadUltrasound == true) currentUiState.scanDate else null,
                 scanWeeks = currentUiState.scanWeeks,
                 scanDays = currentUiState.scanDays,
                 lmpDate = currentUiState.lmpDate,

@@ -5,9 +5,11 @@ import android.content.Intent
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -165,8 +167,12 @@ class M03ProfileTest {
         ScreenshotHelper.step("03", "03", "07", device) {
             // Expand Pregnancy Details section
             try {
-                composeTestRule.onNodeWithText("Pregnancy Details").performClick()
-            } catch (e: Throwable) {}
+                composeTestRule.onNodeWithText("Pregnancy Details").performScrollTo().performClick()
+            } catch (e: Throwable) {
+                try {
+                    composeTestRule.onNodeWithText("Pregnancy Details").performClick()
+                } catch (_: Throwable) {}
+            }
             composeTestRule.waitForIdle()
 
             // The defect manifests as EDD "Aug 20, 2027" and "1 Weeks 0 Days"
@@ -175,7 +181,14 @@ class M03ProfileTest {
             composeTestRule.onNodeWithText("1 Weeks 0 Days", substring = true).assertDoesNotExist()
             composeTestRule.onNodeWithText("1w 0d", substring = true).assertDoesNotExist()
 
+            try {
+                composeTestRule.onNodeWithText("May 28, 2027", substring = true).performScrollTo()
+            } catch (t: Throwable) {}
             composeTestRule.onNodeWithText("May 28, 2027", substring = true).assertIsDisplayed()
+
+            try {
+                composeTestRule.onNodeWithText("12 Weeks", substring = true).performScrollTo()
+            } catch (t: Throwable) {}
             composeTestRule.onNodeWithText("12 Weeks", substring = true).assertIsDisplayed()
         }
 
@@ -183,7 +196,7 @@ class M03ProfileTest {
         ScreenshotHelper.step("03", "04", device) {
             navigateToProfile()
             composeTestRule.waitForIdle()
-            composeTestRule.onNodeWithText("My Profile", substring = true).assertIsDisplayed()
+            composeTestRule.onAllNodesWithText("My Profile", substring = true).onFirst().assertIsDisplayed()
         }
 
         // Step 5: Edited profile saved and persisted
@@ -195,12 +208,19 @@ class M03ProfileTest {
 
             try {
                 composeTestRule.onNodeWithTag("profile_edit_button").performClick()
+            } catch (e: Throwable) {}
+            composeTestRule.waitForIdle()
+
+            try {
                 composeTestRule.onNodeWithTag("profile_field_pre_pregnancy_weight_kg").performTextClearance()
                 composeTestRule.onNodeWithTag("profile_field_pre_pregnancy_weight_kg").performTextInput("60")
                 composeTestRule.onNodeWithTag("profile_save_button").performClick()
             } catch (e: Throwable) {}
             composeTestRule.waitForIdle()
 
+            try {
+                composeTestRule.onNodeWithText("60", substring = true).performScrollTo()
+            } catch (t: Throwable) {}
             composeTestRule.onNodeWithText("60", substring = true).assertIsDisplayed()
         }
     }
