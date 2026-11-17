@@ -1,5 +1,6 @@
 package cit.edu.primera.common
 
+import android.util.Log
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -17,12 +18,36 @@ object LoginHelper {
         email: String = SeedData.TEST_USER_EMAIL,
         pass: String = SeedData.TEST_USER_PASS
     ) {
+        val auth = FirebaseAuth.getInstance()
+        if (auth.currentUser != null) {
+            Log.d("LoginHelper", "User already signed in: ${auth.currentUser?.uid}")
+            return
+        }
+
         try {
-            FirebaseAuth.getInstance().signInWithEmailAndPassword(email, pass).await()
-        } catch (_: Exception) {
-            try {
-                FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, pass).await()
-            } catch (_: Exception) {}
+            auth.signInWithEmailAndPassword(email, pass).await()
+            Log.d("LoginHelper", "Signed in with primary test account: ${auth.currentUser?.uid}")
+            return
+        } catch (e: Exception) {
+            Log.w("LoginHelper", "signInWithEmailAndPassword failed: ${e.message}")
+        }
+
+        // If primary sign-in failed (e.g. rate-limited), try creating a unique test user
+        val fallbackEmail = "primera.qa.${System.currentTimeMillis()}@example.com"
+        try {
+            auth.createUserWithEmailAndPassword(fallbackEmail, pass).await()
+            Log.d("LoginHelper", "Created fresh test account: ${auth.currentUser?.uid} ($fallbackEmail)")
+            return
+        } catch (e2: Exception) {
+            Log.w("LoginHelper", "createUserWithEmailAndPassword fallback failed: ${e2.message}")
+        }
+
+        // Try anonymous sign-in as last resort
+        try {
+            auth.signInAnonymously().await()
+            Log.d("LoginHelper", "Signed in anonymously: ${auth.currentUser?.uid}")
+        } catch (e3: Exception) {
+            Log.e("LoginHelper", "All authentication methods failed", e3)
         }
     }
 
@@ -71,7 +96,6 @@ object LoginHelper {
     }
 
     fun driveGoogleAccountPicker(device: UiDevice, timeoutMs: Long = 5000): Boolean {
-        // Look for Google account picker dialog or One Tap UI
         val accountChooser = device.wait(
             Until.findObject(By.textContains("@")),
             timeoutMs

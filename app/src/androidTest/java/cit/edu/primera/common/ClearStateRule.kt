@@ -15,14 +15,18 @@ import java.io.File
  * Supports granular state resets, pm clear, and fresh ActivityScenario launches.
  */
 class ClearStateRule(
-    private val clearAuth: Boolean = true,
-    private val clearPrefs: Boolean = true,
+    private val clearAuth: Boolean = false,
+    private val clearPrefs: Boolean = false,
     private val clearDatabaseCache: Boolean = false,
     private val usePmClear: Boolean = false
 ) : TestWatcher() {
 
     override fun starting(description: Description?) {
         super.starting(description)
+        try {
+            val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+            device.executeShellCommand("pm grant cit.edu.primera android.permission.POST_NOTIFICATIONS")
+        } catch (_: Exception) {}
         resetState()
     }
 
@@ -54,10 +58,13 @@ class ClearStateRule(
                 if (sharedPrefsDir.exists() && sharedPrefsDir.isDirectory) {
                     sharedPrefsDir.listFiles()?.forEach { file ->
                         val prefName = file.name.removeSuffix(".xml")
-                        context.getSharedPreferences(prefName, Context.MODE_PRIVATE)
-                            .edit()
-                            .clear()
-                            .commit()
+                        // Preserve Firebase Auth prefs if clearAuth is false
+                        if (clearAuth || !prefName.startsWith("com.google.firebase.auth")) {
+                            context.getSharedPreferences(prefName, Context.MODE_PRIVATE)
+                                .edit()
+                                .clear()
+                                .commit()
+                        }
                     }
                 }
             } catch (_: Exception) {}

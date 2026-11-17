@@ -140,10 +140,11 @@ object SeedData {
     }
 
     suspend fun seedUserProfile(
-        userId: String = FirebaseAuth.getInstance().currentUser?.uid ?: "test_uid",
+        userId: String? = null,
         username: String = TEST_USER_NAME,
         lmpDaysAgo: Int = 0 // 0 days ago gives Week 1, Day 0
     ) {
+        val uid = userId ?: FirebaseAuth.getInstance().currentUser?.uid ?: return
         val firestore = FirebaseFirestore.getInstance()
         val cal = Calendar.getInstance().apply {
             add(Calendar.DAY_OF_YEAR, -lmpDaysAgo)
@@ -159,10 +160,10 @@ object SeedData {
         }.time
 
         val userDoc = mapOf(
+            "role" to "patient",
             "username" to username,
-            "email" to TEST_USER_EMAIL,
+            "email" to (FirebaseAuth.getInstance().currentUser?.email ?: TEST_USER_EMAIL),
             "lmpDate" to CryptoManager.encryptDate(lmpDate),
-            "dueDate" to CryptoManager.encryptDate(dueDate),
             "eddDate" to CryptoManager.encryptDate(dueDate),
             "steps" to 8420L,
             "stepsGoal" to 8000L,
@@ -173,15 +174,86 @@ object SeedData {
             "weightKg" to CryptoManager.encryptLong(60L),
             "heightCm" to CryptoManager.encryptLong(165L),
             "isCycleRegular" to CryptoManager.encryptBoolean(true),
-            "hasHadUltrasound" to CryptoManager.encryptBoolean(true)
+            "hasHadUltrasound" to CryptoManager.encryptBoolean(true),
+            "onboardingCompleted" to true
         )
 
-        firestore.collection("users").document(userId)
-            .set(userDoc, com.google.firebase.firestore.SetOptions.merge())
-            .await()
+        try {
+            cit.edu.primera.core.data.PreferenceRepositoryImpl(
+                InstrumentationRegistry.getInstrumentation().targetContext
+            ).apply {
+                setHasEverLoggedIn(true)
+                setOnboardingCompleted(uid)
+            }
+        } catch (_: Exception) {}
+
+        try {
+            firestore.collection("users").document(uid)
+                .set(userDoc, com.google.firebase.firestore.SetOptions.merge())
+                .await()
+        } catch (e: Exception) {
+            android.util.Log.e("SeedData", "Failed to seed user profile", e)
+        }
     }
 
-    suspend fun seedCheckinHistory(userId: String = FirebaseAuth.getInstance().currentUser?.uid ?: "test_uid") {
+    /**
+     * Seeds user profile reproducing Defect D-07 where LMP is Aug 21, 2026,
+     * but EDD is set to Aug 20, 2027 (and gestational age shows "1 week, 0 days").
+     */
+    suspend fun seedUserProfileWithLmpAug21(
+        userId: String? = null,
+        username: String = TEST_USER_NAME
+    ) {
+        val uid = userId ?: FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val firestore = FirebaseFirestore.getInstance()
+        val calLmp = Calendar.getInstance().apply {
+            set(2026, Calendar.AUGUST, 21, 0, 0, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val calBuggyDue = Calendar.getInstance().apply {
+            set(2027, Calendar.AUGUST, 20, 0, 0, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        val userDoc = mapOf(
+            "role" to "patient",
+            "username" to username,
+            "email" to (FirebaseAuth.getInstance().currentUser?.email ?: TEST_USER_EMAIL),
+            "lmpDate" to CryptoManager.encryptDate(calLmp.time),
+            "eddDate" to CryptoManager.encryptDate(calBuggyDue.time),
+            "steps" to 8420L,
+            "stepsGoal" to 8000L,
+            "heartRateBpm" to 78L,
+            "sleepHours" to 7L,
+            "sleepMinutes" to 30L,
+            "spO2" to 98L,
+            "weightKg" to CryptoManager.encryptLong(60L),
+            "heightCm" to CryptoManager.encryptLong(165L),
+            "isCycleRegular" to CryptoManager.encryptBoolean(true),
+            "hasHadUltrasound" to CryptoManager.encryptBoolean(true),
+            "onboardingCompleted" to true
+        )
+
+        try {
+            cit.edu.primera.core.data.PreferenceRepositoryImpl(
+                InstrumentationRegistry.getInstrumentation().targetContext
+            ).apply {
+                setHasEverLoggedIn(true)
+                setOnboardingCompleted(uid)
+            }
+        } catch (_: Exception) {}
+
+        try {
+            firestore.collection("users").document(uid)
+                .set(userDoc, com.google.firebase.firestore.SetOptions.merge())
+                .await()
+        } catch (e: Exception) {
+            android.util.Log.e("SeedData", "Failed to seed user profile with LMP Aug 21", e)
+        }
+    }
+
+    suspend fun seedCheckinHistory(userId: String? = null) {
+        val uid = userId ?: FirebaseAuth.getInstance().currentUser?.uid ?: return
         val firestore = FirebaseFirestore.getInstance()
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
         val cal = Calendar.getInstance()
@@ -201,7 +273,7 @@ object SeedData {
             }
             val dateStr = sdf.format(logCal.time)
             val logDoc = mapOf(
-                "userId" to userId,
+                "userId" to uid,
                 "type" to "Check-in",
                 "category" to category,
                 "message" to notes,
@@ -209,7 +281,11 @@ object SeedData {
                 "timestamp" to logCal.time,
                 "checkinDate" to dateStr
             )
-            firestore.collection("checkins").add(logDoc).await()
+            try {
+                firestore.collection("checkins").add(logDoc).await()
+            } catch (e: Exception) {
+                android.util.Log.e("SeedData", "Failed to seed checkin", e)
+            }
         }
     }
 }

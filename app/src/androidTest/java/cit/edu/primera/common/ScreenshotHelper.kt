@@ -100,6 +100,39 @@ object ScreenshotHelper {
     inline fun step(
         module: String,
         step: String,
+        rtNum: String?,
+        device: UiDevice,
+        assertion: () -> Unit
+    ) {
+        val prefix = "M${module}_TC${step}"
+        val rtPrefix = rtNum?.let { "RT${if (it.length < 2) it.padStart(2, '0') else it}" }
+        try {
+            assertion()
+            captureDevice("${prefix}_PASS", device)
+            if (rtPrefix != null) {
+                captureDevice("${rtPrefix}_PASS", device)
+            }
+        } catch (t: Throwable) {
+            captureDevice("${prefix}_FAIL", device)
+            if (rtPrefix != null) {
+                captureDevice("${rtPrefix}_FAIL", device)
+            }
+            throw t
+        }
+    }
+
+    inline fun step(
+        module: String,
+        step: String,
+        rtNum: String? = null,
+        assertion: () -> Unit
+    ) {
+        step(module, step, rtNum, UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()), assertion)
+    }
+
+    inline fun step(
+        module: String,
+        step: String,
         assertion: () -> Unit
     ) {
         step(module, step, UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()), assertion)
