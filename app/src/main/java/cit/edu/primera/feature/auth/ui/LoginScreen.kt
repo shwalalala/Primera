@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -117,6 +118,7 @@ fun LoginScreen(
                 value = state.email,
                 onValueChange = onEmailChange,
                 placeholder = "Email",
+                testTag = "login_email_input",
                 keyboardType = KeyboardType.Email,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                 isError = state.emailError != null,
@@ -129,6 +131,7 @@ fun LoginScreen(
                 value = state.password,
                 onValueChange = onPasswordChange,
                 placeholder = "Password",
+                testTag = "login_password_input",
                 isPassword = true,
                 keyboardType = KeyboardType.Password,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
@@ -147,14 +150,17 @@ fun LoginScreen(
                 PrimeraCheckbox(
                     checked = state.rememberMe,
                     onCheckedChange = onRememberMeToggle,
-                    label = "Remember me"
+                    label = "Remember me",
+                    modifier = Modifier.testTag("login_remember_me_checkbox")
                 )
                 Text(
                     text = "Forgot password?",
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp),
                     color = PrimeraViolet,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.clickableNoRipple { onForgotPasswordClicked() }
+                    modifier = Modifier
+                        .clickableNoRipple { onForgotPasswordClicked() }
+                        .testTag("login_forgot_password_button")
                 )
             }
 
@@ -163,7 +169,8 @@ fun LoginScreen(
             PrimeraGradientButton(
                 text = if (state.cooldownSeconds > 0) "Wait (${state.cooldownSeconds}s)" else "Login",
                 onClick = onLoginClicked,
-                isLoading = state.isLoading
+                isLoading = state.isLoading,
+                modifier = Modifier.testTag("login_submit_button")
             )
 
             if (state.errorMessage != null) {
@@ -175,7 +182,8 @@ fun LoginScreen(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     ),
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.testTag("login_error_message")
                 )
             }
 
@@ -208,7 +216,9 @@ fun LoginScreen(
                         fontWeight = FontWeight.Bold
                     ),
                     color = PrimeraViolet,
-                    modifier = Modifier.clickable { onNavigateToRegister() }
+                    modifier = Modifier
+                        .clickable { onNavigateToRegister() }
+                        .testTag("login_to_signup_button")
                 )
             }
         }

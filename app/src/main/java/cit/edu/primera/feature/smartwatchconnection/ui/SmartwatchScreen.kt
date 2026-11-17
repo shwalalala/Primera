@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -221,7 +222,7 @@ private fun ConnectDeviceContent(
                         color = if (isError) ErrorRed else TextPrimary,
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(bottom = 24.dp)
+                        modifier = Modifier.padding(bottom = 24.dp).testTag("smartwatch_status_message")
                     )
                 }
 
@@ -254,7 +255,7 @@ private fun ConnectDeviceContent(
                         PrimeraGradientButton(
                             text = "Open Health Connect",
                             onClick = onOpenHealthConnect,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth().testTag("smartwatch_open_health_connect_button")
                         )
                         Spacer(Modifier.height(16.dp))
                     }
@@ -267,7 +268,7 @@ private fun ConnectDeviceContent(
                     PrimeraGradientButton(
                         text = "Review and accept permissions",
                         onClick = onRequestPermissions,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag("smartwatch_permissions_button")
                     )
                 }
 
@@ -278,7 +279,7 @@ private fun ConnectDeviceContent(
                     onClick = onConnectAndSync,
                     isLoading = uiState.isLoading,
                     enabled = uiState.isOnline && !uiState.isLoading,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().testTag("smartwatch_connect_sync_button")
                 )
 
                 Spacer(Modifier.height(28.dp))
@@ -379,7 +380,8 @@ private fun HealthDataContent(
                     "Health Data",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = TextPrimary,
+                    modifier = Modifier.testTag("health_data_title")
                 )
                 Text(
                     lastSyncedStr,
@@ -404,7 +406,7 @@ private fun HealthDataContent(
                         iconBgColor = HeartRateBg,
                         trendText = uiState.hrTrendText,
                         trendColor = Color(uiState.hrTrendColor),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).testTag("health_data_card_heart_rate")
                     )
                     HealthStatCard(
                         title = "Steps",
@@ -413,7 +415,7 @@ private fun HealthDataContent(
                         icon = painterResource(R.drawable.steps),
                         iconBgColor = StepsBg,
                         trendText = uiState.stepsTrendText,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).testTag("health_data_card_steps")
                     )
                 }
                 Spacer(Modifier.height(12.dp))
@@ -426,7 +428,7 @@ private fun HealthDataContent(
                         iconBgColor = SleepBg,
                         trendText = uiState.sleepTrendText,
                         trendColor = Color(uiState.sleepTrendColor),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).testTag("health_data_card_sleep")
                     )
                     HealthStatCard(
                         title = "SpO₂",
@@ -436,7 +438,7 @@ private fun HealthDataContent(
                         iconBgColor = Color(0xFFFFEBEE),
                         trendText = uiState.spO2TrendText,
                         trendColor = Color(uiState.spO2TrendColor),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).testTag("health_data_card_spo2")
                     )
                 }
             }
@@ -507,7 +509,7 @@ private fun HealthDataContent(
                 onClick = onSyncNow,
                 isLoading = uiState.isLoading,
                 enabled = uiState.isOnline && !uiState.isLoading,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().testTag("health_data_sync_button")
             )
             
             Spacer(Modifier.height(80.dp)) // Extra space for bottom nav

@@ -42,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -219,7 +220,8 @@ fun AddGoalDialog(
                             .menuAnchor(
                                 ExposedDropdownMenuAnchorType.PrimaryEditable,
                                 enabled = true
-                            ),
+                            )
+                            .testTag("goal_title_input"),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = PrimeraViolet,
                             unfocusedBorderColor = InputBorder,
@@ -389,7 +391,7 @@ fun AddGoalDialog(
                             maxLines = 1
                         )
                     },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag("goal_target_input"),
                     suffix = {
                         Text(
                             goalUnit,
@@ -572,7 +574,7 @@ fun AddGoalDialog(
                     PrimeraOutlinedButton(
                         text = "Cancel",
                         onClick = onDismiss,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).testTag("goal_cancel_button")
                     )
 
                     PrimeraGradientButton(
@@ -597,7 +599,7 @@ fun AddGoalDialog(
                                 )
                             }
                         },
-                        modifier = Modifier.weight(1.2f),
+                        modifier = Modifier.weight(1.2f).testTag("goal_submit_button"),
                         enabled = isValid
                     )
                 }

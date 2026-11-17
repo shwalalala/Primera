@@ -47,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -304,6 +305,7 @@ fun ReminderSettingCard(
                 Switch(
                     checked = isEnabled,
                     onCheckedChange = onToggle,
+                    modifier = Modifier.testTag("reminder_switch_${title.lowercase().replace(" ", "_").replace("-", "_")}"),
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Color.White,
                         checkedTrackColor = PrimeraLogoStart,
@@ -346,6 +348,7 @@ fun ReminderSettingCard(
 
                     OutlinedButton(
                         onClick = onEditTime,
+                        modifier = Modifier.testTag("reminder_time_button_${title.lowercase().replace(" ", "_").replace("-", "_")}"),
                         shape = RoundedCornerShape(10.dp)
                     ) {
                         Text("Change Time", fontSize = 12.sp, color = PrimeraLogoStart)

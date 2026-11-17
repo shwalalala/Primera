@@ -65,6 +65,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Devices
@@ -730,7 +731,9 @@ fun ProfileSectionCard(
                         onClick = {
                             if (isEditing) onSaveClick?.invoke() else onEditClick?.invoke()
                         },
-                        modifier = Modifier.padding(end = 4.dp)
+                        modifier = Modifier
+                            .padding(end = 4.dp)
+                            .testTag(if (isEditing) "profile_save_button" else "profile_edit_button")
                     ) {
                         Icon(
                             imageVector = if (isEditing) Icons.Default.Save else Icons.Default.Edit,
@@ -778,7 +781,8 @@ fun ProfileSectionCard(
                             TextButton(
                                 onClick = {
                                     if (isEditing) onSaveClick?.invoke() else onEditClick?.invoke()
-                                }
+                                },
+                                modifier = Modifier.testTag(if (isEditing) "profile_save_button_bottom" else "profile_edit_button_bottom")
                             ) {
                                 Icon(
                                     imageVector = if (isEditing) Icons.Default.Save else Icons.Default.Edit,
@@ -814,6 +818,7 @@ fun ProfileField(
     valueColor: Color = TextPrimary,
     trailingIcon: @Composable (() -> Unit)? = null
 ) {
+    val tagSuffix = label.lowercase().replace(" ", "_").replace("(", "").replace(")", "").replace("-", "_").replace("'", "")
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = label,
@@ -832,7 +837,9 @@ fun ProfileField(
                 OutlinedTextField(
                     value = value,
                     onValueChange = onValueChange,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("profile_field_$tagSuffix"),
                     placeholder = { Text(placeholder, fontSize = 14.sp, color = TextHint) },
                     textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = keyboardType),
@@ -851,7 +858,9 @@ fun ProfileField(
                     fontSize = 16.sp,
                     color = if (value.isBlank()) TextHint else valueColor,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("profile_text_$tagSuffix")
                 )
             }
             

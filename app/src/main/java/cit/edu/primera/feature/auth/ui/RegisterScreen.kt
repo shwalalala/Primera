@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -131,6 +132,7 @@ fun RegisterScreen(
                 value = state.username,
                 onValueChange = onUsernameChange,
                 placeholder = "Username",
+                testTag = "register_username_input",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
                 isError = state.usernameError != null,
                 errorMessage = state.usernameError
@@ -142,6 +144,7 @@ fun RegisterScreen(
                 value = state.email,
                 onValueChange = onEmailChange,
                 placeholder = "Email",
+                testTag = "register_email_input",
                 keyboardType = KeyboardType.Email,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                 isError = state.emailError != null,
@@ -154,6 +157,7 @@ fun RegisterScreen(
                 value = state.password,
                 onValueChange = onPasswordChange,
                 placeholder = "Password",
+                testTag = "register_password_input",
                 isPassword = true,
                 keyboardType = KeyboardType.Password,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
@@ -182,6 +186,7 @@ fun RegisterScreen(
                 value = state.confirmPassword,
                 onValueChange = onConfirmPasswordChange,
                 placeholder = "Confirm Password",
+                testTag = "register_confirm_password_input",
                 isPassword = true,
                 keyboardType = KeyboardType.Password,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
@@ -195,6 +200,7 @@ fun RegisterScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .testTag("register_terms_checkbox")
                     .toggleable(
                         value = state.agreedToTerms,
                         onValueChange = onAgreedToTermsToggle,
@@ -241,7 +247,8 @@ fun RegisterScreen(
             PrimeraGradientButton(
                 text = if (state.cooldownSeconds > 0) "Wait (${state.cooldownSeconds}s)" else "Sign Up",
                 onClick = onSignUpClicked,
-                isLoading = state.isLoading
+                isLoading = state.isLoading,
+                modifier = Modifier.testTag("register_submit_button")
             )
 
             if (state.errorMessage != null) {
@@ -253,7 +260,8 @@ fun RegisterScreen(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     ),
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.testTag("register_error_message")
                 )
             }
 
@@ -286,7 +294,9 @@ fun RegisterScreen(
                         fontWeight = FontWeight.Bold
                     ),
                     color = PrimeraViolet,
-                    modifier = Modifier.clickable { onNavigateToLogin() }
+                    modifier = Modifier
+                        .clickable { onNavigateToLogin() }
+                        .testTag("register_to_login_button")
                 )
             }
         }

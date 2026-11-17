@@ -47,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -272,6 +273,7 @@ fun PrimeraTextField(
     onValueChange: (String) -> Unit,
     placeholder: String,
     modifier: Modifier = Modifier,
+    testTag: String? = null,
     isPassword: Boolean = false,
     keyboardType: KeyboardType = KeyboardType.Text,
     keyboardOptions: KeyboardOptions = KeyboardOptions(keyboardType = keyboardType),
@@ -326,7 +328,9 @@ fun PrimeraTextField(
                 unfocusedTextColor = TextPrimary,
                 focusedTextColor = TextPrimary
             ),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (testTag != null) Modifier.testTag(testTag) else Modifier)
         )
         if (isError && errorMessage != null) {
             Text(
@@ -351,6 +355,7 @@ fun LabeledField(
     onValueChange: (String) -> Unit,
     placeholder: String,
     modifier: Modifier = Modifier,
+    testTag: String? = null,
     isPassword: Boolean = false,
     keyboardType: KeyboardType = KeyboardType.Text,
     keyboardOptions: KeyboardOptions = KeyboardOptions(keyboardType = keyboardType),
@@ -371,6 +376,7 @@ fun LabeledField(
             value = value,
             onValueChange = onValueChange,
             placeholder = placeholder,
+            testTag = testTag,
             isPassword = isPassword,
             keyboardType = keyboardType,
             keyboardOptions = keyboardOptions,
