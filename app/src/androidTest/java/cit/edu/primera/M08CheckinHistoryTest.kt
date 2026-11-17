@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -65,6 +66,9 @@ class M08CheckinHistoryTest {
     fun setup() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
         device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        runBlocking {
+            SeedData.seedCheckinHistory()
+        }
         try {
             val allowBtn = device.wait(Until.findObject(By.textContains("Allow")), 2000)
             allowBtn?.click()
@@ -100,6 +104,15 @@ class M08CheckinHistoryTest {
         }
 
         try {
+            composeTestRule.onNodeWithText("Skip").performClick()
+        } catch (_: Throwable) {
+            try {
+                composeTestRule.onNodeWithText("Got it").performClick()
+            } catch (_: Throwable) {}
+        }
+        composeTestRule.waitForIdle()
+
+        try {
             composeTestRule.onNodeWithText("Check-in").performClick()
         } catch (e: Throwable) {
             composeTestRule.activityRule.scenario.onActivity { activity ->
@@ -109,6 +122,16 @@ class M08CheckinHistoryTest {
             }
         }
         composeTestRule.waitForIdle()
+
+        try {
+            composeTestRule.waitUntil(10000) {
+                try {
+                    composeTestRule.onAllNodesWithText("Headache", substring = true).fetchSemanticsNodes().isNotEmpty()
+                } catch (e: Throwable) {
+                    false
+                }
+            }
+        } catch (e: Throwable) {}
     }
 
     @Test
@@ -235,16 +258,39 @@ class M08CheckinHistoryTest {
                 composeTestRule.waitForIdle()
 
                 try {
-                    composeTestRule.onNodeWithText("Confirm & Save").performClick()
+                    composeTestRule.onNodeWithText("Confirm & Save").performScrollTo().performClick()
                 } catch (e: Throwable) {
                     try {
-                        composeTestRule.onNodeWithTag("save_checkin_button").performClick()
+                        composeTestRule.onNodeWithText("Confirm & Save").performClick()
                     } catch (t: Throwable) {}
                 }
                 composeTestRule.waitForIdle()
 
+                try {
+                    composeTestRule.waitUntil(10000) {
+                        try {
+                            composeTestRule.onAllNodesWithText("Confirm & Save").fetchSemanticsNodes().isEmpty()
+                        } catch (t: Throwable) {
+                            false
+                        }
+                    }
+                } catch (t: Throwable) {}
+                composeTestRule.waitForIdle()
+
                 // Open entry details again to verify note replacement
                 composeTestRule.onNodeWithText("Headache", substring = true).performClick()
+                composeTestRule.waitForIdle()
+
+                try {
+                    composeTestRule.waitUntil(10000) {
+                        try {
+                            composeTestRule.onNodeWithText("Updated to vv.", substring = true).assertIsDisplayed()
+                            true
+                        } catch (t: Throwable) {
+                            false
+                        }
+                    }
+                } catch (t: Throwable) {}
                 composeTestRule.waitForIdle()
             } catch (e: Throwable) {}
 

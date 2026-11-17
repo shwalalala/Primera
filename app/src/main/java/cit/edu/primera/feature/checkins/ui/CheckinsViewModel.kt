@@ -737,27 +737,30 @@ class CheckinsViewModel(
             ?.removeSuffix(" mg/dL")
             ?.trim()
 
-        var note = description
+        val originalMessage = originalLog?.message?.trim()
+        val note = if (!originalMessage.isNullOrBlank() && originalMessage != originalLog.description?.trim()) {
+            originalMessage
+        } else {
+            var extracted = description
+            listOf(
+                "Symptoms:",
+                "Mood:",
+                "Medicine:",
+                "Weight:",
+                "Blood Sugar:"
+            ).forEach { label ->
+                val index = extracted.indexOf(label)
 
-        listOf(
-            "Symptoms:",
-            "Mood:",
-            "Medicine:",
-            "Weight:",
-            "Blood Sugar:"
-        ).forEach { label ->
-            val index = note.indexOf(label)
+                if (index != -1) {
+                    val end = extracted.indexOf(";", index).let {
+                        if (it == -1) extracted.length else it + 1
+                    }
 
-            if (index != -1) {
-                val end = note.indexOf(";", index).let {
-                    if (it == -1) note.length else it + 1
+                    extracted = extracted.removeRange(index, end).trim()
                 }
-
-                note = note.removeRange(index, end).trim()
             }
+            extracted.trimStart(';').trim()
         }
-
-        note = note.trimStart(';').trim()
 
         val restoredDate = normalizeCheckinDate(
             originalLog?.checkinDate,

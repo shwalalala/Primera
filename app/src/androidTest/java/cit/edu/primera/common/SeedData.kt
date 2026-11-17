@@ -255,6 +255,16 @@ object SeedData {
     suspend fun seedCheckinHistory(userId: String? = null) {
         val uid = userId ?: FirebaseAuth.getInstance().currentUser?.uid ?: return
         val firestore = FirebaseFirestore.getInstance()
+        try {
+            val existing = firestore.collection("checkins")
+                .whereEqualTo("userId", uid)
+                .get()
+                .await()
+            for (doc in existing.documents) {
+                firestore.collection("checkins").document(doc.id).delete().await()
+            }
+        } catch (_: Exception) {}
+
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
         val cal = Calendar.getInstance()
 
