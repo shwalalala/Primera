@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -99,6 +100,15 @@ class M10InsightsGoalsTest {
         }
 
         try {
+            composeTestRule.onNodeWithText("Skip").performClick()
+        } catch (_: Throwable) {
+            try {
+                composeTestRule.onNodeWithText("Got it").performClick()
+            } catch (_: Throwable) {}
+        }
+        composeTestRule.waitForIdle()
+
+        try {
             composeTestRule.onNodeWithText("Insight").performClick()
         } catch (e: Throwable) {
             composeTestRule.activityRule.scenario.onActivity { activity ->
@@ -138,7 +148,11 @@ class M10InsightsGoalsTest {
         // Step 6: Empty custom goal rejected (Evidence Gap: M10 empty custom goal)
         ScreenshotHelper.step("10", "06", device) {
             try {
-                composeTestRule.onNodeWithText("Add Goal").performClick()
+                try {
+                    composeTestRule.onNodeWithText("Add Goal").performScrollTo().performClick()
+                } catch (_: Throwable) {
+                    composeTestRule.onNodeWithText("Add Goal").performClick()
+                }
                 composeTestRule.waitForIdle()
 
                 composeTestRule.onNodeWithTag("goal_title_input").performTextClearance()
@@ -159,7 +173,11 @@ class M10InsightsGoalsTest {
         // Assert exact name stored without "text " prefix; empty custom goal rejected.
         ScreenshotHelper.step("10", "05", "06", device) {
             try {
-                composeTestRule.onNodeWithText("Add Goal").performClick()
+                try {
+                    composeTestRule.onNodeWithText("Add Goal").performScrollTo().performClick()
+                } catch (_: Throwable) {
+                    composeTestRule.onNodeWithText("Add Goal").performClick()
+                }
                 composeTestRule.waitForIdle()
 
                 composeTestRule.onNodeWithTag("goal_title_input").performTextClearance()
@@ -170,7 +188,9 @@ class M10InsightsGoalsTest {
 
                 composeTestRule.onNodeWithTag("goal_submit_button").performClick()
                 composeTestRule.waitForIdle()
-            } catch (e: Throwable) {}
+            } catch (e: Throwable) {
+                android.util.Log.e("M10Test", "Error in step 5", e)
+            }
 
             // Defect D-06: In the buggy app, the literal markdown prefix "text " is stored with the goal name!
             // Assert that the goal name does NOT contain "text ":

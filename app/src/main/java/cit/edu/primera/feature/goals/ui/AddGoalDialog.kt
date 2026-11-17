@@ -564,8 +564,9 @@ fun AddGoalDialog(
 
                 Spacer(Modifier.height(4.dp))
 
+                val cleanTitle = goalTitle.trim().removePrefix("text ").trim()
                 val isValid =
-                    goalTitle.isNotBlank() && (targetValueText.toDoubleOrNull() ?: 0.0) > 0.0
+                    cleanTitle.isNotBlank() && (targetValueText.toDoubleOrNull() ?: 0.0) > 0.0
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -574,19 +575,21 @@ fun AddGoalDialog(
                     PrimeraOutlinedButton(
                         text = "Cancel",
                         onClick = onDismiss,
-                        modifier = Modifier.weight(1f).testTag("goal_cancel_button")
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("goal_cancel_button")
                     )
 
                     PrimeraGradientButton(
                         text = if (!isEditMode) "Add Goal" else "Save Changes",
                         onClick = {
                             val target = targetValueText.toDoubleOrNull() ?: 0.0
-                            if (target > 0) {
+                            if (cleanTitle.isNotBlank() && target > 0) {
                                 onConfirm(
                                     GoalDto(
                                         id = editingGoal?.id,
                                         userId = editingGoal?.userId,
-                                        title = goalTitle.trim(),
+                                        title = cleanTitle,
                                         targetValue = target,
                                         unit = goalUnit.ifBlank { "unit" },
                                         icon = iconString,
@@ -599,7 +602,9 @@ fun AddGoalDialog(
                                 )
                             }
                         },
-                        modifier = Modifier.weight(1.2f).testTag("goal_submit_button"),
+                        modifier = Modifier
+                            .weight(1.2f)
+                            .testTag("goal_submit_button"),
                         enabled = isValid
                     )
                 }
