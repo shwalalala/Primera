@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
@@ -189,7 +190,10 @@ fun CheckinPreviewContent(
                 },
                 onClick = onConfirm,
                 enabled = !state.isSaving,
-                modifier = Modifier.padding(horizontal = 24.dp)
+                modifier = Modifier
+                    .padding(horizontal = 24.dp)
+                    .testTag("checkin_save_button")
+                    .testTag("save_checkin_button")
             )
         }
     }

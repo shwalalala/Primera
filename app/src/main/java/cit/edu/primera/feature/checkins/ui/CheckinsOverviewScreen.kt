@@ -62,6 +62,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -712,7 +713,8 @@ fun CheckinsOverviewContent(
                     end = 24.dp,
                     bottom = 24.dp
                 )
-                .size(56.dp),
+                .size(56.dp)
+                .testTag("history_fab_add_button"),
             shape = CircleShape,
             containerColor = PrimeraViolet,
             contentColor = Color.White
@@ -1432,7 +1434,7 @@ private fun SearchBar(
     OutlinedTextField(
         value = query,
         onValueChange = onQueryChange,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().testTag("history_search_input"),
         placeholder = {
             Text(
                 text = "Search in history",
@@ -1447,7 +1449,10 @@ private fun SearchBar(
             )
         },
         trailingIcon = {
-            IconButton(onClick = onFilterClick) {
+            IconButton(
+                onClick = onFilterClick,
+                modifier = Modifier.testTag("history_filter_button")
+            ) {
                 Icon(
                     Icons.Default.Tune,
                     contentDescription = "Filters",

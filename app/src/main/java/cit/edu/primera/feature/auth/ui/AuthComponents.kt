@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -103,6 +104,7 @@ fun AuthTabToggle(
                             ) else Modifier
                         )
                         .clickable { onTabSelected(tab) }
+                        .testTag(if (tab == AuthTab.LOGIN) "tab_login" else "tab_signup")
                 ) {
                     Text(
                         text = tab.label,
@@ -171,13 +173,13 @@ fun SocialAuthRow(
             icon = painterResource(id = R.drawable.google),
             contentDescription = "Sign in with Google",
             onClick = onGoogleClick,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f).testTag("social_google_button")
         )
         SocialIconButton(
             icon = painterResource(id = R.drawable.facebook),
             contentDescription = "Sign in with Facebook",
             onClick = onFacebookClick,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f).testTag("social_facebook_button")
         )
     }
 }

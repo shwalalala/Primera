@@ -151,13 +151,17 @@ class CheckinsViewModel(
                         true
                     }
 
+                    val userWeight = userDto.weightKg
+                    val validWeightStr = if (userWeight != null && userWeight in 30..250) userWeight.toString() else ""
+
                     _dailyState.update { state ->
                         state.copy(
                             weightKg = if (state.editingId == null) {
-                                userDto.weightKg?.toString() ?: ""
+                                validWeightStr
                             } else {
                                 state.weightKg
                             },
+                            weightError = null,
                             lastWeightUpdateDate = lastUpdate?.let { date ->
                                 SimpleDateFormat(
                                     "MMM d, yyyy",
@@ -389,9 +393,22 @@ class CheckinsViewModel(
             weight.isEmpty() ||
             weight.matches(Regex("\\d{0,3}(\\.\\d{0,2})?"))
         ) {
+            val error = validateWeight(weight)
             _dailyState.update {
-                it.copy(weightKg = weight)
+                it.copy(weightKg = weight, weightError = error)
             }
+        }
+    }
+
+    private fun validateWeight(weight: String): String? {
+        if (weight.isBlank()) return null
+        val parsed = weight.toDoubleOrNull()
+        return if (parsed == null || parsed <= 0.0) {
+            "Weight must be greater than 0"
+        } else if (parsed < 30.0 || parsed > 250.0) {
+            "Weight must be between 30 and 250 kg"
+        } else {
+            null
         }
     }
 
@@ -548,6 +565,15 @@ class CheckinsViewModel(
                 val descriptionParts = mutableListOf<String>()
 
                 if (state.weightKg.isNotBlank()) {
+                    val weightVal = state.weightKg.toDoubleOrNull()
+                    if (weightVal == null || weightVal <= 0.0) {
+                        _dailyState.update { it.copy(isSaving = false, weightError = "Weight must be greater than 0") }
+                        return@launch
+                    }
+                    if (weightVal < 30.0 || weightVal > 250.0) {
+                        _dailyState.update { it.copy(isSaving = false, weightError = "Weight must be between 30 and 250 kg") }
+                        return@launch
+                    }
                     descriptionParts.add(
                         "Weight: ${state.weightKg} kg"
                     )
@@ -613,7 +639,7 @@ class CheckinsViewModel(
                     if (isToday) {
                         val weight = state.weightKg.toDoubleOrNull()
 
-                        if (weight != null && weight > 0) {
+                        if (weight != null && weight in 30.0..250.0) {
                             repository.updateUserWeight(
                                 weight.roundToInt()
                             ).getOrThrow()
@@ -711,27 +737,30 @@ class CheckinsViewModel(
             ?.removeSuffix(" mg/dL")
             ?.trim()
 
-        var note = description
+        val originalMessage = originalLog?.message?.trim()
+        val note = if (!originalMessage.isNullOrBlank() && originalMessage != originalLog.description?.trim()) {
+            originalMessage
+        } else {
+            var extracted = description
+            listOf(
+                "Symptoms:",
+                "Mood:",
+                "Medicine:",
+                "Weight:",
+                "Blood Sugar:"
+            ).forEach { label ->
+                val index = extracted.indexOf(label)
 
-        listOf(
-            "Symptoms:",
-            "Mood:",
-            "Medicine:",
-            "Weight:",
-            "Blood Sugar:"
-        ).forEach { label ->
-            val index = note.indexOf(label)
+                if (index != -1) {
+                    val end = extracted.indexOf(";", index).let {
+                        if (it == -1) extracted.length else it + 1
+                    }
 
-            if (index != -1) {
-                val end = note.indexOf(";", index).let {
-                    if (it == -1) note.length else it + 1
+                    extracted = extracted.removeRange(index, end).trim()
                 }
-
-                note = note.removeRange(index, end).trim()
             }
+            extracted.trimStart(';').trim()
         }
-
-        note = note.trimStart(';').trim()
 
         val restoredDate = normalizeCheckinDate(
             originalLog?.checkinDate,

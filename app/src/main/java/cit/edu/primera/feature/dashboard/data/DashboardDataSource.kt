@@ -56,9 +56,11 @@ class DashboardDataSource(
                                     val rawPositiveTestDate =
                                         CryptoManager.decryptDate(snapshot.get("positiveTestDate"))
 
+                                    val hasValidScan =
+                                        rawScanDate != null && (rawScanWeeks != null || rawScanDays != null)
                                     val resolvedDueDate =
                                         cit.edu.primera.core.util.PregnancyCalculator.calculateEdd(
-                                            eddDate = rawEdd,
+                                            eddDate = if (hasValidScan || rawLmp != null) null else rawEdd,
                                             scanDate = rawScanDate,
                                             scanWeeks = rawScanWeeks,
                                             scanDays = rawScanDays,
@@ -85,7 +87,7 @@ class DashboardDataSource(
                                         heartRateBpm = snapshot.getLong("heartRateBpm") ?: 0L,
                                         sleepHours = snapshot.getLong("sleepHours") ?: 0L,
                                         sleepMinutes = snapshot.getLong("sleepMinutes") ?: 0L,
-                                        spO2 = snapshot.getLong("spO2"),
+                                        spO2 = snapshot.getLong("spO2") ?: snapshot.getDouble("spO2")?.toLong(),
                                         weightKg = CryptoManager.decryptLong(snapshot.get("weightKg")),
                                         heightCm = CryptoManager.decryptLong(snapshot.get("heightCm")),
                                         isCycleRegular = CryptoManager.decryptBoolean(snapshot.get("isCycleRegular")),
@@ -195,7 +197,7 @@ class DashboardDataSource(
                                         averageHeartRate = doc.getLong("averageHeartRate"),
                                         minimumHeartRate = doc.getLong("minimumHeartRate"),
                                         maximumHeartRate = doc.getLong("maximumHeartRate"),
-                                        spO2 = doc.getDouble("spO2"),
+                                        spO2 = doc.getDouble("spO2") ?: doc.getLong("spO2")?.toDouble(),
                                         sleepMinutes = doc.getLong("sleepMinutes") ?: 0L,
                                         syncedAt = doc.getLong("syncedAt") ?: 0L,
                                         isManualEntry = doc.getBoolean("isManualEntry") ?: false,
@@ -278,7 +280,7 @@ class DashboardDataSource(
             spO2?.let { updates["spO2"] = it }
             
             firestore.collection("users").document(userId)
-                .update(updates)
+                .set(updates, com.google.firebase.firestore.SetOptions.merge())
                 .await()
             Result.success(Unit)
         } catch (e: Exception) {

@@ -29,3 +29,6 @@ Thumbs.db
 .cursorrules
 *.log
 .prompt/
+/std-evidence/
+reports/
+*.patch

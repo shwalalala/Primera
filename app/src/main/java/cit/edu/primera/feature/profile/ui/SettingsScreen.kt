@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -175,7 +176,9 @@ fun SettingsContent(
                     Spacer(Modifier.height(12.dp))
                     OutlinedButton(
                         onClick = onOpenReminderSettings,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("settings_open_reminders_button"),
                         shape = RoundedCornerShape(12.dp),
                         border = androidx.compose.foundation.BorderStroke(
                             1.dp,
@@ -209,7 +212,9 @@ fun SettingsContent(
                         OutlinedButton(
                             onClick = onLinkGoogle,
                             enabled = !state.isLoading,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("settings_link_google_button"),
                             shape = RoundedCornerShape(12.dp),
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
@@ -235,7 +240,9 @@ fun SettingsContent(
                         OutlinedButton(
                             onClick = onLinkFacebook,
                             enabled = !state.isLoading,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("settings_link_facebook_button"),
                             shape = RoundedCornerShape(12.dp),
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
@@ -264,7 +271,9 @@ fun SettingsContent(
                         value = state.newEmail,
                         onValueChange = onNewEmailChange,
                         label = { Text("New Email Address") },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("settings_new_email_input"),
                         enabled = !state.isLoading,
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
@@ -277,7 +286,8 @@ fun SettingsContent(
                     PrimeraGradientButton(
                         text = "Send Email Change Link",
                         onClick = onRequestEmailChange,
-                        isLoading = state.isLoading
+                        isLoading = state.isLoading,
+                        modifier = Modifier.testTag("settings_request_email_change_button")
                     )
                 }
 
@@ -293,7 +303,8 @@ fun SettingsContent(
                     PrimeraGradientButton(
                         text = "Request Password Reset Link",
                         onClick = onRequestPasswordReset,
-                        isLoading = state.isLoading
+                        isLoading = state.isLoading,
+                        modifier = Modifier.testTag("settings_reset_password_button")
                     )
                 }
 
@@ -309,7 +320,8 @@ fun SettingsContent(
                     cit.edu.primera.ui.components.PrimeraOutlinedButton(
                         text = "View Summary QR & Options",
                         onClick = onShowQrDialog,
-                        color = PrimeraViolet
+                        color = PrimeraViolet,
+                        modifier = Modifier.testTag("settings_qr_button")
                     )
                 }
 
@@ -319,13 +331,16 @@ fun SettingsContent(
                 cit.edu.primera.ui.components.PrimeraOutlinedButton(
                     text = "Logout",
                     onClick = { onShowLogoutDialogChange(true) },
-                    color = ErrorRed
+                    color = ErrorRed,
+                    modifier = Modifier.testTag("settings_logout_button")
                 )
 
                 // Delete Account Button
                 OutlinedButton(
                     onClick = { onShowDeleteAccountDialogChange(true) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("settings_delete_account_button"),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorRed),
                     border = androidx.compose.foundation.BorderStroke(1.dp, ErrorRed),

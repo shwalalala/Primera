@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -60,7 +61,48 @@ import cit.edu.primera.ui.components.PrimeraGradientButton
 import cit.edu.primera.ui.components.PrimeraOutlinedButton
 import cit.edu.primera.ui.components.SimpleBarChart
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
+import java.util.Locale
+
+fun formatCurrentWeekRange(dates: List<String> = emptyList()): String {
+    val locale = Locale.US
+    val monthDayFormat = SimpleDateFormat("MMMM d", locale)
+    val dayOnlyFormat = SimpleDateFormat("d", locale)
+    val yearFormat = SimpleDateFormat("yyyy", locale)
+
+    if (dates.size >= 2) {
+        try {
+            val sdf = SimpleDateFormat("yyyy-MM-dd", locale)
+            val start = sdf.parse(dates.first())
+            val end = sdf.parse(dates.last())
+            if (start != null && end != null) {
+                val startCal = Calendar.getInstance().apply { time = start }
+                val endCal = Calendar.getInstance().apply { time = end }
+                return if (startCal.get(Calendar.MONTH) == endCal.get(Calendar.MONTH) &&
+                    startCal.get(Calendar.YEAR) == endCal.get(Calendar.YEAR)
+                ) {
+                    "${monthDayFormat.format(start)} - ${dayOnlyFormat.format(end)}, ${yearFormat.format(end)}"
+                } else {
+                    "${monthDayFormat.format(start)} - ${monthDayFormat.format(end)}, ${yearFormat.format(end)}"
+                }
+            }
+        } catch (_: Exception) {}
+    }
+
+    val endCal = Calendar.getInstance()
+    val startCal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -6) }
+    val start = startCal.time
+    val end = endCal.time
+
+    return if (startCal.get(Calendar.MONTH) == endCal.get(Calendar.MONTH) &&
+        startCal.get(Calendar.YEAR) == endCal.get(Calendar.YEAR)
+    ) {
+        "${monthDayFormat.format(start)} - ${dayOnlyFormat.format(end)}, ${yearFormat.format(end)}"
+    } else {
+        "${monthDayFormat.format(start)} - ${monthDayFormat.format(end)}, ${yearFormat.format(end)}"
+    }
+}
 
 @Composable
 fun SmartwatchScreen(
@@ -211,21 +253,26 @@ private fun ConnectDeviceContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top
             ) {
+                val isFailureOrError = uiState.message.contains("Error", ignoreCase = true) || 
+                             uiState.message.contains("not available", ignoreCase = true) ||
+                             uiState.message.contains("not support", ignoreCase = true) ||
+                             uiState.message.contains("failed", ignoreCase = true) ||
+                             uiState.message.contains("not installed", ignoreCase = true) ||
+                             uiState.message.contains("slow", ignoreCase = true)
+
                 if (uiState.message.isNotBlank()) {
-                    val isError = uiState.message.contains("Error", ignoreCase = true) || 
-                                 uiState.message.contains("not available", ignoreCase = true) ||
-                            uiState.message.contains("not support", ignoreCase = true) ||
-                            uiState.message.contains("failed", ignoreCase = true)
                     Text(
                         text = uiState.message,
-                        color = if (isError) ErrorRed else TextPrimary,
+                        color = if (isFailureOrError) ErrorRed else TextPrimary,
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(bottom = 24.dp)
+                        modifier = Modifier
+                            .testTag("smartwatch_status_message")
+                            .padding(bottom = 24.dp)
                     )
                 }
 
-                if (uiState.hasPermissions) {
+                if (uiState.hasPermissions && !isFailureOrError) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -254,7 +301,7 @@ private fun ConnectDeviceContent(
                         PrimeraGradientButton(
                             text = "Open Health Connect",
                             onClick = onOpenHealthConnect,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth().testTag("smartwatch_open_health_connect_button")
                         )
                         Spacer(Modifier.height(16.dp))
                     }
@@ -267,7 +314,7 @@ private fun ConnectDeviceContent(
                     PrimeraGradientButton(
                         text = "Review and accept permissions",
                         onClick = onRequestPermissions,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag("smartwatch_permissions_button")
                     )
                 }
 
@@ -278,7 +325,7 @@ private fun ConnectDeviceContent(
                     onClick = onConnectAndSync,
                     isLoading = uiState.isLoading,
                     enabled = uiState.isOnline && !uiState.isLoading,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().testTag("smartwatch_connect_sync_button")
                 )
 
                 Spacer(Modifier.height(28.dp))
@@ -379,7 +426,8 @@ private fun HealthDataContent(
                     "Health Data",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = TextPrimary,
+                    modifier = Modifier.testTag("health_data_title")
                 )
                 Text(
                     lastSyncedStr,
@@ -394,55 +442,74 @@ private fun HealthDataContent(
 
         // Stats Grid
         uiState.smartwatchHealth?.let { health ->
+            val effectiveHr = (health.currentHeartRate ?: health.averageHeartRate)?.takeIf { it > 0 }?.toString() ?: "--"
+            val effectiveSteps = if (health.steps > 0) "%,d".format(health.steps) else "--"
+            val effectiveSleep = if (health.sleepMinutes > 0) "${health.sleepMinutes / 60}h ${health.sleepMinutes % 60}m" else "--"
+            val effectiveSpO2 = health.spO2?.takeIf { it > 0 }?.toInt()?.toString() ?: "--"
+
             Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     HealthStatCard(
                         title = "Heart Rate",
-                        value = health.currentHeartRate?.toString() ?: "--",
+                        value = effectiveHr,
                         unit = "bpm",
                         icon = painterResource(R.drawable.heart),
                         iconBgColor = HeartRateBg,
                         trendText = uiState.hrTrendText,
                         trendColor = Color(uiState.hrTrendColor),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .testTag("heart_rate_card")
+                            .testTag("health_data_card_heart_rate")
+                            .weight(1f)
                     )
                     HealthStatCard(
                         title = "Steps",
-                        value = "%,d".format(health.steps),
+                        value = effectiveSteps,
                         unit = "steps",
                         icon = painterResource(R.drawable.steps),
                         iconBgColor = StepsBg,
                         trendText = uiState.stepsTrendText,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .testTag("steps_card")
+                            .testTag("health_data_card_steps")
+                            .weight(1f)
                     )
                 }
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     HealthStatCard(
                         title = "Sleep",
-                        value = "${health.sleepMinutes / 60}h ${health.sleepMinutes % 60}m",
+                        value = effectiveSleep,
                         unit = "",
                         icon = painterResource(R.drawable.sleep),
                         iconBgColor = SleepBg,
                         trendText = uiState.sleepTrendText,
                         trendColor = Color(uiState.sleepTrendColor),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .testTag("sleep_card")
+                            .testTag("health_data_card_sleep")
+                            .weight(1f)
                     )
                     HealthStatCard(
                         title = "SpO₂",
-                        value = health.spO2?.toInt()?.toString() ?: "--",
+                        value = effectiveSpO2,
                         unit = "%",
                         icon = painterResource(R.drawable.sp02),
                         iconBgColor = Color(0xFFFFEBEE),
                         trendText = uiState.spO2TrendText,
                         trendColor = Color(uiState.spO2TrendColor),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .testTag("spo2_card")
+                            .testTag("health_data_card_spo2")
+                            .weight(1f)
                     )
                 }
             }
         }
 
         Spacer(Modifier.height(32.dp))
+
+        val currentWeekRange = uiState.trendDateRange.ifBlank { formatCurrentWeekRange() }
 
         // Trends
         Column(
@@ -462,9 +529,10 @@ private fun HealthDataContent(
 
             ChartContainer(
                 title = { Text("Bpm", fontWeight = FontWeight.SemiBold, fontSize = 14.sp) },
-                dateRange = "March 10 - March 16, 2024",
+                dateRange = currentWeekRange,
                 onPrevious = {},
-                onNext = {}
+                onNext = {},
+                modifier = Modifier.testTag("bpm_chart_container")
             ) {
                 SimpleBarChart(
                     data = uiState.bpmHistory.ifEmpty { listOf(0f) },
@@ -478,9 +546,10 @@ private fun HealthDataContent(
 
             ChartContainer(
                 title = { Text("Sleep", fontWeight = FontWeight.SemiBold, fontSize = 14.sp) },
-                dateRange = "March 10 - March 16, 2024",
+                dateRange = currentWeekRange,
                 onPrevious = {},
-                onNext = {}
+                onNext = {},
+                modifier = Modifier.testTag("sleep_chart_container")
             ) {
                 SimpleBarChart(
                     data = uiState.sleepHistory.ifEmpty { listOf(0f) },
@@ -507,7 +576,7 @@ private fun HealthDataContent(
                 onClick = onSyncNow,
                 isLoading = uiState.isLoading,
                 enabled = uiState.isOnline && !uiState.isLoading,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().testTag("health_data_sync_button")
             )
             
             Spacer(Modifier.height(80.dp)) // Extra space for bottom nav

@@ -58,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -265,7 +266,9 @@ fun NotificationsContent(
                         if (visibleUnreadCount > 0) {
                             IconButton(
                                 onClick = onMarkAllRead,
-                                modifier = Modifier.size(36.dp)
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .testTag("notifications_mark_all_read_button")
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.CheckCircle,
@@ -278,7 +281,9 @@ fun NotificationsContent(
                         if (visibleNotifications.isNotEmpty()) {
                             IconButton(
                                 onClick = onClearAll,
-                                modifier = Modifier.size(36.dp)
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .testTag("notifications_clear_all_button")
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
@@ -328,6 +333,7 @@ fun NotificationsContent(
                             onClick = {
                                 onSelectCategory(category)
                             },
+                            modifier = Modifier.testTag("notifications_filter_${label.lowercase().replace(" ", "_").replace("-", "_")}"),
                             label = {
                                 Text(
                                     text = label,

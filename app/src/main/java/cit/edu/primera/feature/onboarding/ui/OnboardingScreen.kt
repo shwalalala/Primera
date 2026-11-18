@@ -56,6 +56,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -375,7 +376,8 @@ fun OnboardingLayout(
             onClick = {
                 keyboardController?.hide()
                 onContinue()
-            }
+            },
+            modifier = Modifier.testTag("onboarding_continue_button")
         )
         Spacer(Modifier.height(40.dp))
     }
@@ -405,7 +407,7 @@ fun BirthdayStep(
             selectedDate = birthday,
             onDateSelected = onBirthdayChange,
             yearRange = minYear..maxYear,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().testTag("onboarding_birthday_picker")
         )
     }
 }
@@ -431,7 +433,8 @@ fun BodyMeasurementsStep(
                 onWeightChange(weight)
             },
             placeholder = "Enter weight in kg",
-            keyboardType = KeyboardType.Number
+            keyboardType = KeyboardType.Number,
+            testTag = "onboarding_weight_input"
         )
 
         Spacer(Modifier.height(20.dp))
@@ -444,7 +447,8 @@ fun BodyMeasurementsStep(
                 onHeightChange(height)
             },
             placeholder = "Enter height in cm",
-            keyboardType = KeyboardType.Number
+            keyboardType = KeyboardType.Number,
+            testTag = "onboarding_height_input"
         )
     }
 }
@@ -1095,7 +1099,8 @@ fun ReviewSummaryStep(
 
         PrimeraGradientButton(
             text = "Submit & Start",
-            onClick = onSubmit
+            onClick = onSubmit,
+            modifier = Modifier.testTag("onboarding_submit_button")
         )
         Spacer(Modifier.height(16.dp))
     }

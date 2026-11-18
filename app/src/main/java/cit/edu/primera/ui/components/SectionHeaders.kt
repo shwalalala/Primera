@@ -22,6 +22,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -68,6 +71,7 @@ fun DashboardSectionHeader(
                 }
             }
             if (onAdd != null) {
+                val addLabel = if (title.contains("Goal", ignoreCase = true)) "Add Goal" else "Add"
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
@@ -76,6 +80,10 @@ fun DashboardSectionHeader(
                         .clip(CircleShape)
                         .border(1.dp, SectionHeaderBorder, CircleShape)
                         .clickable { onAdd() }
+                        .semantics {
+                            text = androidx.compose.ui.text.AnnotatedString(addLabel)
+                            contentDescription = addLabel
+                        }
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Add,

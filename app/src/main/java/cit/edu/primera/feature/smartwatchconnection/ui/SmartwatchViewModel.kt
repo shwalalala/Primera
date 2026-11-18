@@ -77,6 +77,7 @@ class SmartwatchViewModel(
                             bpmHistory = bpmHistory,
                             sleepHistory = sleepHistory,
                             historyLabels = labels,
+                            trendDateRange = formatCurrentWeekRange(sortedDates),
                             hrTrendText = hrTrend.first,
                             hrTrendColor = hrTrend.second,
                             sleepTrendText = sleepTrend.first,
@@ -119,18 +120,20 @@ class SmartwatchViewModel(
                         } catch (e: Exception) {
                             Log.e("SmartwatchViewModel", "Permission check failed, but SDK is available", e)
                             _uiState.value = _uiState.value.copy(
-                                hasPermissions = true,
+                                hasPermissions = false,
                                 message = "System communication is slow, but you can try syncing now."
                             )
                         }
                     }
                     isInstalled -> {
                         _uiState.value = _uiState.value.copy(
+                            hasPermissions = false,
                             message = "Health Connect is installed but not active. Please open the Health Connect app manually to initialize it."
                         )
                     }
                     else -> {
                         _uiState.value = _uiState.value.copy(
+                            hasPermissions = false,
                             message = "Health Connect is not installed. Please install it from the Play Store to sync your data."
                         )
                     }
@@ -168,7 +171,7 @@ class SmartwatchViewModel(
     fun onPermissionError(e: Exception) {
         Log.e("SmartwatchViewModel", "Permission request failed", e)
         _uiState.value = _uiState.value.copy(
-            hasPermissions = true, 
+            hasPermissions = false, 
             message = "Standard permission popup blocked by device. Please allow Primera manually in Health Connect app, then click Sync."
         )
     }
@@ -226,9 +229,10 @@ class SmartwatchViewModel(
                 }
 
                 // Update main dashboard data fields as well
+                val effectiveHeartRate = (smartwatchHealth.currentHeartRate ?: smartwatchHealth.averageHeartRate ?: 0L).coerceAtLeast(0L)
                 dashboardRepository.updateHealthData(
                     steps = smartwatchHealth.steps,
-                    heartRate = smartwatchHealth.currentHeartRate ?: 0L,
+                    heartRate = effectiveHeartRate,
                     sleepHours = smartwatchHealth.sleepMinutes / 60,
                     sleepMinutes = smartwatchHealth.sleepMinutes % 60,
                     spO2 = smartwatchHealth.spO2?.toLong()
@@ -262,10 +266,14 @@ class SmartwatchViewModel(
                 Log.e("SmartwatchViewModel", "Sync failed", e)
                 
                 val rawMessage = e.message ?: ""
+                val isNotInstalled = rawMessage.contains("not installed", ignoreCase = true)
+                val isPermError = rawMessage.contains("permission", ignoreCase = true)
                 val errorMessage = when {
+                    isNotInstalled ->
+                        "Sync failed: Health Connect is not installed on this device."
                     rawMessage.contains("not responding", ignoreCase = true) -> 
                         "Health Connect service didn't respond in time. This is common on Huawei devices. Please open the Health Connect app, then try syncing again."
-                    rawMessage.contains("permission", ignoreCase = true) -> 
+                    isPermError -> 
                         "Sync failed: Permissions not granted. Please ensure Primera is allowed in the Health Connect app."
                     (e is java.net.SocketTimeoutException || rawMessage.contains("timeout")) ->
                         "Connection timed out. Please try one more time."
@@ -274,6 +282,7 @@ class SmartwatchViewModel(
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
+                    hasPermissions = if (isNotInstalled || isPermError) false else _uiState.value.hasPermissions,
                     message = errorMessage
                 )
 

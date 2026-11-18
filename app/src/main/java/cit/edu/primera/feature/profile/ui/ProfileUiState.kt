@@ -34,7 +34,7 @@ data class ProfileUiState(
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
     val isEditing: Boolean = false,
-    val expandedSections: Set<ProfileSection> = setOf(ProfileSection.PERSONAL_INFO),
+    val expandedSections: Set<ProfileSection> = emptySet(),
     val error: String? = null,
     val successMessage: String? = null
 )

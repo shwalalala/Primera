@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -74,7 +75,7 @@ fun DashboardTopBar(
         title = "Home",
         onOpenDrawer = onOpenDrawer,
         onPrintQrClick = onPrintQrClick,
-        modifier = modifier
+        modifier = modifier.testTag("dashboard_top_bar")
     )
 }
 
@@ -142,7 +143,7 @@ fun BabyRingCard(
     babyIllustration: Int? = null,
 ) {
     Column(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().testTag("dashboard_baby_card"),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         CircularPregnancyRing(
@@ -198,7 +199,7 @@ fun StatsGrid(
                 trendText = if (state.heartRateBpm > 0) "${if (state.heartRateTrendingUp) "▲" else "▼"} ${state.heartRateVsLastWeek}% vs last wk" else null,
                 trendColor = if (state.heartRateTrendingUp) TrendGreen else TrendRed,
                 onAddClick = { onAttributeClick(cit.edu.primera.ui.components.HealthAttribute.HEART_RATE) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).testTag("dashboard_card_heart_rate")
             )
             HealthStatCard(
                 title = "Steps",
@@ -208,7 +209,7 @@ fun StatsGrid(
                 iconBgColor = StepsBg,
                 trendText = if (state.stepsGoal > 0) "Goal: %,d".format(state.stepsGoal) else "Goal: --",
                 onAddClick = { onAttributeClick(cit.edu.primera.ui.components.HealthAttribute.STEPS) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).testTag("dashboard_card_steps")
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -220,7 +221,7 @@ fun StatsGrid(
                 iconBgColor = SleepBg,
                 trendText = null,
                 onAddClick = { onAttributeClick(cit.edu.primera.ui.components.HealthAttribute.SLEEP) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).testTag("dashboard_card_sleep")
             )
             HealthStatCard(
                 title = "SpO₂",
@@ -230,7 +231,7 @@ fun StatsGrid(
                 iconBgColor = Color(0xFFFFEBEE),
                 trendText = null,
                 onAddClick = { onAttributeClick(cit.edu.primera.ui.components.HealthAttribute.SPO2) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).testTag("dashboard_card_spo2")
             )
         }
 
@@ -240,6 +241,7 @@ fun StatsGrid(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 0.dp)
+                .testTag("dashboard_sync_watch_button")
         )
     }
 }

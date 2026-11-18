@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -220,6 +221,7 @@ fun DailyCheckinContent(
 
             WeightSection(
                 weight = state.weightKg,
+                weightError = state.weightError,
                 lastUpdated = state.lastWeightUpdateDate,
                 shouldAlert = state.shouldShowWeightUpdateAlert,
                 onWeightChange = onWeightChange
@@ -242,10 +244,19 @@ fun DailyCheckinContent(
             // EXISTING REVIEW ACTION
             // ----------------------------------
 
+            val isWeightValid = state.weightError == null && (state.weightKg.isBlank() || (state.weightKg.toDoubleOrNull() ?: 0.0) in 30.0..250.0)
+
             PrimeraGradientButton(
                 text = "Review Check-in",
-                onClick = onSubmit,
-                modifier = Modifier.padding(horizontal = 20.dp)
+                onClick = {
+                    if (isWeightValid) {
+                        onSubmit()
+                    }
+                },
+                modifier = Modifier
+                    .padding(horizontal = 20.dp)
+                    .testTag("checkin_review_button")
+                    .testTag("review_checkin_button")
             )
 
             if (state.errorMessage != null) {
@@ -286,7 +297,9 @@ private fun DailyCheckinTopBar(
     ) {
         IconButton(
             onClick = onBack,
-            modifier = Modifier.size(40.dp)
+            modifier = Modifier
+                .size(40.dp)
+                .testTag("checkin_back_button")
         ) {
             Icon(
                 imageVector = Icons.Default.ArrowBack,
@@ -316,7 +329,8 @@ private fun DailyCheckinTopBar(
             contentPadding = PaddingValues(
                 horizontal = 8.dp,
                 vertical = 4.dp
-            )
+            ),
+            modifier = Modifier.testTag("checkin_clear_button")
         ) {
             Text(
                 text = "Clear",
@@ -521,7 +535,10 @@ private fun NoteSection(
                     color = TextHint
                 )
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("checkin_note_input")
+                .testTag("note_input"),
             textStyle = androidx.compose.ui.text.TextStyle(
                 fontSize = 14.sp,
                 color = TextPrimary
@@ -546,6 +563,7 @@ private fun NoteSection(
 @Composable
 private fun WeightSection(
     weight: String,
+    weightError: String? = null,
     lastUpdated: String?,
     shouldAlert: Boolean,
     onWeightChange: (String) -> Unit
@@ -600,6 +618,15 @@ private fun WeightSection(
             )
         }
 
+        if (weightError != null) {
+            Text(
+                text = weightError,
+                fontSize = 11.sp,
+                color = ErrorRed,
+                modifier = Modifier.testTag("weight_error_text")
+            )
+        }
+
         TextField(
             value = weight,
             onValueChange = onWeightChange,
@@ -610,7 +637,10 @@ private fun WeightSection(
                     color = TextHint
                 )
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("checkin_weight_input")
+                .testTag("weight_input"),
             singleLine = true,
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Number
@@ -653,7 +683,10 @@ private fun BloodSugarSection(
                     color = TextHint
                 )
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("checkin_blood_sugar_input")
+                .testTag("blood_sugar_input"),
             singleLine = true,
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Number
