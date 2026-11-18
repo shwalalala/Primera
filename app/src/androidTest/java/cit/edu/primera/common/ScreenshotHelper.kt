@@ -46,16 +46,22 @@ object ScreenshotHelper {
             Log.d(TAG, "Device screenshot saved: ${file.absolutePath}, success=$success")
 
             // Mirror to persistent /sdcard/screenshots so adb pull succeeds even if package is uninstalled
-            getSharedScreenshotDir()?.let { sharedDir ->
-                val sharedFile = File(sharedDir, "$name.png")
-                try {
-                    file.copyTo(sharedFile, overwrite = true)
-                } catch (_: Exception) {
-                    device.takeScreenshot(sharedFile)
+            try {
+                device.executeShellCommand("mkdir -p /sdcard/screenshots")
+                if (file.exists() && file.length() > 0) {
+                    device.executeShellCommand("cp ${file.absolutePath} /sdcard/screenshots/$name.png")
+                } else {
+                    device.executeShellCommand("screencap -p /sdcard/screenshots/$name.png")
                 }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to mirror screenshot to /sdcard/screenshots", e)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to capture device screenshot $name", e)
+            try {
+                device.executeShellCommand("mkdir -p /sdcard/screenshots")
+                device.executeShellCommand("screencap -p /sdcard/screenshots/$name.png")
+            } catch (_: Exception) {}
         }
         return file
     }
@@ -69,12 +75,11 @@ object ScreenshotHelper {
             }
             Log.d(TAG, "Node screenshot saved: ${file.absolutePath}")
 
-            getSharedScreenshotDir()?.let { sharedDir ->
-                val sharedFile = File(sharedDir, "$name.png")
-                try {
-                    file.copyTo(sharedFile, overwrite = true)
-                } catch (_: Exception) {}
-            }
+            try {
+                val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+                device.executeShellCommand("mkdir -p /sdcard/screenshots")
+                device.executeShellCommand("cp ${file.absolutePath} /sdcard/screenshots/$name.png")
+            } catch (_: Exception) {}
         } catch (e: Exception) {
             Log.e(TAG, "Failed to capture node screenshot $name", e)
         }

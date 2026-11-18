@@ -5,6 +5,8 @@ import android.content.Intent
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -96,16 +98,32 @@ class M04SmartwatchConnectionTest {
             } catch (t: Throwable) {}
         }
 
+        // Dismiss Coachmark overlay if present
         try {
-            composeTestRule.onNodeWithText("Device").performClick()
+            composeTestRule.onNodeWithText("Got it").performClick()
+        } catch (t: Throwable) {}
+        try {
+            composeTestRule.onNodeWithText("Skip").performClick()
+        } catch (t: Throwable) {}
+        composeTestRule.waitForIdle()
+
+        try {
+            composeTestRule.onAllNodesWithText("Device").onFirst().performClick()
         } catch (e: Throwable) {
             composeTestRule.activityRule.scenario.onActivity { activity ->
                 activity.startActivity(Intent(activity, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
                     putExtra(NotificationHelper.EXTRA_DESTINATION_ROUTE, "device")
                 })
             }
         }
         composeTestRule.waitForIdle()
+
+        // If HealthDataContent is displayed, navigate back to ConnectDeviceContent
+        try {
+            composeTestRule.onNodeWithContentDescription("Back").performClick()
+            composeTestRule.waitForIdle()
+        } catch (t: Throwable) {}
     }
 
     @Test

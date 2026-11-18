@@ -3,6 +3,11 @@
 # Primera Mobile Automated Test Suite Runner (STD M01 - M23)
 # ==============================================================================
 set -e
+export MSYS_NO_PATHCONV=1
+if [ -z "$ANDROID_HOME" ]; then
+    export ANDROID_HOME="/c/Users/IDoodleNoodles/AppData/Local/Android/Sdk"
+fi
+export PATH="$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH"
 
 # Accept RUN_LABEL argument: 'before' or 'after' (defaults to 'before')
 RUN_LABEL="${1:-before}"
@@ -62,22 +67,57 @@ echo "Emulator is online and fully booted."
 adb shell settings put global window_animation_scale 0
 adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
+adb shell mkdir -p /sdcard/screenshots
+adb shell chmod 777 /sdcard/screenshots
 
 # 4. Run connected Android test suite via Gradle
 echo "[3/6] Running Android instrumented test suite via Gradle (excluding post-reboot tests)..."
 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.notClass=cit.edu.primera.M19AfterRebootTest || echo "Some tests completed with warnings/failures."
+
+# Pull main suite screenshots and copy main JUnit report before subsequent runs
+echo "Pulling main suite screenshots and collecting reports..."
+adb pull /sdcard/screenshots/. "${SCREENSHOT_DIR}/" 2>/dev/null || true
+adb pull /storage/emulated/0/Android/data/cit.edu.primera/files/screenshots/. "${SCREENSHOT_DIR}/" 2>/dev/null || true
+
+XML_FILE=$(find app/build/outputs/androidTest-results/connected/ -name "*.xml" | head -n 1)
+if [ -n "$XML_FILE" ]; then
+    cp "$XML_FILE" "${REPORT_DIR}/junit.xml"
+    echo "JUnit test report copied to ${REPORT_DIR}/junit.xml"
+fi
 
 # 5. Hook for M19 Reboot step
 echo "[4/6] Executing M19 Reboot orchestration hook..."
 echo "Running M19BeforeRebootTest before reboot..."
 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=cit.edu.primera.M19BeforeRebootTest || echo "M19BeforeRebootTest completed with warnings/failures."
 
-# Pull pre-reboot screenshots before restarting emulator
-adb pull /storage/emulated/0/Android/data/cit.edu.primera/files/screenshots/. "${SCREENSHOT_DIR}/" 2>/dev/null || true
 adb pull /sdcard/screenshots/. "${SCREENSHOT_DIR}/" 2>/dev/null || true
+adb pull /storage/emulated/0/Android/data/cit.edu.primera/files/screenshots/. "${SCREENSHOT_DIR}/" 2>/dev/null || true
 
 echo "Rebooting emulator via adb reboot..."
 adb reboot || true
+sleep 5
+
+# If emulator process terminated on reboot (common on Windows QEMU), relaunch it
+if ! adb get-state &> /dev/null; then
+    echo "Emulator offline after reboot, relaunching..."
+    EMULATOR_BIN="emulator"
+    if ! command -v emulator &> /dev/null; then
+        if [ -n "$ANDROID_HOME" ] && [ -x "$ANDROID_HOME/emulator/emulator" ]; then
+            EMULATOR_BIN="$ANDROID_HOME/emulator/emulator"
+        elif [ -x "$HOME/AppData/Local/Android/Sdk/emulator/emulator" ]; then
+            EMULATOR_BIN="$HOME/AppData/Local/Android/Sdk/emulator/emulator"
+        elif [ -x "$HOME/AppData/Local/Android/Sdk/emulator/emulator.exe" ]; then
+            EMULATOR_BIN="$HOME/AppData/Local/Android/Sdk/emulator/emulator.exe"
+        fi
+    fi
+    AVD_NAME=$($EMULATOR_BIN -list-avds 2>/dev/null | head -n 1)
+    if [ -n "$AVD_NAME" ]; then
+        echo "Launching emulator: $AVD_NAME..."
+        $EMULATOR_BIN -avd "$AVD_NAME" -no-snapshot-load -no-boot-anim -no-audio &
+        sleep 5
+    fi
+fi
+
 echo "Waiting for Android device to finish booting..."
 adb wait-for-device
 while [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" != "1" ]; do
@@ -92,20 +132,24 @@ sleep 3
 adb shell settings put global window_animation_scale 0
 adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
+adb shell mkdir -p /sdcard/screenshots
+adb shell chmod 777 /sdcard/screenshots
 
 echo "Running M19AfterRebootTest post-reboot verification..."
 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=cit.edu.primera.M19AfterRebootTest || echo "M19AfterRebootTest completed with warnings/failures."
 
 # 6. Pull screenshots and JUnit XML results
 echo "[5/6] Pulling screenshots and collecting reports..."
-adb pull /storage/emulated/0/Android/data/cit.edu.primera/files/screenshots/. "${SCREENSHOT_DIR}/" 2>/dev/null || true
 adb pull /sdcard/screenshots/. "${SCREENSHOT_DIR}/" 2>/dev/null || true
+adb pull /storage/emulated/0/Android/data/cit.edu.primera/files/screenshots/. "${SCREENSHOT_DIR}/" 2>/dev/null || true
 
-# Copy JUnit XML
-XML_FILE=$(find app/build/outputs/androidTest-results/connected/ -name "*.xml" | head -n 1)
-if [ -n "$XML_FILE" ]; then
-    cp "$XML_FILE" "${REPORT_DIR}/junit.xml"
-    echo "JUnit test report copied to ${REPORT_DIR}/junit.xml"
+# If junit.xml is missing, copy
+if [ ! -f "${REPORT_DIR}/junit.xml" ]; then
+    XML_FILE=$(find app/build/outputs/androidTest-results/connected/ -name "*.xml" | head -n 1)
+    if [ -n "$XML_FILE" ]; then
+        cp "$XML_FILE" "${REPORT_DIR}/junit.xml"
+        echo "JUnit test report copied to ${REPORT_DIR}/junit.xml"
+    fi
 fi
 
 # 7. Cleanup
