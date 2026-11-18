@@ -100,6 +100,7 @@ sleep 5
 # If emulator process terminated on reboot (common on Windows QEMU), relaunch it
 if ! adb get-state &> /dev/null; then
     echo "Emulator offline after reboot, relaunching..."
+    rm -rf "$HOME/.android/avd/"*.avd/*.lock /c/Users/IDoodleNoodles/.android/avd/*.avd/*.lock "$LOCALAPPDATA/Temp/AndroidEmulator" 2>/dev/null || true
     EMULATOR_BIN="emulator"
     if ! command -v emulator &> /dev/null; then
         if [ -n "$ANDROID_HOME" ] && [ -x "$ANDROID_HOME/emulator/emulator" ]; then
@@ -113,13 +114,15 @@ if ! adb get-state &> /dev/null; then
     AVD_NAME=$($EMULATOR_BIN -list-avds 2>/dev/null | head -n 1)
     if [ -n "$AVD_NAME" ]; then
         echo "Launching emulator: $AVD_NAME..."
-        $EMULATOR_BIN -avd "$AVD_NAME" -no-snapshot-load -no-boot-anim -no-audio &
+        $EMULATOR_BIN -avd "$AVD_NAME" -no-snapshot-load -no-boot-anim -no-audio -no-metrics -crash-report-mode never &
         sleep 5
     fi
 fi
 
 echo "Waiting for Android device to finish booting..."
-adb wait-for-device
+until adb wait-for-device 2>/dev/null; do
+    sleep 2
+done
 while [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" != "1" ]; do
     sleep 3
 done
